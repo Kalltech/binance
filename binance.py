@@ -18,6 +18,7 @@ SELL = "SELL"
 
 LIMIT = "LIMIT"
 MARKET = "MARKET"
+STOP_LOSS_LIMIT = "STOP_LOSS_LIMIT"
 
 GTC = "GTC"
 IOC = "IOC"
@@ -120,7 +121,7 @@ def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
         side (str): BUY or SELL.
         quantity (float, str or decimal)
         price (float, str or decimal)
-        orderType (str, optional): LIMIT or MARKET.
+        orderType (str, optional): LIMIT or MARKET or STOP_LOSS_LIMIT
         timeInForce (str, optional): GTC or IOC.
         test (bool, optional): Creates and validates a new order but does not
             send it into the matching engine. Returns an empty dict if
@@ -138,6 +139,7 @@ def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
         "timeInForce": timeInForce,
         "quantity": formatNumber(quantity),
         "price": formatNumber(price),
+        "stopPrice": formatNumber(stopPrice),
     }
     params.update(kwargs)
     path = "/api/v3/order/test" if test else "/api/v3/order"
