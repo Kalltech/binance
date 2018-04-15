@@ -112,7 +112,7 @@ def balances():
     } for d in data.get("balances", [])}
 
 
-def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
+def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC, 
           test=False, **kwargs):
     """Send in a new order.
 
@@ -139,7 +139,6 @@ def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
         "timeInForce": timeInForce,
         "quantity": formatNumber(quantity),
         "price": formatNumber(price),
-        "stopPrice": formatNumber(stopPrice),
     }
     params.update(kwargs)
     path = "/api/v3/order/test" if test else "/api/v3/order"
