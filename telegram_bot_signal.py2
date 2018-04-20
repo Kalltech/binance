@@ -24,7 +24,9 @@ import datetime
 import pickle
 import re
 import string
-api_path="/root/scripts/"
+
+cwd = os.getcwd()
+api_path=cwd+"/"
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
