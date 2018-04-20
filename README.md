@@ -1,14 +1,16 @@
 #Kallmod
 
 apt-get install python-pip
-
+pip install binance
 pip install python-telegram-bot --upgrade
 
 /etc/crontab
 
 */1 * * * *	root	cd /root/scripts && /usr/bin/python2 /root/scripts/binance3.py2
 
-Create your bot and modify ini
+Create your bot, modify ini, update binance.py in /usr/local/lib/python2.7/dist-packages/binance.py
+Then modify crontab and run python telegram_bot_binance.py2
+
 
 # Simple Binance API client in Python
 
