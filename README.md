@@ -12,7 +12,7 @@ pip install python-telegram-bot --upgrade
 
 Create your bot, modify ini, update binance.py in /usr/local/lib/python2.7/dist-packages/binance.py
 Then modify crontab and run python telegram_bot_binance.py2
-
+From your telegram send signal or status to bot
 
 # Simple Binance API client in Python
 
