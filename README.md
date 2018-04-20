@@ -1,3 +1,9 @@
+#Kallmod
+/etc/crontab
+*/1 * * * *	root	cd /root/scripts && /usr/bin/python2 /root/scripts/binance3.py2
+apt-get install python-pip
+pip install python-telegram-bot --upgrade
+
 # Simple Binance API client in Python
 
 - Does not require an api key for public methods
