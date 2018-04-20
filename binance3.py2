@@ -92,7 +92,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
     if order.get("orderId") is not None:
         bot.sendMessage(chat_id=my_telegram_id, text=str(order))
         print order.get("orderId")
-        logger.info("Ordre passe:"+str(order.get("orderId")))
+        logger.info("Ordre passe:"+str(order))
         processed_order=1
         if b_order_side=="STOP-LIMIT":
             dct_FILE['last_SL_orderId']=order.get("orderId")
@@ -315,7 +315,6 @@ dir_TRADES=cwd+"/trades/"
 logger = logging.getLogger("binance")
 log_level = str(ConfigSectionMap("BINANCE_API", load_params)['log_level'])
 level = logging.getLevelName(log_level)
-Log.setLevel(level)
 log_file=cwd+"/logs/binance_"+ datetime.datetime.now().strftime("%Y-%m-%d")+".log"
 hdlr = logging.FileHandler(log_file)
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
