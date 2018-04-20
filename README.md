@@ -1,7 +1,9 @@
 #Kallmod
 
 apt-get install python-pip
+
 pip install binance
+
 pip install python-telegram-bot --upgrade
 
 /etc/crontab
