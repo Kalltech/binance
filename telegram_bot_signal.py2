@@ -1,0 +1,196 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""Simple Bot to reply to Telegram messages.
+
+This program is dedicated to the public domain under the CC0 license.
+
+This Bot uses the Updater class to handle the bot.
+
+First, a few handler functions are defined. Then, those functions are passed to
+the Dispatcher and registered at their respective places.
+Then, the bot is started and runs until we press Ctrl-C on the command line.
+
+Usage:
+Basic Echobot example, repeats messages.
+Press Ctrl-C on the command line or send a signal to the process to stop the
+bot.
+"""
+
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import logging
+import os
+import datetime
+import pickle
+import re
+import string
+api_path="/root/scripts/"
+# Enable logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
+
+logger = logging.getLogger(__name__)
+
+# Define a few command handlers. These usually take the two arguments bot and
+# update. Error handlers also receive the raised TelegramError object in error.
+def removeNonAscii(s):
+    return re.sub(r'\\u\w{4}','',s)
+def start(bot, update):
+    """Send a message when the command /start is issued."""
+    update.message.reply_text('Hi!')
+
+def help(bot, update):
+    """Send a message when the command /help is issued."""
+    update.message.reply_text('Help!')
+
+def echo(bot, update):
+    """Echo the user message."""
+    print "BEGIN response"
+    text_sent=update.message.text.lower()
+    printable = set(string.printable)
+    text_sent=filter(lambda x: x in printable, text_sent)
+    if text_sent=="status":
+        print "status"
+        update.message.reply_text(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
+        for filename in os.listdir(api_path+"trades/"):
+            print(api_path+"trades/"+filename)
+            dct_FILE=load_obj(api_path+"trades/"+filename)
+            update.message.reply_text("Dernier prix "+dct_FILE.get("symbol")+":"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level'])
+    elif "signal" in text_sent:
+        print "signal"
+#        print text_sent
+        update.message.reply_text(update.message.text)
+        update.message.reply_text(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
+        signal_dict = {}
+        signal_dict['C'] = 'test'
+        signal_dict['AC'] = 'test'
+        signal_dict['T1'] = 'test'
+        signal_dict['T2'] = 'test'
+        signal_dict['T3'] = 'test'
+        signal_dict['SL'] = 'test'
+        signal_dict['USD'] = 'test'
+#        signal_dict['BAD'] = 'test'
+        lines=text_sent
+        lines=lines.splitlines()
+        for line in lines:
+#            print(line)
+            line=removeNonAscii(line)
+				#Crypto Signalist Pro
+            if "btc" in line:
+                signal_dict['C'] = line.upper()
+                if signal_dict['C'].find("("):
+                    a_t1=signal_dict['C'].replace(" ", "")
+                    a_t1=a_t1.split('(', 1)[0]
+                    signal_dict['C'] = a_t1
+            if "usd" in line:
+                a_usd=line.split("usd:")
+                signal_dict['USD'] = a_usd[1]
+            if "buy:" in line:
+                a_buy=line.split("buy:")
+                signal_dict['AC'] = a_buy[1]
+            if "sell:" in line:
+                a_sell=line.split("sell:")
+                a_sell=a_sell[1].split("-")
+                signal_dict['T1'] = a_sell[0]
+                signal_dict['T2'] = a_sell[1]
+                signal_dict['T3'] = a_sell[2]
+            if "stop:" in line:
+                a_stop=line.split("stop:")
+                signal_dict['SL'] = a_stop[1]
+				#Signal Profits
+            if "buy zone:" in line:
+                a_buy=line.split("buy zone:")
+                signal_dict['AC'] = a_buy[1]
+            if "buyzone:" in line.replace(" ", ""):
+                a_buy=line.replace(" ", "")
+                print a_buy
+                a_buy=a_buy.split("buyzone:")
+                print a_buy
+                a_buy=a_buy[1].split('-', 1)[0]
+                print a_buy
+                signal_dict['AC'] = a_buy
+            if "target1:" in line.replace(" ", ""):
+                a_t1=line.replace(" ", "")
+                a_t1=a_t1.split("target1:")
+                a_t1=a_t1[1].split('(', 1)[0]
+                signal_dict['T1'] = a_t1
+            if "target2:" in line.replace(" ", ""):
+                a_t1=line.replace(" ", "")
+                a_t1=a_t1.split("target2:")
+                a_t1=a_t1[1].split('(', 1)[0]
+                signal_dict['T2'] = a_t1
+            if "target3:" in line.replace(" ", ""):
+                a_t1=line.replace(" ", "")
+                a_t1=a_t1.split("target3:")
+                a_t1=a_t1[1].split('(', 1)[0]
+                signal_dict['T3'] = a_t1
+            if "stop loss:" in line:
+                a_stop=line.split("stop loss:")
+                signal_dict['SL'] = a_stop[1]
+                if signal_dict['SL'].find("("):
+                    a_t1=signal_dict['SL'].replace(" ", "")
+                    a_t1=a_t1.split('(', 1)[0]
+                    signal_dict['SL'] = a_t1
+        key_not_find=0
+        str_file="[TRADE]\n"
+#        print str(signal_dict)
+        for key, value in sorted(signal_dict.items()):
+            if value == 'test':
+                update.message.reply_text("Valeur non trouvee:"+key)
+                key_not_find=1
+            else:
+                str_file=str_file+key.upper()+":"+value.strip()+"\n"
+        if key_not_find<>1:
+            text_file = open(api_path+"/signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
+            text_file.write(str_file)
+            text_file.close()
+            update.message.reply_text("Signal resolu:\n"+str_file)
+        else:
+            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100")
+#            print str_file
+    else:
+        update.message.reply_text(update.message.text)
+    print "END response"
+    
+def load_obj(name ):
+    with open(name, 'rb') as f:
+        print "Ouvre l objet depuis: "+name
+        logger.debug("Ouvre l objet depuis: "+name)
+        return pickle.load(f)
+
+def error(bot, update, error):
+    """Log Errors caused by Updates."""
+    logger.warning('Update "%s" caused error "%s"', update, error)
+
+def float8f(float8f_value):
+    return format(float(float8f_value), '.8f')
+
+def main():
+    """Start the bot."""
+    # Create the EventHandler and pass it your bot's token.
+    updater = Updater("559093322:AAEwhzyRELHL_IalDPKUKn3BSvYkWI2GX_4")
+
+    # Get the dispatcher to register handlers
+    dp = updater.dispatcher
+
+    # on different commands - answer in Telegram
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("help", help))
+
+    # on noncommand i.e message - echo the message on Telegram
+    dp.add_handler(MessageHandler(Filters.text, echo))
+
+    # log all errors
+    dp.add_error_handler(error)
+
+    # Start the Bot
+    updater.start_polling()
+
+    # Run the bot until you press Ctrl-C or the process receives SIGINT,
+    # SIGTERM or SIGABRT. This should be used most of the time, since
+    # start_polling() is non-blocking and will stop the bot gracefully.
+    updater.idle()
+
+print "Starting Bot"
+if __name__ == '__main__':
+    main()
