@@ -313,12 +313,15 @@ dir_SIGNALS=cwd+"/signals/"
 dir_TRADES=cwd+"/trades/"
 ###Logs
 logger = logging.getLogger("binance")
+log_level = str(ConfigSectionMap("BINANCE_API", load_params)['log_level'])
+level = logging.getLevelName(log_level)
+Log.setLevel(level)
 log_file=cwd+"/logs/binance_"+ datetime.datetime.now().strftime("%Y-%m-%d")+".log"
 hdlr = logging.FileHandler(log_file)
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
-logger.setLevel(logging.DEBUG)
+logger.setLevel(level)
 ###Variables
 processed_order=0
 ###Binance
