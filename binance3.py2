@@ -355,6 +355,7 @@ for filename in os.listdir(dir_TRADES):
 #    save_obj(dct_FILE, dct_FILE.get("filename"))
 #    if dct_FILE['filename']=="/root/scripts/trades/TRIGBTC_2018-04-20_01.12.07":
 #    dct_FILE['ToBeFilled']=1
+#    dct_FILE['last_orderId']=22775085
 #    dct_FILE['ToBeFilled'] = {}
 #    dct_FILE['ToBeFilled']["order_BUY"]=1
 #    dct_FILE['dictToBeFilled'] = {}
@@ -364,6 +365,11 @@ for filename in os.listdir(dir_TRADES):
     if dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED':
         print dct_FILE.get("last_order_level")+" Deplace le fichier dans old"
         logger.debug("Ordre T3 FILLED_Deplace le fichier dans old")
+        save_obj(dct_FILE, dct_FILE.get("filename"))
+        os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
+    if dct_FILE['executedQty_vendu']*1.01>=dct_FILE['order_BUY_FILLED']['origQty']:
+        print "executedQty_vendu>=origQty:"+" Deplace le fichier dans old"
+        logger.debug("executedQty_vendu>=origQty:"+" Deplace le fichier dans old")
         save_obj(dct_FILE, dct_FILE.get("filename"))
         os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
     if dct_FILE['ToBeFilled']==1:
@@ -380,7 +386,7 @@ for filename in os.listdir(dir_TRADES):
                 if dct_FILE['executedQty_creation']=="test":
                     dct_FILE['executedQty_creation']=float(current_order.get("executedQty"))
                 dct_FILE['ToBeFilled']=0
-                if dct_FILE['order_BUY_FILLED']['side']=="SELL":
+                if current_order['side']=="SELL":
                     dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+dct_FILE['last_executedQty']
                 save_obj(dct_FILE, dct_FILE.get("filename"))
             else:
@@ -405,7 +411,7 @@ for filename in os.listdir(dir_TRADES):
                         if dct_FILE['executedQty_creation']=="test":
                             dct_FILE['executedQty_creation']=float(current_order.get("executedQty"))
                         dct_FILE[order_level_dictToBeFilled]['orderId']=0
-                        if dct_FILE['order_BUY_FILLED']['side']=="SELL":
+                        if current_order['side']=="SELL":
                             dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+dct_FILE['last_executedQty']
                         save_obj(dct_FILE, dct_FILE.get("filename"))
                     else:
