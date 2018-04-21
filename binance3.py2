@@ -367,39 +367,35 @@ for filename in os.listdir(dir_TRADES):
         logger.debug("Ordre T3 FILLED_Deplace le fichier dans old")
         save_obj(dct_FILE, dct_FILE.get("filename"))
         os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
-    if dct_FILE['executedQty_vendu']*1.01>=dct_FILE['order_BUY_FILLED']['origQty']:
-        print "executedQty_vendu>=origQty:"+" Deplace le fichier dans old"
-        logger.debug("executedQty_vendu>=origQty:"+" Deplace le fichier dans old")
-        save_obj(dct_FILE, dct_FILE.get("filename"))
-        os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
-    if dct_FILE['ToBeFilled']==1:
-        #test si ordre FILLED
-        logger.debug("ToBeFilled")
-        current_order=binance.orderStatus(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_orderId"))
-        if current_order.get("orderId") is not None:
-            if current_order.get("status")=="FILLED":
-                print "Trade FILLED of order_ "+str(current_order.get("orderId"))
-                logger.debug("Trade FILLED of order_ "+str(current_order.get("orderId")))
-                dct_FILE[dct_FILE.get("last_order_level")+"_FILLED"]=current_order
-                dct_FILE['last_order_level']=dct_FILE.get("last_order_level")+"_FILLED"
-                dct_FILE['last_executedQty']=float(current_order.get("executedQty"))
-                if dct_FILE['executedQty_creation']=="test":
-                    dct_FILE['executedQty_creation']=float(current_order.get("executedQty"))
-                dct_FILE['ToBeFilled']=0
-                if current_order['side']=="SELL":
-                    dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+dct_FILE['last_executedQty']
-                save_obj(dct_FILE, dct_FILE.get("filename"))
-            else:
-                print "En attente FILLED_"+str(dct_FILE.get("last_orderId"))
-                logger.info("En attente FILLED_"+str(dct_FILE.get("last_orderId")))
-        else:
-            logger.info(dct_FILE.get("last_orderId")+":ordre_vide")
-            bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_orderId")+":Order vide:"+str(current_order))
-        time.sleep(1)
-        
-    elif dct_FILE['ToBeFilled']<>0:
-        if dct_FILE['dictToBeFilled'].has_key("order_BUY"):
-            for order_level_dictToBeFilled in dct_FILE['dictToBeFilled']:
+#    if dct_FILE['ToBeFilled']==1:
+#        #test si ordre FILLED
+#        logger.debug("ToBeFilled")
+#        current_order=binance.orderStatus(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_orderId"))
+#        if current_order.get("orderId") is not None:
+#            if current_order.get("status")=="FILLED":
+#                print "Trade FILLED of order_ "+str(current_order.get("orderId"))
+#                logger.debug("Trade FILLED of order_ "+str(current_order.get("orderId")))
+#                dct_FILE[dct_FILE.get("last_order_level")+"_FILLED"]=current_order
+#                dct_FILE['last_order_level']=dct_FILE.get("last_order_level")+"_FILLED"
+#                dct_FILE['last_executedQty']=float(current_order.get("executedQty"))
+#                if dct_FILE['executedQty_creation']=="test":
+#                    dct_FILE['executedQty_creation']=float(current_order.get("executedQty"))
+#                dct_FILE['ToBeFilled']=0
+#                if current_order['side']=="SELL":
+#                    dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+dct_FILE['last_executedQty']
+#                save_obj(dct_FILE, dct_FILE.get("filename"))
+#            else:
+#                print "En attente FILLED_"+str(dct_FILE.get("last_orderId"))
+#                logger.info("En attente FILLED_"+str(dct_FILE.get("last_orderId")))
+#        else:
+#            logger.info(dct_FILE.get("last_orderId")+":ordre_vide")
+#            bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_orderId")+":Order vide:"+str(current_order))
+#        time.sleep(1)
+#        
+#    elif dct_FILE['ToBeFilled']<>0:
+    if dct_FILE['dictToBeFilled'].has_key("order_BUY"):
+        for order_level_dictToBeFilled in dct_FILE['dictToBeFilled']:
+            if dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]==1:
                 current_order=binance.orderStatus(dct_FILE.get("symbol"), orderId=dct_FILE[order_level_dictToBeFilled]['orderId'])
                 if current_order.get("orderId") is not None:
                     if current_order.get("status")=="FILLED":
@@ -410,15 +406,15 @@ for filename in os.listdir(dir_TRADES):
                         dct_FILE['last_executedQty']=float(current_order.get("executedQty"))
                         if dct_FILE['executedQty_creation']=="test":
                             dct_FILE['executedQty_creation']=float(current_order.get("executedQty"))
-                        dct_FILE[order_level_dictToBeFilled]['orderId']=0
+                        dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
                         if current_order['side']=="SELL":
-                            dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+dct_FILE['last_executedQty']
+                            dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+float(current_order['origQty'])
                         save_obj(dct_FILE, dct_FILE.get("filename"))
                     else:
                         print "En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])
                         logger.info("En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId']))
                 else:
-                    logger.info(dct_FILE[order_level_dictToBeFilled]['orderId']+":ordre_vide")
+                    logger.error(dct_FILE[order_level_dictToBeFilled]['orderId']+":ordre_vide")
                     bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE[order_level_dictToBeFilled]['orderId']+":Order vide:"+str(current_order))
                 time.sleep(1)
         
@@ -434,7 +430,7 @@ for filename in os.listdir(dir_TRADES):
             dct_FILE['current_SL']='order_SL'
             save_obj(dct_FILE, dct_FILE.get("filename"))
         else:
-            logger.info("ordre_vide")
+            logger.error("ordre_vide")
             bot.sendMessage(chat_id=my_telegram_id, text="Order vide:"+str(current_order))
         #teste si prix actuel > T3, annule l ordre et renome le fichier _T3_C
         time.sleep(1)
@@ -481,13 +477,13 @@ for filename in os.listdir(dir_TRADES):
                         count = count + 1
                         time.sleep(1)
                 else:
-                    logger.info(dct_FILE.get("last_order_level")+'_CANCELED'+"ordre_vide")
+                    logger.error(dct_FILE.get("last_order_level")+'_CANCELED'+"ordre_vide")
                     bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_order_level")+'_CANCELED'+"Order vide:"+str(current_order))
             else:
                 print count, "s exit apres Check si ordre bien CANCELED"
                 logger.debug(str(count)+ "s exit apres Check si ordre bien CANCELED")
         else:
-            logger.info(dct_FILE.get("last_SL_orderId")+"ordre_vide")
+            logger.error(dct_FILE.get("last_SL_orderId")+"ordre_vide")
             bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_SL_orderId")+"Order vide:"+str(current_order))
         time.sleep(1)
         
@@ -536,7 +532,7 @@ for filename in os.listdir(dir_TRADES):
                             dct_FILE['last_order_level']='order_T2SL'
                             save_obj(dct_FILE, dct_FILE.get("filename"))
                         else:
-                            logger.info("ordre_vide"+":order_T2SL")
+                            logger.error("ordre_vide"+":order_T2SL")
                             bot.sendMessage(chat_id=my_telegram_id, text="order_T2SL"+":Order vide:"+str(current_order))
                     else:
                         print "Attend Check si ordre bien CANCELED"
@@ -544,13 +540,13 @@ for filename in os.listdir(dir_TRADES):
                         count = count + 1
                         time.sleep(1)
                 else:
-                    logger.info(dct_FILE.get("last_SL_orderId")+":ordre_vide")
+                    logger.error(dct_FILE.get("last_SL_orderId")+":ordre_vide")
                     bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_SL_orderId")+":Order vide:"+str(current_order))
             else:
                 print count, "s exit apres Check si ordre bien CANCELED"
                 logger.debug(str(count)+ "s exit apres Check si ordre bien CANCELED")
         else:
-            logger.info(dct_FILE.get("last_SL_orderId")+":ordre_vide")
+            logger.error(dct_FILE.get("last_SL_orderId")+":ordre_vide")
             bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_SL_orderId")+":Order vide:"+str(current_order))
         time.sleep(1)
         
@@ -599,7 +595,7 @@ for filename in os.listdir(dir_TRADES):
                             dct_FILE['last_order_level']='order_T1SL'
                             save_obj(dct_FILE, dct_FILE.get("filename"))
                         else:
-                            logger.info("ordre_vide"+":order_T1SL")
+                            logger.error("ordre_vide"+":order_T1SL")
                             bot.sendMessage(chat_id=my_telegram_id, text="order_T1SL"+":Order vide:"+str(current_order))
                     else:
                         print "Attend Check si ordre bien CANCELED"
@@ -607,13 +603,13 @@ for filename in os.listdir(dir_TRADES):
                         count = count + 1
                         time.sleep(1)
                 else:
-                    logger.info(dct_FILE.get("last_SL_orderId")+":ordre_vide")
+                    logger.error(dct_FILE.get("last_SL_orderId")+":ordre_vide")
                     bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_SL_orderId")+":Order vide:"+str(current_order))
             else:
                 print count, "s exit apres Check si ordre bien CANCELED"
                 logger.debug(str(count)+ "s exit apres Check si ordre bien CANCELED")
         else:
-            logger.info(dct_FILE.get("last_SL_orderId")+":ordre_vide")
+            logger.error(dct_FILE.get("last_SL_orderId")+":ordre_vide")
             bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_SL_orderId")+":Order vide:"+str(current_order))
         time.sleep(1)
 	logger.info("*************************************************")
