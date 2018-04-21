@@ -126,11 +126,8 @@ def echo(bot, update):
                 signal_dict['AC'] = a_buy
             if "buyzone:" in line.replace(" ", ""):
                 a_buy=line.replace(" ", "")
-                print a_buy
                 a_buy=a_buy.split("buyzone:")
-                print a_buy
                 a_buy=a_buy[1].split('-', 1)[0]
-                print a_buy
                 signal_dict['AC'] = a_buy
             if "target1:" in line.replace(" ", ""):
                 a_t1=line.replace(" ", "")
