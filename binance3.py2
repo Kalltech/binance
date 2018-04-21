@@ -118,6 +118,23 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
     time.sleep(1)
     return order
 
+def check_pause():
+    if os.path.exists("pause.txt")==True:
+        text_file = open("pause.txt", "r")
+        f_time=text_file.read()
+        text_file.close()
+        f_time=datetime.datetime.strptime(f_time, '%Y-%m-%d %H:%M:%S')
+        if f_time<=datetime.datetime.now():
+            print "Remove pause.txt"
+            os.remove("pause.txt")
+        else:
+            t_delay=chop_microseconds(f_time-datetime.datetime.now())
+            print "Script paused for: "+str(t_delay)
+            sys.exit()
+
+def chop_microseconds(delta):
+    return delta - datetime.timedelta(microseconds=delta.microseconds)
+    
 def load_trade(load_trade_file):
     print "load_trade begin"
     logger.debug("load_trade begin")
@@ -286,6 +303,7 @@ def get_stepSize(get_stepSize_coin):
 #############################################################################################################
 
 os.system('clear')
+check_pause()
 ###load params
 load_params = ConfigParser.ConfigParser()
 load_params.read("binance_api.ini")
@@ -414,8 +432,8 @@ for filename in os.listdir(dir_TRADES):
                         print "En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])
                         logger.info("En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId']))
                 else:
-                    logger.error(dct_FILE[order_level_dictToBeFilled]['orderId']+":ordre_vide")
-                    bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE[order_level_dictToBeFilled]['orderId']+":Order vide:"+str(current_order))
+                    logger.error(str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":ordre_vide")
+                    bot.sendMessage(chat_id=my_telegram_id, text=str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Order vide:"+str(current_order))
                 time.sleep(1)
         
     if dct_FILE.get("last_order_level")=='order_BUY_FILLED':
@@ -477,14 +495,14 @@ for filename in os.listdir(dir_TRADES):
                         count = count + 1
                         time.sleep(1)
                 else:
-                    logger.error(dct_FILE.get("last_order_level")+'_CANCELED'+"ordre_vide")
+                    logger.error(str(dct_FILE.get("last_order_level"))+'_CANCELED'+"ordre_vide")
                     bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_order_level")+'_CANCELED'+"Order vide:"+str(current_order))
             else:
                 print count, "s exit apres Check si ordre bien CANCELED"
                 logger.debug(str(count)+ "s exit apres Check si ordre bien CANCELED")
         else:
-            logger.error(dct_FILE.get("last_SL_orderId")+"ordre_vide")
-            bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_SL_orderId")+"Order vide:"+str(current_order))
+            logger.error(str(dct_FILE.get("last_SL_orderId"))+"ordre_vide")
+            bot.sendMessage(chat_id=my_telegram_id, text=str(dct_FILE.get("last_SL_orderId"))+"Order vide:"+str(current_order))
         time.sleep(1)
         
     if dct_FILE['T2'] < binance_price(dct_FILE.get("symbol"))and dct_FILE['last_order_level']<>'order_T2SL':
@@ -540,14 +558,14 @@ for filename in os.listdir(dir_TRADES):
                         count = count + 1
                         time.sleep(1)
                 else:
-                    logger.error(dct_FILE.get("last_SL_orderId")+":ordre_vide")
-                    bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_SL_orderId")+":Order vide:"+str(current_order))
+                    logger.error(str(dct_FILE.get("last_SL_orderId"))+":ordre_vide")
+                    bot.sendMessage(chat_id=my_telegram_id, text=str(dct_FILE.get("last_SL_orderId"))+":Order vide:"+str(current_order))
             else:
                 print count, "s exit apres Check si ordre bien CANCELED"
                 logger.debug(str(count)+ "s exit apres Check si ordre bien CANCELED")
         else:
             logger.error(dct_FILE.get("last_SL_orderId")+":ordre_vide")
-            bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_SL_orderId")+":Order vide:"+str(current_order))
+            bot.sendMessage(chat_id=my_telegram_id, text=str(dct_FILE.get("last_SL_orderId"))+":Order vide:"+str(current_order))
         time.sleep(1)
         
     if dct_FILE['T1'] < binance_price(dct_FILE.get("symbol"))and dct_FILE['last_order_level']<>'order_T1SL':
@@ -603,14 +621,14 @@ for filename in os.listdir(dir_TRADES):
                         count = count + 1
                         time.sleep(1)
                 else:
-                    logger.error(dct_FILE.get("last_SL_orderId")+":ordre_vide")
-                    bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_SL_orderId")+":Order vide:"+str(current_order))
+                    logger.error(str(dct_FILE.get("last_SL_orderId"))+":ordre_vide")
+                    bot.sendMessage(chat_id=my_telegram_id, text=str(dct_FILE.get("last_SL_orderId"))+":Order vide:"+str(current_order))
             else:
                 print count, "s exit apres Check si ordre bien CANCELED"
                 logger.debug(str(count)+ "s exit apres Check si ordre bien CANCELED")
         else:
-            logger.error(dct_FILE.get("last_SL_orderId")+":ordre_vide")
-            bot.sendMessage(chat_id=my_telegram_id, text=dct_FILE.get("last_SL_orderId")+":Order vide:"+str(current_order))
+            logger.error(str(dct_FILE.get("last_SL_orderId"))+":ordre_vide")
+            bot.sendMessage(chat_id=my_telegram_id, text=str(dct_FILE.get("last_SL_orderId"))+":Order vide:"+str(current_order))
         time.sleep(1)
 	logger.info("*************************************************")
         
