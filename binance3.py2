@@ -305,8 +305,8 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
         dct_which_level_what_do['SL_Price']=dct_FILE['T1']
     #si t1 mais pas t3 ni t2 vend 50% de la mise et met un SL de ce qu il reste a Achat
-#    if dct_FILE['T1'] < which_level_what_do_price and dct_FILE['last_order_level']=="order_SL":
-    if dct_FILE['T1'] < which_level_what_do_price:
+    if dct_FILE['T1'] < which_level_what_do_price and dct_FILE['last_order_level']=="order_SL":
+#    if dct_FILE['T1'] < which_level_what_do_price:
         sell_part_t=sell_part_t1
         sell_part_sl=1-sell_part_t
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*sell_part_t
@@ -446,7 +446,10 @@ for filename in os.listdir(dir_TRADES):
 #    dct_FILE['last_order_level']="order_BUY_FILLED"
 #    dct_FILE['executedQty_vendu']=0
 #    save_obj(dct_FILE, dct_FILE.get("filename"))
-#    if dct_FILE['filename']=="/root/scripts/trades/TRIGBTC_2018-04-20_01.12.07":
+#    if dct_FILE['dictToBeFilled'].has_key("order_T1SL"):
+#        dct_FILE['dictToBeFilled']['order_T1_SL']=1
+#        dct_FILE['dictToBeFilled']['order_T1SL']=0
+#        dct_FILE['last_order_level']="order_T1_SL"
 #    dct_FILE['ToBeFilled']=1
 #    dct_FILE['last_orderId']=22775085
 #    dct_FILE['ToBeFilled'] = {}
@@ -545,7 +548,7 @@ for filename in os.listdir(dir_TRADES):
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_orderId"))+"Order vide:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
             time.sleep(1)
             
-        if dct_FILE['T2'] < binance_price(dct_FILE.get("symbol"))and dct_FILE['last_order_level']<>'order_T2SL':
+        if dct_FILE['T2'] < binance_price(dct_FILE.get("symbol"))and dct_FILE['last_order_level']<>'order_T2_SL':
             #Annule l ordre SL
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au T2_"+float8f(dct_FILE['T2'])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l ordre SL",debugapp_DebugLevel="DEBUG")
@@ -555,16 +558,16 @@ for filename in os.listdir(dir_TRADES):
                 dct_FILE['order_SL_CANCELED_ASKED']=current_order
                 count=0
                 processed_order=1
-                while count < 30 and dct_FILE['last_order_level']<>'order_T2SL':
+                while count < 30 and dct_FILE['last_order_level']<>'order_T2_SL':
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+"s apres debut Check si ordre bien CANCELED",debugapp_DebugLevel="DEBUG")
                     #Check si ordre bien CANCELED
+                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Check si ordre bien CANCELED")
                     current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
-
                     if current_order.get("orderId") is not None:
                         if current_order.get("status")=="CANCELED":
                             dct_FILE[dct_FILE.get("last_order_level")+'_CANCELED']=current_order
                             #lance l ordre de SELL T2 avec les bonnes valeurs
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l ordre de SELL T2 avec les bonnes valeurs",debugapp_DebugLevel="DEBUG")
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l ordre de SELL T2 avec les bonnes valeurs")
                             dct_which_level_what_do=which_level_what_do(binance_price(dct_FILE.get("symbol")))
                             current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do['vente_Qty'], binance_price(dct_FILE.get("symbol")),"SELL", "order_T2")
                             if current_order.get("orderId") is not None:
@@ -577,14 +580,14 @@ for filename in os.listdir(dir_TRADES):
                             dct_FILE['current_balance'] = binance_balances.get(dct_FILE['symbol'].replace("BTC", ""))
                             time.sleep(1)
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"place le SL aussi")
-                            current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do['vente_Qty_SL'], dct_which_level_what_do['SL_Price'],"STOP-LIMIT", "order_T2SL")
+                            current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do['vente_Qty_SL'], dct_which_level_what_do['SL_Price'],"STOP-LIMIT", "order_T2_SL")
                             if current_order.get("orderId") is not None:
                                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade ordre SL_ "+str(current_order.get("orderId")),debugapp_Telegram=1)
                                 dct_FILE['order_T2_SL']=current_order
-                                dct_FILE['last_order_level']='order_T2SL'
+                                dct_FILE['last_order_level']='order_T2_SL'
                                 save_obj(dct_FILE, dct_FILE.get("filename"))
                             else:
-                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"order_T2SL"+":Order vide:"+str(current_order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL")
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"order_T2_SL"+":Order vide:"+str(current_order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL")
                         else:
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Attend Check si ordre bien CANCELED",debugapp_DebugLevel="DEBUG")
                             count = count + 1
@@ -597,31 +600,31 @@ for filename in os.listdir(dir_TRADES):
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_orderId"))+":Order vide:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
             time.sleep(1)
             
-        if dct_FILE['T1'] < binance_price(dct_FILE.get("symbol"))and dct_FILE['last_order_level']<>'order_T1SL':
+        if dct_FILE['T1'] < binance_price(dct_FILE.get("symbol"))and dct_FILE['last_order_level']<>'order_T1_SL':
             #Annule l ordre SL
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au T1_"+float8f(dct_FILE['T1'])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l ordre SL",debugapp_DebugLevel="DEBUG")
-#            current_order=binance.cancel(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
-            current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
+            current_order=binance.cancel(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
+#            current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
             if current_order.get("orderId") is not None:
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order),debugapp_Telegram=1)
                 dct_FILE['order_SL_CANCELED_ASKED']=current_order
                 count=0
                 processed_order=1
-                while count < 30 and dct_FILE['last_order_level']<>'order_T1SL':
+                while count < 30 and dct_FILE['last_order_level']<>'order_T1_SL':
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+"s apres debut Check si ordre bien CANCELED",debugapp_DebugLevel="DEBUG")
                     #Check si ordre bien CANCELED
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Check si ordre bien CANCELED")
-#                    current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
-                    current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
+                    current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
+#                    current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
                     if current_order.get("orderId") is not None:
                         if current_order.get("status")=="CANCELED":
                             dct_FILE[dct_FILE.get("last_order_level")+'_CANCELED']=current_order
                             #lance l ordre de SELL T1 avec les bonnes valeurs
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l ordre de SELL T1 avec les bonnes valeurs")
                             dct_which_level_what_do=which_level_what_do(binance_price(dct_FILE.get("symbol")))
-#                            current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do['vente_Qty'], binance_price(dct_FILE.get("symbol")),"SELL", "order_T1")
-                            current_order=binance_status(dct_FILE.get("symbol"), orderId=43802508, binance_status_test=1, binance_status_orderId_type="NEW_SELL")
+                            current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do['vente_Qty'], binance_price(dct_FILE.get("symbol")),"SELL", "order_T1")
+#                            current_order=binance_status(dct_FILE.get("symbol"), orderId=43802508, binance_status_test=1, binance_status_orderId_type="NEW_SELL")
                             if current_order.get("orderId") is not None:
                                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade ordre T1_ "+str(current_order.get("orderId")),debugapp_Telegram=1)
                                 dct_FILE['order_T1']=current_order
@@ -632,14 +635,14 @@ for filename in os.listdir(dir_TRADES):
                             dct_FILE['current_balance'] = binance_balances.get(dct_FILE['symbol'].replace("BTC", ""))
                             time.sleep(1)
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"place le SL aussi")
-                            current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do['vente_Qty_SL'], dct_which_level_what_do['SL_Price'],"STOP-LIMIT", "order_T1SL")
+                            current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do['vente_Qty_SL'], dct_which_level_what_do['SL_Price'],"STOP-LIMIT", "order_T1_SL")
                             if current_order.get("orderId") is not None:
                                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade ordre SL_ "+str(current_order.get("orderId")),debugapp_Telegram=1)
                                 dct_FILE['order_T1_SL']=current_order
-                                dct_FILE['last_order_level']='order_T1SL'
+                                dct_FILE['last_order_level']='order_T1_SL'
                                 save_obj(dct_FILE, dct_FILE.get("filename"))
                             else:
-                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"order_T1SL"+":Order vide:"+str(current_order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL")
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"order_T1_SL"+":Order vide:"+str(current_order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL")
                         else:
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Attend Check si ordre bien CANCELED",debugapp_DebugLevel="DEBUG")
                             count = count + 1
