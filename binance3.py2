@@ -64,10 +64,19 @@ def debugapp(debugapp_str, **kwargs):
         if "trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
         if "signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/signals","/problems")+".laststate")
         #deplace le fichier de trade dans problems
-        os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/problems"))
-        os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/signals","/problems"))
+        try:
+            os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/problems"))
+        except: 
+            pass
+        try:
+            os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/signals","/problems"))
+        except: 
+            pass
         #deplace le fichier de log dans problems
-        os.rename(log_file, log_file.replace("/logs","/problems"))
+        try:
+            os.rename(log_file, log_file.replace("/logs","/problems"))
+        except: 
+            pass
         #Sauve dct_FILE au format txt dans problems
         
         if "trades" in  dct_FILE['filename']: text_file = open(dct_FILE['symbol']+dct_FILE['filename'].replace("/trades","/problems")+".txt", "w")
@@ -224,24 +233,30 @@ def b_trade_to_order(b_trade_to_order_file):
         #achatcoin=USD/prixbtc*coinbtc
         #200/7000*0.0000184
         if Buy_price_signal_down <= dct_FILE['binance_price'] <= Buy_price_signal_up:
-          debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+":prix entre les seuils d achat:"+float8f(dct_FILE['binance_price']))
-          b_TRADE=b_order(dct_FILE['symbol'], Qty_signal, dct_FILE['BUY'],"BUY", "order_BUY")
-          if b_TRADE.get("orderId") is not None:
-              dct_FILE['last_orderId']=b_TRADE.get("orderId")
-              dct_FILE['order_BUY']=b_TRADE
-              dct_FILE['executedDate_creation']=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
-              dct_FILE['last_order_level']='order_BUY'
-              dct_FILE['filename']=dir_TRADES+dct_FILE['symbol']+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
-              debugapp(str(sys._getframe().f_code.co_name)+"|"+"Ordre passe: deplace le fichier vers: "+dct_FILE['filename'].replace("/trades","/old"),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
-              save_obj(dct_FILE, dct_FILE['filename'])
-              os.rename(b_trade_to_order_file, b_trade_to_order_file.replace("/signals","/old"))  
-          else:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Ordre pas passe:\n"+str(b_TRADE),debugapp_Telegram=1)
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+":prix entre les seuils d achat:"+float8f(dct_FILE['binance_price']))
+            b_TRADE=b_order(dct_FILE['symbol'], Qty_signal, dct_FILE['BUY'],"BUY", "order_BUY")
+            if b_TRADE.get("orderId") is not None:
+                dct_FILE['last_orderId']=b_TRADE.get("orderId")
+                dct_FILE['order_BUY']=b_TRADE
+                dct_FILE['executedDate_creation']=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
+                dct_FILE['last_order_level']='order_BUY'
+                dct_FILE['filename']=dir_TRADES+dct_FILE['symbol']+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Ordre passe: deplace le fichier vers: "+dct_FILE['filename'].replace("/trades","/old"),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
+                save_obj(dct_FILE, dct_FILE['filename'])
+                try:
+                    os.rename(b_trade_to_order_file, b_trade_to_order_file.replace("/signals","/old"))  
+                except:
+                    pass
+            else:
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Ordre pas passe:\n"+str(b_TRADE),debugapp_Telegram=1)
         else:
           debugapp(str(sys._getframe().f_code.co_name)+"|"+":prix PAS entre les seuils d achat:"+float8f(dct_FILE['binance_price']),debugapp_DebugLevel="DEBUG")
     else:
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Inconnu: "+dct_FILE['symbol']+str(b_TRADE),debugapp_Telegram=1,debugapp_DebugLevel="ERROR")
-            os.rename(b_trade_to_order_file, b_trade_to_order_file.replace("/signals","/problems"))
+            try:
+                os.rename(b_trade_to_order_file, b_trade_to_order_file.replace("/signals","/problems"))
+            except: 
+                pass
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"b_trade_to_order end",debugapp_DebugLevel="DEBUG")
 
 def save_obj(obj, name ):
@@ -429,7 +444,10 @@ for filename in os.listdir(dir_TRADES):
     if dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED':
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("last_order_level")+" Deplace le fichier dans old",debugapp_DebugLevel="DEBUG")
         save_obj(dct_FILE, dct_FILE.get("filename"))
-        os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
+        try:
+            os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
+        except: 
+            pass
     if dct_FILE['dictToBeFilled'].has_key("order_BUY"):
         for order_level_dictToBeFilled in dct_FILE['dictToBeFilled']:
             if dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]==1:
