@@ -185,7 +185,7 @@ def echo(bot, update):
             update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100")
 #            print str_file
     else:
-        update.message.reply_text(update.message.text)
+        update.message.reply_text("I dont understand")
     print "END response"
     
 def load_obj(name ):
