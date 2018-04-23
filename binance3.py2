@@ -32,8 +32,44 @@ def create_dict():
     signal_dict['last_SL_orderId'] = 'test'
     return signal_dict
     
+def debugapp(debugapp_str, **kwargs):
+    debugapp_str=debugapp_str.replace("<module>", "")
+    debugapp_exit=kwargs.get('debugapp_exit', None)
+    debugapp_SaveObj=kwargs.get('debugapp_SaveObj', None)
+    debugapp_DebugLevel=kwargs.get('debugapp_DebugLevel', None)
+    debugapp_Telegram=kwargs.get('debugapp_Telegram', None)
+    debugapp_Print=kwargs.get('debugapp_Print', None)
+
+    if debugapp_Telegram: bot.sendMessage(chat_id=my_telegram_id, text=str(debugapp_str))
+    if debugapp_DebugLevel:
+        if debugapp_DebugLevel=="ERROR":
+            logger.error(str(debugapp_str))
+        elif debugapp_DebugLevel=="DEBUG":
+            logger.debug(str(debugapp_str))
+        elif debugapp_DebugLevel=="WARNING":
+            logger.warning(str(debugapp_str))
+        elif debugapp_DebugLevel=="CRITICAL":
+            logger.critical(str(debugapp_str))
+        if not debugapp_Print: print str(debugapp_str)
+    else:
+        logger.info(str(debugapp_str))
+        if not debugapp_Print: print str(debugapp_str)
+    if debugapp_SaveObj:
+        #Sauve le fichier au dernier etat
+        save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
+        #deplace le fichier de trade dans problems
+        os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/problems"))
+        #deplace le fichier de log dans problems
+        os.rename(log_file, log_file.replace("/logs","/problems"))
+        #Sauve dct_FILE au format txt dans problems
+        text_file = open(dct_FILE['filename'].replace("/trades","/problems")+".txt", "w")
+        text_file.write(str(dct_FILE))
+        text_file.close()
+    if debugapp_exit:
+        sys.exit()
+
 def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"b_order begin",debugapp_DebugLevel=="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"b_order begin",debugapp_DebugLevel="DEBUG")
 #Place l ordre selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Place l ordre selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)")
     if b_order_side=="BUY":
@@ -266,42 +302,6 @@ def get_stepSize(get_stepSize_coin):
     dct_FILE['PRICE_FILTER_tickSize']=float(a_coin['filters'][0]['tickSize'])
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"get_stepSize end",debugapp_DebugLevel="DEBUG")
     return float(stepSize)
-
-def debugapp(debugapp_str, **kwargs):
-    debugapp_str=debugapp_str.replace("<module>", "")
-    debugapp_exit=kwargs.get('debugapp_exit', None)
-    debugapp_SaveObj=kwargs.get('debugapp_SaveObj', None)
-    debugapp_DebugLevel=kwargs.get('debugapp_DebugLevel', None)
-    debugapp_Telegram=kwargs.get('debugapp_Telegram', None)
-    debugapp_Print=kwargs.get('debugapp_Print', None)
-
-    if debugapp_Telegram: bot.sendMessage(chat_id=my_telegram_id, text=str(debugapp_str))
-    if debugapp_DebugLevel:
-        if debugapp_DebugLevel=="ERROR":
-            logger.error(str(debugapp_str))
-        elif debugapp_DebugLevel=="DEBUG":
-            logger.debug(str(debugapp_str))
-        elif debugapp_DebugLevel=="WARNING":
-            logger.warning(str(debugapp_str))
-        elif debugapp_DebugLevel=="CRITICAL":
-            logger.critical(str(debugapp_str))
-        if not debugapp_Print: print str(debugapp_str)
-    else:
-        logger.info(str(debugapp_str))
-        if not debugapp_Print: print str(debugapp_str)
-    if debugapp_SaveObj:
-        #Sauve le fichier au dernier etat
-        save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
-        #deplace le fichier de trade dans problems
-        os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/problems"))
-        #deplace le fichier de log dans problems
-        os.rename(log_file, log_file.replace("/logs","/problems"))
-        #Sauve dct_FILE au format txt dans problems
-        text_file = open(dct_FILE['filename'].replace("/trades","/problems")+".txt", "w")
-        text_file.write(str(dct_FILE))
-        text_file.close()
-    if debugapp_exit:
-        sys.exit()
 
 #############################################################################################################
 #END FUNCTIONS###############################################################################################
