@@ -43,9 +43,9 @@ def debugapp(debugapp_str, **kwargs):
     if debugapp_Telegram: 
         try:
             bot.sendMessage(chat_id=my_telegram_id, text=str(debugapp_str))
-        except type_de_l_exception as exception_retournee:
-            logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str)+ str(exception_retournee))
-            print str("Impossible d envoyer vers Telegram"+str(debugapp_str)+ str(exception_retournee))
+        except:
+            logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
+            print str("Impossible d envoyer vers Telegram"+str(debugapp_str))
     if debugapp_DebugLevel:
         if debugapp_DebugLevel=="ERROR":
             logger.error(str(debugapp_str))
