@@ -162,6 +162,14 @@ def echo(bot, update):
                     a_t1=signal_dict['SL'].replace(" ", "")
                     a_t1=a_t1.split('(', 1)[0]
                     signal_dict['SL'] = a_t1
+            if "stoplimit:" in line.replace(" ", ""):
+                a_stop=line.replace(" ", "")
+                a_stop=a_stop.split("stoplimit:")
+                signal_dict['SL'] = a_stop[1]
+                if signal_dict['SL'].find("("):
+                    a_t1=signal_dict['SL'].replace(" ", "")
+                    a_t1=a_t1.split('(', 1)[0]
+                    signal_dict['SL'] = a_t1
         key_not_find=0
         str_file="[TRADE]\n"
 #        print str(signal_dict)
@@ -183,6 +191,7 @@ def echo(bot, update):
                 update.message.reply_text("Signal resolu:\n"+str_file)
         else:
             update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100")
+            update.message.reply_text("Ou, format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
 #            print str_file
     else:
         update.message.reply_text("I dont understand")
