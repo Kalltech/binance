@@ -79,14 +79,23 @@ def debugapp(debugapp_str, **kwargs):
             pass
         #Sauve dct_FILE au format txt dans problems
         
-        if "trades" in  dct_FILE['filename']: text_file = open(dct_FILE['symbol']+dct_FILE['filename'].replace("/trades","/problems")+".txt", "w")
-        if "signals" in  dct_FILE['filename']: text_file = open(dct_FILE['symbol']+dct_FILE['filename'].replace("/signals","/problems")+".txt", "w")
+        if "trades" in  dct_FILE['filename']:
+            try:
+                text_file = open(dct_FILE['symbol']+dct_FILE['filename'].replace("/trades","/problems")+".txt", "w")
+            except: 
+                pass
+        if "signals" in  dct_FILE['filename']:
+            try:
+                text_file = open(dct_FILE['symbol']+dct_FILE['filename'].replace("/signals","/problems")+".txt", "w")
+            except: 
+                pass
         text_file.write(str(dct_FILE))
         text_file.close()
     if debugapp_exit:
         sys.exit()
 
 def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
+    b_order_price=float(b_order_price)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"b_order begin",debugapp_DebugLevel="DEBUG")
 #Place l ordre selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Place l ordre selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)")
@@ -113,7 +122,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         order=binance.order(b_order_symbol, binance.SELL, order_quantity, b_order_price, test=False)
         
     elif b_order_side=="STOP-LIMIT":
-        b_order_price_plus_01_percen=float(format(b_order_price+b_order_price*0.001*percentage_sl_upside, '.8f'))
+        b_order_price_plus_01_percen=float(format(b_order_price+b_order_price*0.001*float(percentage_sl_upside), '.8f'))
 #        balance_coin=binance_balances.get(b_order_symbol.replace("BTC", ""))
         debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_symbol.replace("BTC", "")+":locked:"+ str(dct_FILE['current_balance']['locked']),debugapp_DebugLevel="DEBUG")
         debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_symbol.replace("BTC", "")+":free:"+ str(dct_FILE['current_balance']['free']),debugapp_DebugLevel="DEBUG")
@@ -296,7 +305,8 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
         dct_which_level_what_do['SL_Price']=dct_FILE['T1']
     #si t1 mais pas t3 ni t2 vend 50% de la mise et met un SL de ce qu il reste a Achat
-    if dct_FILE['T1'] < which_level_what_do_price and dct_FILE['last_order_level']=="order_SL":
+#    if dct_FILE['T1'] < which_level_what_do_price and dct_FILE['last_order_level']=="order_SL":
+    if dct_FILE['T1'] < which_level_what_do_price:
         sell_part_t=sell_part_t1
         sell_part_sl=1-sell_part_t
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*sell_part_t
@@ -335,6 +345,7 @@ def binance_status(binance_status_symbol,  **kwargs):
             if binance_status_orderId_type=="FILLED_SELL": in_file = open(dir_MODELS+"FILLED_SELL","r")
             if binance_status_orderId_type=="CANCELED_BUY": in_file = open(dir_MODELS+"CANCELED_BUY","r")
             if binance_status_orderId_type=="CANCELED_SELL": in_file = open(dir_MODELS+"CANCELED_SELL","r")
+            if binance_status_orderId_type=="CANCELED_SL": in_file = open(dir_MODELS+"CANCELED_SL","r")
         # Load the contents from the file, which creates a new dictionary
         binance_status_dict = json.load(in_file)
         # Close the file... we don't need it anymore  
@@ -368,6 +379,9 @@ load_params.read("binance_api.ini")
 percentage_delta_buy = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_delta_buy'])
 percentage_control_balance = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_control_balance'])
 percentage_sl_upside = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_sl_upside'])
+sell_part_t1 = float(ConfigSectionMap("BINANCE_API", load_params)['sell_part_t1'])
+sell_part_t2 = float(ConfigSectionMap("BINANCE_API", load_params)['sell_part_t2'])
+sell_part_t3 = float(ConfigSectionMap("BINANCE_API", load_params)['sell_part_t3'])
 ###Directories
 cwd = os.getcwd()
 if not os.path.exists(cwd+"/trades"):
@@ -545,6 +559,7 @@ for filename in os.listdir(dir_TRADES):
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+"s apres debut Check si ordre bien CANCELED",debugapp_DebugLevel="DEBUG")
                     #Check si ordre bien CANCELED
                     current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
+
                     if current_order.get("orderId") is not None:
                         if current_order.get("status")=="CANCELED":
                             dct_FILE[dct_FILE.get("last_order_level")+'_CANCELED']=current_order
@@ -586,7 +601,8 @@ for filename in os.listdir(dir_TRADES):
             #Annule l ordre SL
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au T1_"+float8f(dct_FILE['T1'])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l ordre SL",debugapp_DebugLevel="DEBUG")
-            current_order=binance.cancel(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
+#            current_order=binance.cancel(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
+            current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
             if current_order.get("orderId") is not None:
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order),debugapp_Telegram=1)
                 dct_FILE['order_SL_CANCELED_ASKED']=current_order
@@ -596,14 +612,16 @@ for filename in os.listdir(dir_TRADES):
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+"s apres debut Check si ordre bien CANCELED",debugapp_DebugLevel="DEBUG")
                     #Check si ordre bien CANCELED
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Check si ordre bien CANCELED")
-                    current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
+#                    current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
+                    current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
                     if current_order.get("orderId") is not None:
                         if current_order.get("status")=="CANCELED":
                             dct_FILE[dct_FILE.get("last_order_level")+'_CANCELED']=current_order
                             #lance l ordre de SELL T1 avec les bonnes valeurs
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l ordre de SELL T1 avec les bonnes valeurs")
                             dct_which_level_what_do=which_level_what_do(binance_price(dct_FILE.get("symbol")))
-                            current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do['vente_Qty'], binance_price(dct_FILE.get("symbol")),"SELL", "order_T1")
+#                            current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do['vente_Qty'], binance_price(dct_FILE.get("symbol")),"SELL", "order_T1")
+                            current_order=binance_status(dct_FILE.get("symbol"), orderId=43802508, binance_status_test=1, binance_status_orderId_type="NEW_SELL")
                             if current_order.get("orderId") is not None:
                                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade ordre T1_ "+str(current_order.get("orderId")),debugapp_Telegram=1)
                                 dct_FILE['order_T1']=current_order
