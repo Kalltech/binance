@@ -445,9 +445,12 @@ for filename in os.listdir(dir_TRADES):
 #    dct_FILE['T1']=0.0000205
 #    dct_FILE['last_order_level']="order_BUY_FILLED"
 #    dct_FILE['executedQty_vendu']=0
-#    save_obj(dct_FILE, dct_FILE.get("filename"))
+#    if dct_FILE['last_order_level']=="order_T1SL":
+#        dct_FILE['last_order_level']="order_T1_SL"
 #    if dct_FILE['dictToBeFilled'].has_key("order_T1SL"):
+#        del dct_FILE['dictToBeFilled']['order_T1SL']
 #        dct_FILE['dictToBeFilled']['order_T1_SL']=1
+#        save_obj(dct_FILE, dct_FILE.get("filename"))
 #        dct_FILE['dictToBeFilled']['order_T1SL']=0
 #        dct_FILE['last_order_level']="order_T1_SL"
 #    dct_FILE['ToBeFilled']=1
