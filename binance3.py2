@@ -257,7 +257,7 @@ def b_trade_to_order(b_trade_to_order_file):
                 except:
                     pass
             else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order not OK:"+str(b_TRADE.get("orderId")),debugapp_Telegram=1)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order not OK:\n"+str(b_TRADE),debugapp_Telegram=1)
         else:
           debugapp(str(sys._getframe().f_code.co_name)+"|"+":prix PAS entre les seuils d achat:"+float8f(dct_FILE['binance_price']),debugapp_DebugLevel="DEBUG")
     else:
