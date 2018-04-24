@@ -112,6 +112,10 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         order=binance.order(b_order_symbol, binance.BUY, order_quantity, b_order_price, test=False)
         
     elif b_order_side=="SELL":
+#        b_order_Qty_lot=dct_FILE['LOT_SIZE_stepSize']
+#        order_quantity = math.floor(float(b_order_Qty) * 10**b_order_Qty_lot) / float(10**b_order_Qty_lot)
+#        frac, whole = math.modf(b_order_Qty_lot)
+#        order_quantity=round(order_quantity,len(str(int(frac)))-1)
         b_order_Qty=float(b_order_Qty)
         b_order_Qty_down= b_order_Qty-b_order_Qty/100*percentage_control_balance
         b_order_Qty_up= b_order_Qty+b_order_Qty/100*percentage_control_balance
@@ -125,6 +129,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         
     elif b_order_side=="STOP-LIMIT":
         b_order_price_plus_01_percen=float(format(b_order_price+b_order_price*0.001*float(percentage_sl_upside), '.8f'))
+#        balance_coin=binance_balances.get(b_order_symbol.replace("BTC", ""))
         b_order_Qty=float(b_order_Qty)
         b_order_Qty_down= b_order_Qty-b_order_Qty/100*percentage_control_balance
         b_order_Qty_up= b_order_Qty+b_order_Qty/100*percentage_control_balance
@@ -207,6 +212,7 @@ def format_stepSize(val, step_size_str):
         val= "{:0.0{}f}".format(val, precision+1)
         val=val[:-1]+"0"
         val=float(val)
+#        val="{:0.0{}f}".format(val, precision)
     return val
 def ConfigSectionMap(section, Config):
   dict1 = {}
@@ -290,6 +296,7 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']-dct_FILE['executedQty_vendu']
     #si t2 mais pas t3 ni t1 vend 75% de la mise et met un SL de 25% de la mise a T1
     if dct_FILE['T2'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and not findkeys(dct_FILE, "order_T1"):
+#    if dct_FILE['T2'] < which_level_what_do_price and (not dct_FILE['order_T3'] or not dct_FILE['order_T3_FILLED']) and (not dct_FILE['order_T1'] or not dct_FILE['order_T1_FILLED']):
         sell_part_t=sell_part_t1+sell_part_t2
         sell_part_sl=1-sell_part_t
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation'] * sell_part_t
@@ -297,6 +304,7 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['SL_Price']=dct_FILE['T1']
     #si t2 mais pas t3 mais t1 vend 25% de la mise et met un SL de 25% de la mise a T1
     elif dct_FILE['T2'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and findkeys(dct_FILE, "order_T"):
+#    if dct_FILE['T2'] < which_level_what_do_price and (not dct_FILE['order_T3'] or not dct_FILE['order_T3_FILLED']) and (dct_FILE['order_T1'] or dct_FILE['order_T1_FILLED']):
         sell_part_t=sell_part_t1+sell_part_t2
         sell_part_sl=1-sell_part_t
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*sell_part_t2
@@ -304,6 +312,8 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['SL_Price']=dct_FILE['T1']
     #si t1 mais pas t3 ni t2 vend 50% de la mise et met un SL de ce qu il reste a Achat
     elif dct_FILE['T1'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and not findkeys(dct_FILE, "order_T2"):
+#    if dct_FILE['T1'] < which_level_what_do_price and dct_FILE['last_order_level']=="order_SL":
+#    if dct_FILE['T1'] < which_level_what_do_price:
         sell_part_t=sell_part_t1
         sell_part_sl=1-sell_part_t
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*sell_part_t1
@@ -407,6 +417,8 @@ def targetTX(targetTX_level):
                         save_obj(dct_FILE, dct_FILE.get("filename"))
                     if not targetTX_level=="T3":
                         #place le SL aussi
+#                        binance_balances=binance.balances()
+#                        dct_FILE["current_balance"] = binance_balances.get(dct_FILE["symbol"].replace("BTC", ""))
                         time.sleep(1)
                         debugapp(str(sys._getframe().f_code.co_name)+"|"+"place le SL aussi")
                         current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty_SL"], dct_which_level_what_do["SL_Price"],"STOP-LIMIT", "order_"+targetTX_level+"_SL")
@@ -488,6 +500,7 @@ binance_secret = ConfigSectionMap("BINANCE_API", load_params)['binance_secret']
 binance.set(binance_key, binance_secret)
 #binance_balances=binance.balances()
 binance_prices=binance.prices()
+
 #print binance_prices
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************")
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Price:"+"BTCUSDT:"+ str(binance_prices.get("BTCUSDT")),debugapp_DebugLevel="DEBUG")
@@ -548,11 +561,12 @@ for filename in os.listdir(dir_TRADES):
                         debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Order empty:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
                     time.sleep(1)
 
-        if dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED':
+        if dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED' or dct_FILE['executedQty_creation']<dct_FILE['executedQty_vendu']+dct_FILE['executedQty_creation']/200:
             debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("last_order_level")+" Deplace le fichier dans old",debugapp_DebugLevel="DEBUG")
             save_obj(dct_FILE, dct_FILE.get("filename"))
             try:
                 os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
+                sys.exit()
             except: 
                 pass
             
