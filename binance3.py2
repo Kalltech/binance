@@ -448,6 +448,8 @@ for filename in os.listdir(dir_TRADES):
 #    if dct_FILE['last_order_level']=="order_T1SL":
 #        dct_FILE['last_order_level']="order_T1_SL"
 #    if dct_FILE['dictToBeFilled'].has_key("order_T1SL"):
+#    if "order_T1" in dct_FILE['last_order_level']:
+#        print "Find: order_T1"
 #        del dct_FILE['dictToBeFilled']['order_T1SL']
 #        dct_FILE['dictToBeFilled']['order_T1_SL']=1
 #        save_obj(dct_FILE, dct_FILE.get("filename"))
@@ -506,8 +508,7 @@ for filename in os.listdir(dir_TRADES):
         time.sleep(1)
         
     if 'order_BUY_FILLED' in dct_FILE.keys():
-#    if dct_FILE['order_BUY_FILLED'] is not None:
-        if dct_FILE['T3'] < binance_price(dct_FILE.get("symbol")):
+        if dct_FILE['T3'] < binance_price(dct_FILE.get("symbol")) and not "order_T3" in dct_FILE['last_order_level']:
             #Annule l ordre SL
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au T3_"+float8f(dct_FILE['T3'])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))),debugapp_DebugLevel="DEBUG")
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l ordre SL",debugapp_DebugLevel="DEBUG")
@@ -551,7 +552,7 @@ for filename in os.listdir(dir_TRADES):
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_orderId"))+"Order vide:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
             time.sleep(1)
             
-        if dct_FILE['T2'] < binance_price(dct_FILE.get("symbol"))and dct_FILE['last_order_level']<>'order_T2_SL':
+        if dct_FILE['T2'] < binance_price(dct_FILE.get("symbol")) and not "order_T2" in dct_FILE['last_order_level']:
             #Annule l ordre SL
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au T2_"+float8f(dct_FILE['T2'])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l ordre SL",debugapp_DebugLevel="DEBUG")
@@ -603,7 +604,7 @@ for filename in os.listdir(dir_TRADES):
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_orderId"))+":Order vide:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
             time.sleep(1)
             
-        if dct_FILE['T1'] < binance_price(dct_FILE.get("symbol"))and dct_FILE['last_order_level']<>'order_T1_SL':
+        if dct_FILE['T1'] < binance_price(dct_FILE.get("symbol")) and not "order_T1" in dct_FILE['last_order_level']:
             #Annule l ordre SL
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au T1_"+float8f(dct_FILE['T1'])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l ordre SL",debugapp_DebugLevel="DEBUG")
@@ -656,7 +657,7 @@ for filename in os.listdir(dir_TRADES):
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+ "s exit apres Check si ordre bien CANCELED",debugapp_DebugLevel="DEBUG")
             else:
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_orderId"))+":Order vide:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-        time.sleep(1)
+            time.sleep(1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************")
 
 for filename in os.listdir(dir_SIGNALS):
