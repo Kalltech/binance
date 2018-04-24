@@ -287,29 +287,32 @@ def which_level_what_do(which_level_what_do_price):
     dct_which_level_what_do['vente_Qty_SL'] = 'test'
     dct_which_level_what_do['SL_Price'] = 'test'
     
-    #si t3 mais pas t2 ni t1 vend la mise executedQty_creation-executedQty_vendu
+    #si t3 vend la mise executedQty_creation-executedQty_vendu
     if dct_FILE['T3'] < which_level_what_do_price:
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']
+        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']-dct_FILE['executedQty_vendu']
     #si t2 mais pas t3 ni t1 vend 75% de la mise et met un SL de 25% de la mise a T1
-    if dct_FILE['T2'] < which_level_what_do_price and (not dct_FILE['order_T3'] or not dct_FILE['order_T3_FILLED']) and (not dct_FILE['order_T1'] or not dct_FILE['order_T1_FILLED']):
+    if dct_FILE['T2'] < which_level_what_do_price and not "order_T3" in dct_FILE and not "order_T1" in dct_FILE:
+#    if dct_FILE['T2'] < which_level_what_do_price and (not dct_FILE['order_T3'] or not dct_FILE['order_T3_FILLED']) and (not dct_FILE['order_T1'] or not dct_FILE['order_T1_FILLED']):
         sell_part_t=sell_part_t1+sell_part_t2
         sell_part_sl=1-sell_part_t
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation'] * sell_part_t
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation'] * sell_part_sl
         dct_which_level_what_do['SL_Price']=dct_FILE['T1']
-    #si t2 mais pas t3 mais t1 vend 75% de la mise et met un SL de 25% de la mise a T1
-    if dct_FILE['T2'] < which_level_what_do_price and (not dct_FILE['order_T3'] or not dct_FILE['order_T3_FILLED']) and (dct_FILE['order_T1'] or dct_FILE['order_T1_FILLED']):
+    #si t2 mais pas t3 mais t1 vend 25% de la mise et met un SL de 25% de la mise a T1
+    elif dct_FILE['T2'] < which_level_what_do_price and not "order_T3" in dct_FILE and "order_T1" in dct_FILE:
+#    if dct_FILE['T2'] < which_level_what_do_price and (not dct_FILE['order_T3'] or not dct_FILE['order_T3_FILLED']) and (dct_FILE['order_T1'] or dct_FILE['order_T1_FILLED']):
         sell_part_t=sell_part_t1+sell_part_t2
         sell_part_sl=1-sell_part_t
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*sell_part_t
+        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*sell_part_t2
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
         dct_which_level_what_do['SL_Price']=dct_FILE['T1']
     #si t1 mais pas t3 ni t2 vend 50% de la mise et met un SL de ce qu il reste a Achat
-    if dct_FILE['T1'] < which_level_what_do_price and dct_FILE['last_order_level']=="order_SL":
+    elif dct_FILE['T1'] < which_level_what_do_price and not "order_T3" in dct_FILE and not "order_T2" in dct_FILE:
+#    if dct_FILE['T1'] < which_level_what_do_price and dct_FILE['last_order_level']=="order_SL":
 #    if dct_FILE['T1'] < which_level_what_do_price:
         sell_part_t=sell_part_t1
         sell_part_sl=1-sell_part_t
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*sell_part_t
+        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*sell_part_t1
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
         dct_which_level_what_do['SL_Price']=float(dct_FILE['order_BUY_FILLED']['price'])
     return dct_which_level_what_do
@@ -508,7 +511,7 @@ for filename in os.listdir(dir_TRADES):
         time.sleep(1)
         
     if 'order_BUY_FILLED' in dct_FILE.keys():
-        if dct_FILE['T3'] < binance_price(dct_FILE.get("symbol")) and not "order_T3" in dct_FILE['last_order_level']:
+        if dct_FILE['T3'] < binance_price(dct_FILE.get("symbol")) and not "order_T3" in dct_FILE:
             #Annule l ordre SL
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au T3_"+float8f(dct_FILE['T3'])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))),debugapp_DebugLevel="DEBUG")
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l ordre SL",debugapp_DebugLevel="DEBUG")
@@ -552,11 +555,12 @@ for filename in os.listdir(dir_TRADES):
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_orderId"))+"Order vide:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
             time.sleep(1)
             
-        if dct_FILE['T2'] < binance_price(dct_FILE.get("symbol")) and not "order_T2" in dct_FILE['last_order_level']:
+        elif dct_FILE['T2'] < binance_price(dct_FILE.get("symbol")) and not "order_T2" in dct_FILE and not "order_T3" in dct_FILE:
             #Annule l ordre SL
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au T2_"+float8f(dct_FILE['T2'])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l ordre SL",debugapp_DebugLevel="DEBUG")
             current_order=binance.cancel(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
+#            current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
             if current_order.get("orderId") is not None:
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order),debugapp_Telegram=1)
                 dct_FILE['order_SL_CANCELED_ASKED']=current_order
@@ -567,6 +571,7 @@ for filename in os.listdir(dir_TRADES):
                     #Check si ordre bien CANCELED
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Check si ordre bien CANCELED")
                     current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
+#                    current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
                     if current_order.get("orderId") is not None:
                         if current_order.get("status")=="CANCELED":
                             dct_FILE[dct_FILE.get("last_order_level")+'_CANCELED']=current_order
@@ -604,7 +609,7 @@ for filename in os.listdir(dir_TRADES):
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_orderId"))+":Order vide:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
             time.sleep(1)
             
-        if dct_FILE['T1'] < binance_price(dct_FILE.get("symbol")) and not "order_T1" in dct_FILE['last_order_level']:
+        elif dct_FILE['T1'] < binance_price(dct_FILE.get("symbol")) and not "order_T" in dct_FILE:
             #Annule l ordre SL
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au T1_"+float8f(dct_FILE['T1'])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l ordre SL",debugapp_DebugLevel="DEBUG")
