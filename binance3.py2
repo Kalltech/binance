@@ -24,7 +24,7 @@ def create_dict():
     signal_dict['last_order_level'] = 'test'
     signal_dict['binance_price'] = 'test'
     signal_dict['current_balance'] = 'test'
-    signal_dict['executedQty_creation'] = 'test'
+    signal_dict['executedQty_creation'] = 0
     signal_dict['executedQty_vendu'] = 0
     signal_dict['filename'] = 'test'
     signal_dict['dictToBeFilled'] = {}
@@ -515,6 +515,7 @@ for filename in os.listdir(dir_TRADES):
 #        dct_FILE['current_balance'] = binance_balances.get(dct_FILE['symbol'].replace("BTC", ""))
         dct_FILE['LOT_SIZE_stepSize'] = float(get_stepSize(dct_FILE.get("symbol")))
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cours actuel "+str(float8f(dct_FILE['binance_price']))+" "+dct_FILE['last_order_level'],debugapp_DebugLevel="DEBUG")
+        if dct_FILE['executedQty_creation']=="test": dct_FILE['executedQty_creation']=0
     #############################################################################################################
     #TESTS###############################################################################################
     #############################################################################################################
@@ -549,7 +550,7 @@ for filename in os.listdir(dir_TRADES):
                             dct_FILE[dct_FILE.get("last_order_level")+"_FILLED"]=current_order
                             dct_FILE['last_order_level']=dct_FILE.get("last_order_level")+"_FILLED"
                             dct_FILE['last_executedQty']=float(current_order.get("executedQty"))
-                            if dct_FILE['executedQty_creation']=="test":
+                            if dct_FILE['executedQty_creation']==0:
                                 dct_FILE['executedQty_creation']=float(current_order.get("executedQty"))
                             dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
                             if current_order['side']=="SELL":
@@ -561,7 +562,7 @@ for filename in os.listdir(dir_TRADES):
                         debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Order empty:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
                     time.sleep(1)
 
-        if dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED' or dct_FILE['executedQty_creation']<dct_FILE['executedQty_vendu']+dct_FILE['executedQty_creation']/200:
+        if dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED' or (float(dct_FILE['executedQty_creation'])<float(dct_FILE['executedQty_vendu'])+float(dct_FILE['executedQty_creation'])/200 and dct_FILE['executedQty_creation']<>0):
             debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("last_order_level")+" Deplace le fichier dans old",debugapp_DebugLevel="DEBUG")
             save_obj(dct_FILE, dct_FILE.get("filename"))
             try:
