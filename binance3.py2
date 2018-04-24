@@ -11,6 +11,7 @@ import logging
 import datetime
 import telegram
 import json
+import re
 
 #############################################################################################################
 #FUNCTIONS###############################################################################################
@@ -96,7 +97,7 @@ def debugapp(debugapp_str, **kwargs):
 
 def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
     b_order_price=float(b_order_price)
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"b_order begin",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
 #Place l ordre selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Place l ordre selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)")
     if b_order_side=="BUY":
@@ -147,7 +148,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
     else:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+":orderId vide_"+str(order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
         save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"b_order end",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
     time.sleep(1)
     return order
 
@@ -169,7 +170,7 @@ def chop_microseconds(delta):
     return delta - datetime.timedelta(microseconds=delta.microseconds)
     
 def load_trade(load_trade_file):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"load_trade begin",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
 #    global COIN,Buy_price_signal,T1,T2,T3,SL,USD
     global dct_FILE
     dct_FILE=create_dict()
@@ -184,7 +185,7 @@ def load_trade(load_trade_file):
     dct_FILE['USD'] = float(ConfigSectionMap("TRADE", parse_Trade)['usd'])
     dct_FILE['filename']=load_trade_file
     debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+"/"+float8f(dct_FILE['BUY'])+"/"+float8f(dct_FILE['T1'])+"/"+float8f(dct_FILE['T2'])+"/"+float8f(dct_FILE['T3'])+"/"+float8f(dct_FILE['SL']),debugapp_DebugLevel="DEBUG")
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"load_trade end",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
     return dct_FILE
 
 def float8f(float8f_value):
@@ -224,7 +225,7 @@ def ConfigSectionMap(section, Config):
   return dict1
 
 def b_trade_to_order(b_trade_to_order_file):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"b_trade_to_order begin",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
     #Prend le trade puis fait un achat s'il est dans les seuils
     #Calc if price is on seuils
     load_trade(b_trade_to_order_file)
@@ -266,7 +267,7 @@ def b_trade_to_order(b_trade_to_order_file):
                 os.rename(b_trade_to_order_file, b_trade_to_order_file.replace("/signals","/problems"))
             except: 
                 pass
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"b_trade_to_order end",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
 
 def save_obj(obj, name ):
     with open(name, 'wb') as f:
@@ -291,7 +292,7 @@ def which_level_what_do(which_level_what_do_price):
     if dct_FILE['T3'] < which_level_what_do_price:
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']-dct_FILE['executedQty_vendu']
     #si t2 mais pas t3 ni t1 vend 75% de la mise et met un SL de 25% de la mise a T1
-    if dct_FILE['T2'] < which_level_what_do_price and not "order_T3" in dct_FILE and not "order_T1" in dct_FILE:
+    if dct_FILE['T2'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and not findkeys(dct_FILE, "order_T1"):
 #    if dct_FILE['T2'] < which_level_what_do_price and (not dct_FILE['order_T3'] or not dct_FILE['order_T3_FILLED']) and (not dct_FILE['order_T1'] or not dct_FILE['order_T1_FILLED']):
         sell_part_t=sell_part_t1+sell_part_t2
         sell_part_sl=1-sell_part_t
@@ -299,7 +300,7 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation'] * sell_part_sl
         dct_which_level_what_do['SL_Price']=dct_FILE['T1']
     #si t2 mais pas t3 mais t1 vend 25% de la mise et met un SL de 25% de la mise a T1
-    elif dct_FILE['T2'] < which_level_what_do_price and not "order_T3" in dct_FILE and "order_T1" in dct_FILE:
+    elif dct_FILE['T2'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and findkeys(dct_FILE, "order_T"):
 #    if dct_FILE['T2'] < which_level_what_do_price and (not dct_FILE['order_T3'] or not dct_FILE['order_T3_FILLED']) and (dct_FILE['order_T1'] or dct_FILE['order_T1_FILLED']):
         sell_part_t=sell_part_t1+sell_part_t2
         sell_part_sl=1-sell_part_t
@@ -307,7 +308,7 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
         dct_which_level_what_do['SL_Price']=dct_FILE['T1']
     #si t1 mais pas t3 ni t2 vend 50% de la mise et met un SL de ce qu il reste a Achat
-    elif dct_FILE['T1'] < which_level_what_do_price and not "order_T3" in dct_FILE and not "order_T2" in dct_FILE:
+    elif dct_FILE['T1'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and not findkeys(dct_FILE, "order_T2"):
 #    if dct_FILE['T1'] < which_level_what_do_price and dct_FILE['last_order_level']=="order_SL":
 #    if dct_FILE['T1'] < which_level_what_do_price:
         sell_part_t=sell_part_t1
@@ -318,7 +319,7 @@ def which_level_what_do(which_level_what_do_price):
     return dct_which_level_what_do
 
 def get_stepSize(get_stepSize_coin):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"get_stepSize begin",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
     r=requests.get("https://www.binance.com/api/v1/exchangeInfo")
     data=r.json()
     symbols=data.get("symbols")
@@ -329,7 +330,7 @@ def get_stepSize(get_stepSize_coin):
     a_LOT_SIZE=LOT_SIZE[0]
     stepSize=a_LOT_SIZE.get("stepSize")
     dct_FILE['PRICE_FILTER_tickSize']=float(a_coin['filters'][0]['tickSize'])
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"get_stepSize end",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
     return float(stepSize)
 
 def binance_status(binance_status_symbol,  **kwargs):
@@ -369,6 +370,14 @@ def binance_status(binance_status_symbol,  **kwargs):
             out_file.close()
         return current_order
 
+def findkeys(d, findkeys_str):
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
+    for key in d.keys():
+        if findkeys_str in key:
+            return 1
+    return 0
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
+    
 #############################################################################################################
 #END FUNCTIONS###############################################################################################
 #############################################################################################################
@@ -511,7 +520,7 @@ for filename in os.listdir(dir_TRADES):
         time.sleep(1)
         
     if 'order_BUY_FILLED' in dct_FILE.keys():
-        if dct_FILE['T3'] < binance_price(dct_FILE.get("symbol")) and not "order_T3" in dct_FILE:
+        if dct_FILE['T3'] < binance_price(dct_FILE.get("symbol")) and not findkeys(dct_FILE, "order_T3"):
             #Annule l ordre SL
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au T3_"+float8f(dct_FILE['T3'])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))),debugapp_DebugLevel="DEBUG")
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l ordre SL",debugapp_DebugLevel="DEBUG")
@@ -555,7 +564,7 @@ for filename in os.listdir(dir_TRADES):
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_orderId"))+"Order vide:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
             time.sleep(1)
             
-        elif dct_FILE['T2'] < binance_price(dct_FILE.get("symbol")) and not "order_T2" in dct_FILE and not "order_T3" in dct_FILE:
+        elif dct_FILE['T2'] < binance_price(dct_FILE.get("symbol")) and not findkeys(dct_FILE, "order_T2") and not findkeys(dct_FILE, "order_T3"):
             #Annule l ordre SL
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au T2_"+float8f(dct_FILE['T2'])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l ordre SL",debugapp_DebugLevel="DEBUG")
@@ -609,7 +618,7 @@ for filename in os.listdir(dir_TRADES):
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_orderId"))+":Order vide:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
             time.sleep(1)
             
-        elif dct_FILE['T1'] < binance_price(dct_FILE.get("symbol")) and not "order_T" in dct_FILE:
+        elif dct_FILE['T1'] < binance_price(dct_FILE.get("symbol")) and not findkeys(dct_FILE, "order_T"):
             #Annule l ordre SL
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au T1_"+float8f(dct_FILE['T1'])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l ordre SL",debugapp_DebugLevel="DEBUG")
