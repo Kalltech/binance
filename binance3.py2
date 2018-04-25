@@ -97,13 +97,16 @@ def debugapp(debugapp_str, **kwargs):
         sys.exit()
 
 def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
-    b_order_price=float(b_order_price)
+    b_order_price=float(float8f(b_order_price))
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
     binance_balances=binance.balances()
     dct_FILE["current_balance"] = binance_balances.get(dct_FILE["symbol"].replace("BTC", ""))
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_symbol.replace("BTC", "")+":locked:"+ str(dct_FILE['current_balance']['locked']),debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"\n"+float8f(dct_FILE['PRICE_FILTER_tickSize'])+"\n"+float8f(b_order_price),debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"\n"+floatXf(dct_FILE['PRICE_FILTER_tickSize'])+"\n"+floatXf(b_order_price),debugapp_DebugLevel="DEBUG")
     debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_symbol.replace("BTC", "")+":free:"+ str(dct_FILE['current_balance']['free']),debugapp_DebugLevel="DEBUG")
 #Place l Order selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)
+    
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Place l Order selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)")
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Place l Order selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)")
     if b_order_side=="BUY":
         b_order_Qty=float(b_order_Qty)
@@ -138,8 +141,8 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
         b_order_price=float(floatXf(b_order_price))
         b_order_price_plus_01_percen=float(floatXf(b_order_price_plus_01_percen))
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+b_order_symbol+" @ "+float8f(b_order_price)+" @ stop "+float8f(b_order_price_plus_01_percen),debugapp_Telegram=1)
-        order=binance.order(b_order_symbol, binance.SELL, order_quantity, b_order_price, orderType=binance.STOP_LOSS_LIMIT, test=False, stopPrice='%.8f' % b_order_price_plus_01_percen)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+b_order_symbol+" @ "+floatXf(b_order_price)+" @ stop "+floatXf(b_order_price_plus_01_percen),debugapp_Telegram=1)
+        order=binance.order(b_order_symbol, binance.SELL, order_quantity, floatXf(b_order_price), orderType=binance.STOP_LOSS_LIMIT, test=False, stopPrice=floatXf(b_order_price_plus_01_percen))
     if order.get("orderId") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK:"+str(order.get("orderId")),debugapp_Telegram=1,debugapp_DebugLevel="DEBUG")
         processed_order=1
@@ -196,7 +199,7 @@ def float8f(float8f_value):
 
 def floatXf(float8f_value):
     frac, whole = math.modf(dct_FILE['PRICE_FILTER_tickSize'])
-    return format(float(float8f_value), "."+str(len(str(frac))+2)+"f")
+    return format(float(float8f_value), "."+str(len(str(frac))+1)+"f")
 
 def step_size_to_precision(ss):
     return ss.find('1') - 1
@@ -388,7 +391,7 @@ def targetTX(targetTX_level):
     current_order=binance.cancel(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
 #    current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
     if current_order.get("orderId") is not None:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order),debugapp_Telegram=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order.get("orderId")),debugapp_Telegram=1)
         dct_FILE["order_SL_CANCELED_ASKED"]=current_order
         count=0
         processed_order=1
@@ -446,7 +449,6 @@ def targetTX(targetTX_level):
 #############################################################################################################
 
 os.system('clear')
-check_pause()
 ###load params
 load_params = ConfigParser.ConfigParser()
 load_params.read("binance_api.ini")
@@ -487,6 +489,8 @@ formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
 logger.setLevel(level)
+###Check pause
+check_pause()
 ###Telegram
 my_telegram_bot_token = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_bot_token']
 my_telegram_id = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_id']
@@ -554,7 +558,19 @@ for filename in os.listdir(dir_TRADES):
                                 dct_FILE['executedQty_creation']=float(current_order.get("executedQty"))
                             dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
                             if current_order['side']=="SELL":
-                                dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+float(current_order['origQty'])
+                                dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+float(current_order['executedQty'])
+                                
+                                prix_de_vente=float(current_order['price'])
+                                prix_achat=float(dct_FILE['order_BUY_FILLED']['price'])
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Diff BTC: "+str(prix_de_vente-prix_achat))
+                                
+                                gain_BTC=(prix_de_vente-prix_achat)*float(current_order['executedQty'])
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain BTC: "+str(gain_BTC))
+                                
+                                BTCUSDT=float(binance_prices.get("BTCUSDT"))
+                                gain_USD=gain_BTC*BTCUSDT
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente au level:"+dct_FILE['last_order_level'],debugapp_Telegram=1)
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente de "+str(current_order['executedQty'])+" de "+dct_FILE.get("symbol")+"\nGain $: "+str(gain_USD),debugapp_Telegram=1)
                             save_obj(dct_FILE, dct_FILE.get("filename"))
                         else:
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId']),debugapp_DebugLevel="DEBUG")
