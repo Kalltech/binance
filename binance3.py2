@@ -106,8 +106,6 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
     debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_symbol.replace("BTC", "")+":free:"+ str(dct_FILE['current_balance']['free']),debugapp_DebugLevel="DEBUG")
 #Place l Order selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)
     
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Place l Order selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)")
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Place l Order selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)")
     if b_order_side=="BUY":
         b_order_Qty=float(b_order_Qty)
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
@@ -201,8 +199,8 @@ def float8f(float8f_value):
 #    frac, whole = math.modf(dct_FILE['PRICE_FILTER_tickSize'])
 #    return format(float(float8f_value), "."+str(len(str(frac))+2)+"f")
 def floatXf(float8f_value):
-    pos=str(float8f(PRICE_FILTER)).find("1")-1
-    return format(float(PRICE_FILTER), "."+str(pos)+"f")
+    pos=str(float8f(dct_FILE['PRICE_FILTER_tickSize'])).find("1")-1
+    return format(float(float8f_value), "."+str(pos)+"f")
 
 def step_size_to_precision(ss):
     return ss.find('1') - 1
