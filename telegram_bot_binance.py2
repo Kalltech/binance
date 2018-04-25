@@ -47,7 +47,7 @@ def start(bot, update):
 
 def help(bot, update):
     """Send a message when the command /help is issued."""
-    update.message.reply_text('Help!')
+    update.message.reply_text('Help!\nPause:5 Met en pause pour 5min\nStatus Donne le status de chaque trade\nSignal... Met en fil d attente la position selon les valeurs\n')
 
 def echo(bot, update):
     """Echo the user message."""
@@ -70,10 +70,10 @@ def echo(bot, update):
         for filename in os.listdir(api_path+"trades/"):
             print(api_path+"trades/"+filename)
             dct_FILE=load_obj(api_path+"trades/"+filename)
-            update.message.reply_text("Dernier prix "+dct_FILE.get("symbol")+":"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level'])
+            update.message.reply_text(dct_FILE.get("symbol")+":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level'])
     elif "signal" in text_sent:
         print "signal"
-        update.message.reply_text(update.message.text)
+#        update.message.reply_text(update.message.text)
         update.message.reply_text(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
         signal_dict = {}
         signal_dict['C'] = 'test'
@@ -88,6 +88,7 @@ def echo(bot, update):
         lines=lines.splitlines()
         for line in lines:
             line=line.replace(" ", "")
+            line=line.replace("$", "")
 #            print(line)
 #Crypto Signalist Pro
             if "btc" in line:
@@ -172,8 +173,7 @@ def echo(bot, update):
                 text_file.close()
                 update.message.reply_text("Signal resolu:\n"+str_file)
         else:
-            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100")
-            update.message.reply_text("Ou, format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
+            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
 #            print str_file
     else:
         update.message.reply_text("I dont understand")
