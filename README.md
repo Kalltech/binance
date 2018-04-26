@@ -4,6 +4,8 @@ apt-get install python-pip
 
 pip install binance
 
+apt-get install python-requests
+
 pip install python-telegram-bot --upgrade
 
 /etc/crontab
