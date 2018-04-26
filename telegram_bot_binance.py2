@@ -13,6 +13,7 @@ import datetime
 import pickle
 import string
 import ConfigParser
+import json
 
 load_params = ConfigParser.ConfigParser()
 load_params.read("binance_api.ini")
@@ -23,6 +24,45 @@ api_path=cwd+"/"
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 level=logging.INFO)
 
+def findkeys(d, findkeys_str):
+    for key in d.keys():
+        if findkeys_str in key:
+            return 1
+    return 0
+    
+def float0f(float8f_value):
+    return format(float(float8f_value), '.0f')
+
+def stats():
+    sell_stats_file=cwd+"/"+"sell_stats.json"
+    with open(sell_stats_file) as json_data:
+        dct_sell_stats = json.load(json_data)
+        json_data.close()
+        sum_GainUSD_today=0
+        today=datetime.datetime.now().strftime("%Y-%m-%d")
+        dct_today=dct_sell_stats.get(today)
+        for key in dct_today.keys():
+            sum_GainUSD_today=sum_GainUSD_today+float(dct_today[key]["gain_USD"])
+        stats_str= "Gain today $:"+float0f(sum_GainUSD_today)
+        sum_GainUSD_week=0
+        for x in range(0, 8):
+            day=datetime.datetime.now()-datetime.timedelta(days=int(x))
+            day=str(day.strftime("%Y-%m-%d"))
+            if findkeys(dct_sell_stats, day):
+                dct_day=dct_sell_stats.get(day)
+                for key in dct_day.keys():
+                    sum_GainUSD_week=sum_GainUSD_week+float(dct_day[key]["gain_USD"])
+        stats_str= stats_str+"\nGain last 7 days $:"+float0f(sum_GainUSD_week)
+        sum_GainUSD_month=0
+        for x in range(0, 32):
+            day=datetime.datetime.now()-datetime.timedelta(days=int(x))
+            day=str(day.strftime("%Y-%m-%d"))
+            if findkeys(dct_sell_stats, day):
+                dct_day=dct_sell_stats.get(day)
+                for key in dct_day.keys():
+                    sum_GainUSD_month=sum_GainUSD_month+float(dct_day[key]["gain_USD"])
+        stats_str= stats_str+"\nGain last 31 days $:"+float0f(sum_GainUSD_month)
+    return stats_str
 logger = logging.getLogger(__name__)
 
 # Define a few command handlers. These usually take the two arguments bot and
@@ -64,6 +104,12 @@ def echo(bot, update):
         text_file.write(str(f_time))
         text_file.close()
         update.message.reply_text("Pause until: "+str(f_time))
+    elif text_sent=="stats":
+        sell_stats_file=cwd+"/"+"sell_stats.json"
+        if not os.path.isfile(sell_stats_file):
+            update.message.reply_text("Stats empty")
+        else:
+            update.message.reply_text(stats())
     elif text_sent=="status":
         print "status"
         update.message.reply_text(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
