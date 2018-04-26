@@ -101,8 +101,8 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
     binance_balances=binance.balances()
     dct_FILE["current_balance"] = binance_balances.get(dct_FILE["symbol"].replace("BTC", ""))
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"\ntickSize:"+float8f(dct_FILE['PRICE_FILTER_tickSize'])+"\n"+float8f(b_order_price),debugapp_DebugLevel="DEBUG")
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"\ntickSize:"+floatXf(dct_FILE['PRICE_FILTER_tickSize'])+"\n"+floatXf(b_order_price),debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"tickSize:\n"+float8f(dct_FILE['PRICE_FILTER_tickSize'])+"\n"+float8f(b_order_price),debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"tickSize:\n"+floatXf(dct_FILE['PRICE_FILTER_tickSize'])+"\n"+floatXf(b_order_price),debugapp_DebugLevel="DEBUG")
     debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_symbol.replace("BTC", "")+":free:"+ str(dct_FILE['current_balance']['free']),debugapp_DebugLevel="DEBUG")
 #Place l Order selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)
     
@@ -280,14 +280,38 @@ def save_obj(obj, name ):
     with open(name, 'wb') as f:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Sauve l objet vers: "+name,debugapp_DebugLevel="DEBUG")
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+        save_obj_out_file = open(name+".json","w")
+        json.dump(obj,save_obj_out_file, indent=4, sort_keys=True)                                    
+        save_obj_out_file.close()
 
 def load_obj(name ):
     with open(name, 'rb') as f:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Ouvre l objet depuis: "+name,debugapp_DebugLevel="DEBUG")
         return pickle.load(f)
+#        my_dict = json.loads(json_data)
 
 def binance_price(binance_price_symbol):
     return float(binance_prices.get(binance_price_symbol))
+    
+def sell_stats(sell_stats_current_order, sell_stats_current_level):
+    sell_stats_current_order["gain_USD"]=gain_USD
+    sell_stats_current_order["gain_BTC"]=gain_BTC
+    sell_stats_current_order["level"]=sell_stats_current_level
+    sell_stats_file=cwd+"/"+"sell_stats.json"
+    sell_stats_date=datetime.datetime.now().strftime("%Y-%m-%d")
+    if not os.path.isfile(sell_stats_file):
+        dct_sell_stats = {}
+        sell_stats_file_obj = open(sell_stats_file,"w")
+        json.dump(dct_sell_stats,sell_stats_file_obj, indent=4, sort_keys=True)                                    
+        sell_stats_file_obj.close()
+    with open(sell_stats_file) as json_data:
+        dct_sell_stats = json.load(json_data)
+        if not findkeys(dct_sell_stats, sell_stats_date): dct_sell_stats[sell_stats_date] = {}
+        dct_sell_stats[sell_stats_date][sell_stats_current_order.get("orderId")] = sell_stats_current_order
+        json_data.close()
+        sell_stats_file_obj = open(sell_stats_file,"w")
+        json.dump(dct_sell_stats,sell_stats_file_obj, indent=4, sort_keys=True)                                    
+        sell_stats_file_obj.close()
 
 def which_level_what_do(which_level_what_do_price):
     dct_which_level_what_do = {}
@@ -513,7 +537,8 @@ debugapp(str(sys._getframe().f_code.co_name)+"|"+datetime.datetime.now().strftim
 
 #parse le dossier pour les fichiers
 for filename in os.listdir(dir_TRADES):
-    if not "TRXBTC_2018-04-23_14.53.27" in filename:
+    dct_FILE = {}
+    if not ".json" in filename:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_TRADES+filename,debugapp_DebugLevel="DEBUG")
         dct_FILE=load_obj(dir_TRADES+filename)
         dct_FILE['binance_price'] = float(binance_prices.get(dct_FILE['symbol']))
@@ -524,6 +549,8 @@ for filename in os.listdir(dir_TRADES):
     #############################################################################################################
     #TESTS###############################################################################################
     #############################################################################################################
+#        if "_FILLED_FILLED" in dct_FILE['last_order_level']:
+#            dct_FILE['last_order_level']=dct_FILE['last_order_level'].replace("_FILLED_FILLED", "_FILLED")
     #    dct_FILE['T1']=0.0000205
     #    dct_FILE['last_order_level']="order_BUY_FILLED"
     #    dct_FILE['executedQty_vendu']=0
@@ -552,26 +579,24 @@ for filename in os.listdir(dir_TRADES):
                     if current_order.get("orderId") is not None:
                         if current_order.get("status")=="FILLED":
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade FILLED of order_ "+str(current_order.get("orderId")),debugapp_DebugLevel="DEBUG")
-                            dct_FILE[dct_FILE.get("last_order_level")+"_FILLED"]=current_order
-                            dct_FILE['last_order_level']=dct_FILE.get("last_order_level")+"_FILLED"
+                            dct_FILE[order_level_dictToBeFilled+"_FILLED"]=current_order
+                            dct_FILE['last_order_level']=order_level_dictToBeFilled+"_FILLED"
                             dct_FILE['last_executedQty']=float(current_order.get("executedQty"))
                             if dct_FILE['executedQty_creation']==0:
                                 dct_FILE['executedQty_creation']=float(current_order.get("executedQty"))
                             dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
                             if current_order['side']=="SELL":
                                 dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+float(current_order['executedQty'])
-                                
                                 prix_de_vente=float(current_order['price'])
                                 prix_achat=float(dct_FILE['order_BUY_FILLED']['price'])
                                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Diff BTC: "+str(prix_de_vente-prix_achat))
-                                
                                 gain_BTC=(prix_de_vente-prix_achat)*float(current_order['executedQty'])
                                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain BTC: "+str(gain_BTC))
-                                
                                 BTCUSDT=float(binance_prices.get("BTCUSDT"))
                                 gain_USD=gain_BTC*BTCUSDT
-                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente au level:"+dct_FILE['last_order_level'],debugapp_Telegram=1)
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente au level:"+order_level_dictToBeFilled,debugapp_Telegram=1)
                                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente de "+str(current_order['executedQty'])+" de "+dct_FILE.get("symbol")+"\nGain $: "+str(gain_USD),debugapp_Telegram=1)
+                                sell_stats(current_order, order_level_dictToBeFilled)
                             save_obj(dct_FILE, dct_FILE.get("filename"))
                         else:
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId']),debugapp_DebugLevel="DEBUG")
@@ -613,6 +638,7 @@ for filename in os.listdir(dir_TRADES):
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************")
 
 for filename in os.listdir(dir_SIGNALS):
+    dct_FILE = {}
     debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_SIGNALS+filename)
     b_trade_to_order(dir_SIGNALS+filename)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************")
