@@ -116,9 +116,10 @@ def echo(bot, update):
         print "status"
         update.message.reply_text(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
         for filename in os.listdir(api_path+"trades/"):
-            print(api_path+"trades/"+filename)
-            dct_FILE=load_obj(api_path+"trades/"+filename)
-            update.message.reply_text(dct_FILE.get("symbol")+":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level'])
+            if not ".json" in filename:
+                print(api_path+"trades/"+filename)
+                dct_FILE=load_obj(api_path+"trades/"+filename)
+                update.message.reply_text(dct_FILE.get("symbol")+":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level'])
     elif "signal" in text_sent:
         print "signal"
 #        update.message.reply_text(update.message.text)
