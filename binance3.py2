@@ -639,7 +639,7 @@ for filename in os.listdir(dir_TRADES):
                     time.sleep(1)
 
         if dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED' or (float(dct_FILE['executedQty_creation'])<float(dct_FILE['executedQty_vendu'])+float(dct_FILE['executedQty_creation'])/200 and dct_FILE['executedQty_creation']<>0):
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("last_order_level")+" Fin du trade: deplace le fichier dans old",debugapp_DebugLevel="DEBUG")
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("last_order_level")+" Fin du trade: deplace le fichier dans old",debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
             save_obj(dct_FILE, dct_FILE.get("filename"))
             try:
                 os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
