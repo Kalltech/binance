@@ -288,21 +288,23 @@ def b_trade_to_order(b_trade_to_order_file):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def save_obj(obj, name ):
-    with open(name, 'wb') as f:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Sauve l objet vers: "+name,debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Sauve l objet vers: "+name,debugapp_DebugLevel="DEBUG")
+    if not ".json" in name:
+        with open(name, 'wb') as f:
 #        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+            pass
+    else:
         save_obj_out_file = open(name,"w")
         json.dump(obj,save_obj_out_file, indent=4, sort_keys=True)                                    
         save_obj_out_file.close()
 
 def load_obj(name ):
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Ouvre l objet depuis: "+name,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     if not ".json" in name:
         with open(name, 'rb') as f:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Ouvre l objet depuis: "+name,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
             return pickle.load(f)
     else:
         with open(name) as json_data:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Ouvre l objet depuis: "+name,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
             dct_load_obj = json.load(json_data)
             json_data.close()
             return dct_load_obj
@@ -559,6 +561,10 @@ for filename in os.listdir(dir_TRADES):
     if ".json" in filename:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_TRADES+filename,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         dct_FILE=load_obj(dir_TRADES+filename)
+        if not ".json" in dct_FILE['filename']:
+            dct_FILE['filename']=dct_FILE['filename']+".json"
+        if not dir_TRADES in dct_FILE['filename']:
+            dct_FILE['filename']=dir_TRADES+filename
         dct_FILE['binance_price'] = float(binance_prices.get(dct_FILE['symbol']))
 #        dct_FILE['current_balance'] = binance_balances.get(dct_FILE['symbol'].replace("BTC", ""))
         dct_FILE['LOT_SIZE_stepSize'] = float(get_stepSize(dct_FILE.get("symbol")))
@@ -633,11 +639,11 @@ for filename in os.listdir(dir_TRADES):
                     time.sleep(1)
 
         if dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED' or (float(dct_FILE['executedQty_creation'])<float(dct_FILE['executedQty_vendu'])+float(dct_FILE['executedQty_creation'])/200 and dct_FILE['executedQty_creation']<>0):
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("last_order_level")+" Deplace le fichier dans old",debugapp_DebugLevel="DEBUG")
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("last_order_level")+" Fin du trade: deplace le fichier dans old",debugapp_DebugLevel="DEBUG")
             save_obj(dct_FILE, dct_FILE.get("filename"))
             try:
                 os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
-                sys.exit()
+#                sys.exit()
             except: 
                 pass
             
