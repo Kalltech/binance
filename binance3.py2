@@ -39,25 +39,36 @@ def debugapp(debugapp_str, **kwargs):
     debugapp_DebugLevel=kwargs.get('debugapp_DebugLevel', None)
     debugapp_Telegram=kwargs.get('debugapp_Telegram', None)
     debugapp_Print=kwargs.get('debugapp_Print', None)
-
+    debugapp_logger=kwargs.get('debugapp_logger', None)
+    if not debugapp_logger: 
+        if logger_symbol: 
+            debugapp_logger=logger_symbol
+        else:
+            debugapp_logger=logger
     if debugapp_Telegram: 
         try:
             bot.sendMessage(chat_id=my_telegram_id, text=str(debugapp_str))
         except:
-            logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
+#            logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
+            debugapp_logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
             print str("Impossible d envoyer vers Telegram"+str(debugapp_str))
     if debugapp_DebugLevel:
         if debugapp_DebugLevel=="ERROR":
-            logger.error(str(debugapp_str))
+#            logger.error(str(debugapp_str))
+            debugapp_logger.error(str(debugapp_str))
         elif debugapp_DebugLevel=="DEBUG":
-            logger.debug(str(debugapp_str))
+#            logger.debug(str(debugapp_str))
+            debugapp_logger.debug(str(debugapp_str))
         elif debugapp_DebugLevel=="WARNING":
-            logger.warning(str(debugapp_str))
+#            logger.warning(str(debugapp_str))
+            debugapp_logger.warning(str(debugapp_str))
         elif debugapp_DebugLevel=="CRITICAL":
-            logger.critical(str(debugapp_str))
+#            logger.critical(str(debugapp_str))
+            debugapp_logger.critical(str(debugapp_str))
         if not debugapp_Print: print str(debugapp_str)
     else:
-        logger.info(str(debugapp_str))
+#        logger.info(str(debugapp_str))
+        debugapp_logger.info(str(debugapp_str))
         if not debugapp_Print: print str(debugapp_str)
     if debugapp_SaveObj:
         #Sauve le fichier au dernier etat
@@ -232,7 +243,7 @@ def ConfigSectionMap(section, Config):
   return dict1
 
 def b_trade_to_order(b_trade_to_order_file):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     #Prend le trade puis fait un achat s'il est dans les seuils
     #Calc if price is on seuils
     load_trade(b_trade_to_order_file)
@@ -241,8 +252,8 @@ def b_trade_to_order(b_trade_to_order_file):
     Buy_price_signal_up= dct_FILE['BUY']+dct_FILE['BUY']/100*percentage_delta_buy
     if binance_prices.get(dct_FILE['symbol']) is not None:
         dct_FILE['binance_price'] = float(binance_prices.get(dct_FILE['symbol']))
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix actuel du "+dct_FILE['symbol']+" est "+float8f(dct_FILE['binance_price']))
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix demande du "+dct_FILE['symbol']+" est "+float8f(dct_FILE['BUY']))
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix actuel du "+dct_FILE['symbol']+" est "+float8f(dct_FILE['binance_price']), debugapp_logger=logger)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix demande du "+dct_FILE['symbol']+" est "+float8f(dct_FILE['BUY']), debugapp_logger=logger)
         #Calc how many BTC vs USD demand
         BTCUSDT=float(binance_prices.get("BTCUSDT"))
         Qty_signal=1/dct_FILE['BUY']/BTCUSDT*dct_FILE['USD']
@@ -250,7 +261,7 @@ def b_trade_to_order(b_trade_to_order_file):
         #achatcoin=USD/prixbtc*coinbtc
         #200/7000*0.0000184
         if Buy_price_signal_down <= dct_FILE['binance_price'] <= Buy_price_signal_up:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+":prix entre les seuils d achat:"+float8f(dct_FILE['binance_price']))
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+":prix entre les seuils d achat:"+float8f(dct_FILE['binance_price']), debugapp_logger=logger)
             b_TRADE=b_order(dct_FILE['symbol'], Qty_signal, dct_FILE['BUY'],"BUY", "order_BUY")
             if b_TRADE.get("orderId") is not None:
                 dct_FILE['last_orderId']=b_TRADE.get("orderId")
@@ -258,23 +269,23 @@ def b_trade_to_order(b_trade_to_order_file):
                 dct_FILE['executedDate_creation']=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
                 dct_FILE['last_order_level']='order_BUY'
                 dct_FILE['filename']=dir_TRADES+dct_FILE['symbol']+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK: deplace le fichier vers: "+dct_FILE['filename'].replace("/trades","/old"),debugapp_DebugLevel="DEBUG")
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK: deplace le fichier vers: "+dct_FILE['filename'].replace("/trades","/old"),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
                 save_obj(dct_FILE, dct_FILE['filename'])
                 try:
                     os.rename(b_trade_to_order_file, b_trade_to_order_file.replace("/signals","/old"))  
                 except:
                     pass
             else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order not OK:\n"+str(b_TRADE),debugapp_Telegram=1)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order not OK:\n"+str(b_TRADE),debugapp_Telegram=1, debugapp_logger=logger)
         else:
-          debugapp(str(sys._getframe().f_code.co_name)+"|"+":prix PAS entre les seuils d achat:"+float8f(dct_FILE['binance_price']),debugapp_DebugLevel="DEBUG")
+          debugapp(str(sys._getframe().f_code.co_name)+"|"+":prix PAS entre les seuils d achat:"+float8f(dct_FILE['binance_price']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     else:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Inconnu: "+dct_FILE['symbol']+str(b_TRADE),debugapp_Telegram=1,debugapp_DebugLevel="ERROR")
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Inconnu: "+dct_FILE['symbol']+str(b_TRADE),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
             try:
                 os.rename(b_trade_to_order_file, b_trade_to_order_file.replace("/signals","/problems"))
             except: 
                 pass
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def save_obj(obj, name ):
     with open(name, 'wb') as f:
@@ -286,7 +297,7 @@ def save_obj(obj, name ):
 
 def load_obj(name ):
     with open(name, 'rb') as f:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Ouvre l objet depuis: "+name,debugapp_DebugLevel="DEBUG")
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Ouvre l objet depuis: "+name,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         return pickle.load(f)
 #        my_dict = json.loads(json_data)
 
@@ -350,7 +361,7 @@ def which_level_what_do(which_level_what_do_price):
     return dct_which_level_what_do
 
 def get_stepSize(get_stepSize_coin):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     r=requests.get("https://www.binance.com/api/v1/exchangeInfo")
     data=r.json()
     symbols=data.get("symbols")
@@ -361,7 +372,7 @@ def get_stepSize(get_stepSize_coin):
     a_LOT_SIZE=LOT_SIZE[0]
     stepSize=a_LOT_SIZE.get("stepSize")
     dct_FILE['PRICE_FILTER_tickSize']=float(a_coin['filters'][0]['tickSize'])
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     return float(stepSize)
 
 def binance_status(binance_status_symbol,  **kwargs):
@@ -369,7 +380,7 @@ def binance_status(binance_status_symbol,  **kwargs):
     binance_status_orderId=kwargs.get('orderId', None)
     binance_status_orderId_type=kwargs.get('binance_status_orderId_type', None)
     if binance_status_test:
-        debugapp("Envoi d un faux status",debugapp_DebugLevel="DEBUG")
+        debugapp("Envoi d un faux status",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         # Open the file for reading
         if not binance_status_orderId_type:
             in_file = open("NEW_BUY","r")
@@ -388,10 +399,10 @@ def binance_status(binance_status_symbol,  **kwargs):
         binance_status_dict['orderId']=binance_status_orderId
         return binance_status_dict
     else:
-        debugapp("Envoi du status de binance",debugapp_DebugLevel="DEBUG")
+        debugapp("Envoi du status de binance",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         current_order=binance.orderStatus(binance_status_symbol, orderId=binance_status_orderId)
         if current_order.get("orderId") is not None:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(current_order.get("orderId")),debugapp_DebugLevel="DEBUG")
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(current_order.get("orderId")),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
             # Open a file for writing
             out_file = open(dir_TEMP+str(current_order.get("orderId")),"w")
             # Save the dictionary into this file
@@ -402,12 +413,12 @@ def binance_status(binance_status_symbol,  **kwargs):
         return current_order
 
 def findkeys(d, findkeys_str):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     for key in d.keys():
         if findkeys_str in key:
             return 1
     return 0
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     
 def targetTX(targetTX_level):
     #Annule l Order SL
@@ -531,20 +542,28 @@ binance.set(binance_key, binance_secret)
 binance_prices=binance.prices()
 
 #print binance_prices
-debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************")
-debugapp(str(sys._getframe().f_code.co_name)+"|"+"Price:"+"BTCUSDT:"+ str(binance_prices.get("BTCUSDT")),debugapp_DebugLevel="DEBUG")
-debugapp(str(sys._getframe().f_code.co_name)+"|"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"Price:"+"BTCUSDT:"+ str(binance_prices.get("BTCUSDT")),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+debugapp(str(sys._getframe().f_code.co_name)+"|"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), debugapp_logger=logger)
 
 #parse le dossier pour les fichiers
 for filename in os.listdir(dir_TRADES):
     dct_FILE = {}
-    if not ".json" in filename:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_TRADES+filename,debugapp_DebugLevel="DEBUG")
+    logger_symbol=None
+    if not ".json" in filename and not ".log" in filename:
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_TRADES+filename,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         dct_FILE=load_obj(dir_TRADES+filename)
         dct_FILE['binance_price'] = float(binance_prices.get(dct_FILE['symbol']))
 #        dct_FILE['current_balance'] = binance_balances.get(dct_FILE['symbol'].replace("BTC", ""))
         dct_FILE['LOT_SIZE_stepSize'] = float(get_stepSize(dct_FILE.get("symbol")))
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cours actuel "+str(float8f(dct_FILE['binance_price']))+" "+dct_FILE['last_order_level'],debugapp_DebugLevel="DEBUG")
+#        logger_symbol = logging.getLogger("symbol")
+#        log_file_symbol=dir_TRADES+filename+".log"
+#        hdlr_symbol = logging.FileHandler(log_file_symbol)
+#        hdlr_symbol.setFormatter(formatter)
+#        logger_symbol.addHandler(hdlr_symbol) 
+#        logger_symbol.setLevel(level)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cours actuel "+str(float8f(dct_FILE['binance_price']))+" "+dct_FILE['last_order_level'],debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+
         if dct_FILE['executedQty_creation']=="test": dct_FILE['executedQty_creation']=0
     #############################################################################################################
     #TESTS###############################################################################################
@@ -599,9 +618,12 @@ for filename in os.listdir(dir_TRADES):
                                 sell_stats(current_order, order_level_dictToBeFilled)
                             save_obj(dct_FILE, dct_FILE.get("filename"))
                         else:
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId']),debugapp_DebugLevel="DEBUG")
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
                     else:
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Order empty:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+						if current_order['msg'] is not None:
+							debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Error:"+str(current_order['code'])+":"+current_order['msg'],debugapp_DebugLevel="WARNING")
+						else:
+							debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Order empty:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
                     time.sleep(1)
 
         if dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED' or (float(dct_FILE['executedQty_creation'])<float(dct_FILE['executedQty_vendu'])+float(dct_FILE['executedQty_creation'])/200 and dct_FILE['executedQty_creation']<>0):
@@ -639,14 +661,14 @@ for filename in os.listdir(dir_TRADES):
 
 for filename in os.listdir(dir_SIGNALS):
     dct_FILE = {}
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_SIGNALS+filename)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_SIGNALS+filename, debugapp_logger=logger)
     b_trade_to_order(dir_SIGNALS+filename)
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
 
 if processed_order==0:
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Aucun traitement",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Aucun traitement",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 #    bot.sendMessage(chat_id=my_telegram_id, text="Aucun traitement")
-debugapp(str(sys._getframe().f_code.co_name)+"|"+"end script",debugapp_DebugLevel="DEBUG")
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"end script",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 sys.exit()
 #############################################################################################################
 #END SCRIPT##################################################################################################
