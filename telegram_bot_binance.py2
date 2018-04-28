@@ -17,6 +17,7 @@ import json
 
 load_params = ConfigParser.ConfigParser()
 load_params.read("binance_api.ini")
+json_stats="sell_stats.json"
 
 cwd = os.getcwd()
 api_path=cwd+"/"
@@ -34,7 +35,7 @@ def float0f(float8f_value):
     return format(float(float8f_value), '.0f')
 
 def stats():
-    sell_stats_file=cwd+"/"+"sell_stats.json"
+    sell_stats_file=cwd+"/"+json_stats
     stats_str=""
     with open(sell_stats_file) as json_data:
         dct_sell_stats = json.load(json_data)
@@ -107,7 +108,7 @@ def echo(bot, update):
         text_file.close()
         update.message.reply_text("Pause until: "+str(f_time))
     elif text_sent=="stats":
-        sell_stats_file=cwd+"/"+"sell_stats.json"
+        sell_stats_file=cwd+"/"+json_stats
         if not os.path.isfile(sell_stats_file):
             update.message.reply_text("Stats empty")
         else:
@@ -116,7 +117,7 @@ def echo(bot, update):
         print "status"
         update.message.reply_text(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
         for filename in os.listdir(api_path+"trades/"):
-            if not ".json" in filename:
+            if ".json" in filename:
                 print(api_path+"trades/"+filename)
                 dct_FILE=load_obj(api_path+"trades/"+filename)
                 update.message.reply_text(dct_FILE.get("symbol")+":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level'])
@@ -229,10 +230,13 @@ def echo(bot, update):
     print "END response"
     
 def load_obj(name ):
-    with open(name, 'rb') as f:
-        print "Ouvre l objet depuis: "+name
-        logger.debug("Ouvre l objet depuis: "+name)
-        return pickle.load(f)
+#    with open(name, 'rb') as f:
+#        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Ouvre l objet depuis: "+name,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+#        return pickle.load(f)
+    with open(name) as json_data:
+        dct_load_obj = json.load(json_data)
+        json_data.close()
+        return dct_load_obj
 
 def error(bot, update, error):
     """Log Errors caused by Updates."""
