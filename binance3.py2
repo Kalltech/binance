@@ -247,10 +247,10 @@ def b_trade_to_order(b_trade_to_order_file):
     #Prend le trade puis fait un achat s'il est dans les seuils
     #Calc if price is on seuils
     load_trade(b_trade_to_order_file)
-    dct_FILE['LOT_SIZE_stepSize'] = float(get_stepSize(dct_FILE.get("symbol")))
-    Buy_price_signal_down= dct_FILE['BUY']-dct_FILE['BUY']/100*percentage_delta_buy
-    Buy_price_signal_up= dct_FILE['BUY']+dct_FILE['BUY']/100*percentage_delta_buy
     if binance_prices.get(dct_FILE['symbol']) is not None:
+        dct_FILE['LOT_SIZE_stepSize'] = float(get_stepSize(dct_FILE.get("symbol")))
+        Buy_price_signal_down= dct_FILE['BUY']-dct_FILE['BUY']/100*percentage_delta_buy
+        Buy_price_signal_up= dct_FILE['BUY']+dct_FILE['BUY']/100*percentage_delta_buy
         dct_FILE['binance_price'] = float(binance_prices.get(dct_FILE['symbol']))
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix actuel du "+dct_FILE['symbol']+" est "+float8f(dct_FILE['binance_price']), debugapp_logger=logger)
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix demande du "+dct_FILE['symbol']+" est "+float8f(dct_FILE['BUY']), debugapp_logger=logger)
@@ -276,11 +276,11 @@ def b_trade_to_order(b_trade_to_order_file):
                 except:
                     pass
             else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order not OK:\n"+str(b_TRADE),debugapp_Telegram=1, debugapp_logger=logger)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order not OK:\n"+str(b_trade_to_order_file),debugapp_Telegram=1, debugapp_logger=logger)
         else:
           debugapp(str(sys._getframe().f_code.co_name)+"|"+":prix PAS entre les seuils d achat:"+float8f(dct_FILE['binance_price']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     else:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Inconnu: "+dct_FILE['symbol']+str(b_TRADE),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Inconnu: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
             try:
                 os.rename(b_trade_to_order_file, b_trade_to_order_file.replace("/signals","/problems"))
             except: 
