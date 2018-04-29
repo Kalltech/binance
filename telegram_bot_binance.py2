@@ -90,7 +90,7 @@ def start(bot, update):
 
 def help(bot, update):
     """Send a message when the command /help is issued."""
-    update.message.reply_text('Help!\nPause:5 Met en pause pour 5min\nStatus Donne le status de chaque trade\nStats Donne les stats de vente\nSignal... Met en fil d attente la position selon les valeurs\n')
+    update.message.reply_text('Help!\nPause:5 Met en pause pour 5min\nStatus Donne le status de chaque trade\nStats Donne les stats de vente\nKill:XLMBTC Stop la surveillance de la paire\nSignal... Met en fil d attente la position selon les valeurs\n')
 
 def echo(bot, update):
     """Echo the user message."""
@@ -113,9 +113,17 @@ def echo(bot, update):
             update.message.reply_text("Stats empty")
         else:
             update.message.reply_text(stats())
+    elif "kill:" in text_sent:
+        print text_sent
+        for filename in os.listdir(api_path+"trades/"):
+            if ".json" in filename:
+                a_kill=text_sent.split("kill:")
+                if a_kill[1] in filename.lower():
+                    os.rename(api_path+"trades/"+filename, api_path+"old/"+filename)
+                    update.message.reply_text("Kill ok:"+filename)
     elif text_sent=="status":
         print "status"
-        update.message.reply_text(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
+#        update.message.reply_text(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
         for filename in os.listdir(api_path+"trades/"):
             if ".json" in filename:
                 print(api_path+"trades/"+filename)
