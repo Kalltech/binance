@@ -470,12 +470,12 @@ def targetTX(targetTX_level):
                         debugapp(str(sys._getframe().f_code.co_name)+"|"+"place le SL aussi")
                         current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty_SL"], dct_which_level_what_do["SL_Price"],"STOP-LIMIT", "order_"+targetTX_level+"_SL")
                         if current_order.get("orderId") is not None:
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+"SL id:"+str(current_order.get("orderId")),debugapp_Telegram=1)
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+"_SL id:"+str(current_order.get("orderId")),debugapp_Telegram=1)
                             dct_FILE["order_"+targetTX_level+"_SL"]=current_order
                             dct_FILE["last_order_level"]="order_"+targetTX_level+"_SL"
                             save_obj(dct_FILE, dct_FILE.get("filename"))
                         else:
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+"SL "+targetTX_level+":id empty:"+str(current_order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL")
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+"_SL "+targetTX_level+":id empty:"+str(current_order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL")
                 else:
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Attend Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
                     count = count + 1
