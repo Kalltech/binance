@@ -22,4 +22,4 @@ Then modify crontab with your scripts path and run python telegram_bot_binance.p
 From your telegram send signal XLMBTC etc... or status to the bot
 
 - Does not require an api key for public methods
-- Compatible with Python 2.7-3.6
+- Some compatible with Python 2.7, some not...
