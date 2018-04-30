@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 ############################################
+#pip3 install typing
+#pip3 install telethon
+#pip3 install configparser
 #Create an app in https://my.telegram.org/apps and put info in INI
 
 from telethon import TelegramClient, events
