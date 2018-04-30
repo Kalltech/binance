@@ -10,10 +10,12 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import logging
 import os
 import datetime
+import time
 import pickle
 import string
 import ConfigParser
 import json
+import glob
 
 load_params = ConfigParser.ConfigParser()
 load_params.read("binance_api.ini")
@@ -70,6 +72,9 @@ logger = logging.getLogger(__name__)
 
 # Define a few command handlers. These usually take the two arguments bot and
 # update. Error handlers also receive the raised TelegramError object in error.
+
+def float8f(float8f_value):
+    return format(float(float8f_value), '.8f')
 
 def ConfigSectionMap(section, Config):
   dict1 = {}
@@ -129,10 +134,14 @@ def echo(bot, update):
                 print(api_path+"trades/"+filename)
                 dct_FILE=load_obj(api_path+"trades/"+filename)
                 update.message.reply_text(dct_FILE.get("symbol")+":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level'])
-    elif "signal" in text_sent:
+        list_of_files = glob.glob(api_path+"logs/*") # * means all if need specific format then *.csv
+        latest_file = max(list_of_files, key=os.path.getctime)
+        update.message.reply_text("Dernier log:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file))))
+
+    elif "btc" in text_sent:
         print "signal"
 #        update.message.reply_text(update.message.text)
-        update.message.reply_text(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
+#        update.message.reply_text(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
         signal_dict = {}
         signal_dict['C'] = 'test'
         signal_dict['AC'] = 'test'
@@ -155,48 +164,52 @@ def echo(bot, update):
                     a_symbol=signal_dict['C']
                     a_symbol=a_symbol.split('(', 1)[0]
                     signal_dict['C'] = a_symbol
+                if signal_dict['C'].find("-"):
+                    a_symbol=signal_dict['C']
+                    a_symbol=a_symbol.split('-', 1)[0]
+                    signal_dict['C'] = a_symbol
             if "usd" in line:
                 a_usd=line.split("usd:")
                 signal_dict['USD'] = a_usd[1]
-            if "buy:" in line:
-                a_buy=line.split("buy:")
-                signal_dict['AC'] = a_buy[1]
+#            if "buy:" in line:
+#                a_buy=line.split("buy:")
+#                signal_dict['AC'] = str(float(a_buy[1]))
             if "sell:" in line:
                 a_sell=line.split("sell:")
                 a_sell=a_sell[1].split("-")
-                signal_dict['T1'] = a_sell[0]
-                signal_dict['T2'] = a_sell[1]
-                signal_dict['T3'] = a_sell[2]
+                signal_dict['T1'] = float8f(float(a_sell[0]))
+                signal_dict['T2'] = float8f(float(a_sell[1]))
+                signal_dict['T3'] = float8f(float(a_sell[2]))
             if "stop:" in line:
                 a_stop=line.split("stop:")
-                signal_dict['SL'] = a_stop[1]
+                signal_dict['SL'] = float8f(float(a_stop[1]))
 #Signal Profits
             if "buy:" in line:
                 a_buy=line
                 a_buy=a_buy.split("buy:")
                 a_buy=a_buy[1]
                 a_buy=a_buy.split('-', 1)[0]
-                signal_dict['AC'] = a_buy
+                signal_dict['AC'] = float8f(float(a_buy))
             if "buyzone:" in line:
                 a_buy=line
                 a_buy=a_buy.split("buyzone:")
                 a_buy=a_buy[1].split('-', 1)[0]
-                signal_dict['AC'] = a_buy
+                signal_dict['AC'] = float8f(float(a_buy))
             if "target1:" in line:
                 a_t1=line
                 a_t1=a_t1.split("target1:")
                 a_t1=a_t1[1].split('(', 1)[0]
-                signal_dict['T1'] = a_t1
+                signal_dict['T1'] = float8f(float(a_t1))
             if "target2:" in line:
                 a_t2=line
                 a_t2=a_t2.split("target2:")
                 a_t2=a_t2[1].split('(', 1)[0]
-                signal_dict['T2'] = a_t2
+                signal_dict['T2'] = float8f(float(a_t2))
             if "target3:" in line:
                 a_t3=line
                 a_t3=a_t3.split("target3:")
                 a_t3=a_t3[1].split('(', 1)[0]
-                signal_dict['T3'] = a_t3
+                signal_dict['T3'] = float8f(float(a_t3))
             if "stoploss:" in line:
                 a_stop=line
                 a_stop=a_stop.split("stoploss:")
@@ -204,7 +217,7 @@ def echo(bot, update):
                 if signal_dict['SL'].find("("):
                     a_sl=signal_dict['SL']
                     a_sl=a_sl.split('(', 1)[0]
-                    signal_dict['SL'] = a_sl
+                    signal_dict['SL'] = float8f(float(a_sl))
             if "stoplimit:" in line:
                 a_sl=line
                 a_sl=a_sl.split("stoplimit:")
@@ -212,9 +225,10 @@ def echo(bot, update):
                 if signal_dict['SL'].find("("):
                     a_sl=signal_dict['SL']
                     a_sl=a_sl.split('(', 1)[0]
-                    signal_dict['SL'] = a_sl
+                    signal_dict['SL'] = float8f(float(a_sl))
         key_not_find=0
         str_file="[TRADE]\n"
+        if signal_dict['USD']=="test": signal_dict['USD'] = ConfigSectionMap("BINANCE_API", load_params)['usd_to_bet']
         for key, value in sorted(signal_dict.items()):
             if value == 'test':
                 update.message.reply_text("Valeur non trouvee:"+key)
