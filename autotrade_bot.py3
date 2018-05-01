@@ -34,6 +34,7 @@ print(str(api_id)+"/"+api_hash+"/"+bot_name+"/"+telegram_chat)
 client = TelegramClient('session_telethon', api_id, api_hash, update_workers=1, spawn_read_thread=False)
 client.start()
 print("Starting autotrade")
+if auto_trade=="1": print("autotrade:on")
 @client.on(events.NewMessage(incoming=True,chats=telegram_chat))
 def my_event_handler(event):
     print(event.raw_text)
@@ -41,7 +42,7 @@ def my_event_handler(event):
         if "buy:" in event.raw_text.lower():
             print("Envoi\n"+event.raw_text)
             client.send_message(bot_name, event.raw_text)
-        else:
-            print("auto_trade disabled\n"+event.raw_text)
-            client.send_message(bot_name, "auto_trade disabled")
+    else:
+        print("auto_trade disabled\n"+event.raw_text)
+        client.send_message(bot_name, "auto_trade disabled")
 client.idle()
