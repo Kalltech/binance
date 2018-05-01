@@ -128,20 +128,19 @@ def echo(bot, update):
                     update.message.reply_text("Kill ok:"+filename)
     elif text_sent=="status":
         print "status"
-#        update.message.reply_text(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
+        status_dict = {}
         for filename in os.listdir(api_path+"trades/"):
             if ".json" in filename:
                 print(api_path+"trades/"+filename)
                 dct_FILE=load_obj(api_path+"trades/"+filename)
-                update.message.reply_text(dct_FILE.get("symbol")+":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level'])
-        list_of_files = glob.glob(api_path+"logs/*") # * means all if need specific format then *.csv
+                status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level']
+        for symbols in sorted(status_dict):
+            update.message.reply_text(symbols+status_dict[symbols])
+        list_of_files = glob.glob(api_path+"logs/*")
         latest_file = max(list_of_files, key=os.path.getctime)
         update.message.reply_text("Dernier log:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file))))
-
     elif "btc" in text_sent:
         print "signal"
-#        update.message.reply_text(update.message.text)
-#        update.message.reply_text(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
         signal_dict = {}
         signal_dict['C'] = 'test'
         signal_dict['AC'] = 'test'
@@ -156,6 +155,7 @@ def echo(bot, update):
         for line in lines:
             line=line.replace(" ", "")
             line=line.replace("$", "")
+            line=line.replace("coin:", "")
 #            print(line)
 #Crypto Signalist Pro
             if "btc" in line:
@@ -193,6 +193,11 @@ def echo(bot, update):
             if "buyzone:" in line:
                 a_buy=line
                 a_buy=a_buy.split("buyzone:")
+                a_buy=a_buy[1].split('-', 1)[0]
+                signal_dict['AC'] = float8f(float(a_buy))
+            if "entryzone:" in line:
+                a_buy=line
+                a_buy=a_buy.split("entryzone:")
                 a_buy=a_buy[1].split('-', 1)[0]
                 signal_dict['AC'] = float8f(float(a_buy))
             if "target1:" in line:
