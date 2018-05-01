@@ -27,6 +27,7 @@ api_id = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_app_api_id']
 api_hash = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_app_api_hash']
 bot_name= ConfigSectionMap("BINANCE_API", load_params)['my_telegram_bot_name']
 telegram_chat= ConfigSectionMap("BINANCE_API", load_params)['telegram_chat']
+auto_trade= ConfigSectionMap("BINANCE_API", load_params)['auto_trade']
 
 print(str(api_id)+"/"+api_hash+"/"+bot_name+"/"+telegram_chat)
 
@@ -36,7 +37,11 @@ print("Starting autotrade")
 @client.on(events.NewMessage(incoming=True,chats=telegram_chat))
 def my_event_handler(event):
     print(event.raw_text)
-    if "buy:" in event.raw_text.lower():
-        print("Envoi\n"+event.raw_text)
-        client.send_message(bot_name, event.raw_text)
+    if auto_trade==1:
+        if "buy:" in event.raw_text.lower():
+            print("Envoi\n"+event.raw_text)
+            client.send_message(bot_name, event.raw_text)
+        else:
+            print("auto_trade disabled\n"+event.raw_text)
+            client.send_message(bot_name, "auto_trade disabled")
 client.idle()
