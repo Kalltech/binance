@@ -37,7 +37,7 @@ print("Starting autotrade")
 @client.on(events.NewMessage(incoming=True,chats=telegram_chat))
 def my_event_handler(event):
     print(event.raw_text)
-    if auto_trade==1:
+    if auto_trade=="1":
         if "buy:" in event.raw_text.lower():
             print("Envoi\n"+event.raw_text)
             client.send_message(bot_name, event.raw_text)
