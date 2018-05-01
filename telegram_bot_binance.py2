@@ -33,8 +33,8 @@ def findkeys(d, findkeys_str):
             return 1
     return 0
     
-def float0f(float8f_value):
-    return format(float(float8f_value), '.0f')
+def float0f(float0f_value):
+    return format(float(float0f_value), '.0f')
 
 def stats():
     sell_stats_file=cwd+"/"+json_stats
@@ -263,9 +263,6 @@ def load_obj(name ):
 def error(bot, update, error):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, error)
-
-def float8f(float8f_value):
-    return format(float(float8f_value), '.8f')
 
 def main():
     """Start the bot."""
