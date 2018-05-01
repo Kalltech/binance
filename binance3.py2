@@ -194,8 +194,11 @@ def load_trade(load_trade_file):
     dct_FILE['symbol'] = ConfigSectionMap("TRADE", parse_Trade)['c']
     dct_FILE['BUY'] = float(ConfigSectionMap("TRADE", parse_Trade)['ac'])
     dct_FILE['T1'] = float(ConfigSectionMap("TRADE", parse_Trade)['t1'])
+    dct_FILE['T1'] = dct_FILE['T1']-dct_FILE['T1']/100*float(percentage_under_tx)
     dct_FILE['T2'] = float(ConfigSectionMap("TRADE", parse_Trade)['t2'])
+    dct_FILE['T2'] = dct_FILE['T2']-dct_FILE['T2']/100*float(percentage_under_tx)
     dct_FILE['T3'] = float(ConfigSectionMap("TRADE", parse_Trade)['t3'])
+    dct_FILE['T3'] = dct_FILE['T3']-dct_FILE['T3']/100*float(percentage_under_tx)
     dct_FILE['SL'] = float(ConfigSectionMap("TRADE", parse_Trade)['sl'])
     dct_FILE['USD'] = float(ConfigSectionMap("TRADE", parse_Trade)['usd'])
     dct_FILE['filename']=load_trade_file
@@ -337,10 +340,12 @@ def which_level_what_do(which_level_what_do_price):
     dct_which_level_what_do['vente_Qty'] = 'test'
     dct_which_level_what_do['vente_Qty_SL'] = 'test'
     dct_which_level_what_do['SL_Price'] = 'test'
+    which_level_what_do_price=which_level_what_do_price-which_level_what_do_price/100*percentage_limit_order_before_tx
     
     #si t3 vend la mise executedQty_creation-executedQty_vendu
     if dct_FILE['T3'] < which_level_what_do_price:
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']-dct_FILE['executedQty_vendu']
+        dct_which_level_what_do['Current_TX']=dct_FILE['T3']
     #si t2 mais pas t3 ni t1 vend 75% de la mise et met un SL de 25% de la mise a T1
     if dct_FILE['T2'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and not findkeys(dct_FILE, "order_T1"):
 #    if dct_FILE['T2'] < which_level_what_do_price and (not dct_FILE['order_T3'] or not dct_FILE['order_T3_FILLED']) and (not dct_FILE['order_T1'] or not dct_FILE['order_T1_FILLED']):
@@ -349,6 +354,7 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation'] * sell_part_t
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation'] * sell_part_sl
         dct_which_level_what_do['SL_Price']=dct_FILE['T1']
+        dct_which_level_what_do['Current_TX']=dct_FILE['T2']
     #si t2 mais pas t3 mais t1 vend 25% de la mise et met un SL de 25% de la mise a T1
     elif dct_FILE['T2'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and findkeys(dct_FILE, "order_T"):
 #    if dct_FILE['T2'] < which_level_what_do_price and (not dct_FILE['order_T3'] or not dct_FILE['order_T3_FILLED']) and (dct_FILE['order_T1'] or dct_FILE['order_T1_FILLED']):
@@ -357,6 +363,7 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*sell_part_t2
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
         dct_which_level_what_do['SL_Price']=dct_FILE['T1']
+        dct_which_level_what_do['Current_TX']=dct_FILE['T2']
     #si t1 mais pas t3 ni t2 vend 50% de la mise et met un SL de ce qu il reste a Achat
     elif dct_FILE['T1'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and not findkeys(dct_FILE, "order_T2"):
 #    if dct_FILE['T1'] < which_level_what_do_price and dct_FILE['last_order_level']=="order_SL":
@@ -366,6 +373,7 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*sell_part_t1
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
         dct_which_level_what_do['SL_Price']=float(dct_FILE['order_BUY_FILLED']['price'])
+        dct_which_level_what_do['Current_TX']=dct_FILE['T1']
     return dct_which_level_what_do
 
 def get_stepSize(get_stepSize_coin):
@@ -455,7 +463,10 @@ def targetTX(targetTX_level):
                     #lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs")
                     dct_which_level_what_do=which_level_what_do(binance_price(dct_FILE.get("symbol")))
-                    current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], binance_price(dct_FILE.get("symbol")),"SELL", "order_"+targetTX_level)
+                    if percentage_limit_order_before_tx<>0:
+                        current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], dct_which_level_what_do['Current_TX'],"SELL", "order_"+targetTX_level)
+                    else:
+                        current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], binance_price(dct_FILE.get("symbol")),"SELL", "order_"+targetTX_level)
 #                    current_order=binance_status(dct_FILE.get("symbol"), orderId=43802508, binance_status_test=1, binance_status_orderId_type="NEW_SELL")
                     if current_order.get("orderId") is not None:
                         debugapp(str(sys._getframe().f_code.co_name)+"|"+"SELL "+dct_FILE['symbol']+targetTX_level+" id:"+str(current_order.get("orderId")),debugapp_Telegram=1)
@@ -493,6 +504,7 @@ def targetTX(targetTX_level):
 #############################################################################################################
 
 os.system('clear')
+begin_time=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
 ###load params
 load_params = ConfigParser.ConfigParser()
 load_params.read("binance_api.ini")
@@ -500,6 +512,8 @@ load_params.read("binance_api.ini")
 percentage_delta_buy = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_delta_buy'])
 percentage_control_balance = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_control_balance'])
 percentage_sl_upside = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_sl_upside'])
+percentage_under_tx = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_under_tx'])
+percentage_limit_order_before_tx = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_limit_order_before_tx'])
 sell_part_t1 = float(ConfigSectionMap("BINANCE_API", load_params)['sell_part_t1'])
 sell_part_t2 = float(ConfigSectionMap("BINANCE_API", load_params)['sell_part_t2'])
 sell_part_t3 = float(ConfigSectionMap("BINANCE_API", load_params)['sell_part_t3'])
@@ -550,6 +564,7 @@ binance.set(binance_key, binance_secret)
 binance_prices=binance.prices()
 
 #print binance_prices
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////begin script:"+begin_time, debugapp_logger=logger)
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Price:"+"BTCUSDT:"+ str(binance_prices.get("BTCUSDT")),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 debugapp(str(sys._getframe().f_code.co_name)+"|"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), debugapp_logger=logger)
@@ -663,11 +678,11 @@ for filename in os.listdir(dir_TRADES):
             time.sleep(1)
             
         if 'order_BUY_FILLED' in dct_FILE.keys():
-            if dct_FILE['T3'] < binance_price(dct_FILE.get("symbol")) and not findkeys(dct_FILE, "order_T3"):
+            if dct_FILE['T3'] < binance_price(dct_FILE.get("symbol"))-binance_price(dct_FILE.get("symbol"))/100*percentage_limit_order_before_tx and not findkeys(dct_FILE, "order_T3"):
                 targetTX('T3')
-            elif dct_FILE['T2'] < binance_price(dct_FILE.get("symbol")) and not findkeys(dct_FILE, "order_T2") and not findkeys(dct_FILE, "order_T3"):
+            elif dct_FILE['T2'] < binance_price(dct_FILE.get("symbol"))-binance_price(dct_FILE.get("symbol"))/100*percentage_limit_order_before_tx and not findkeys(dct_FILE, "order_T2") and not findkeys(dct_FILE, "order_T3"):
                 targetTX('T2')
-            elif dct_FILE['T1'] < binance_price(dct_FILE.get("symbol")) and not findkeys(dct_FILE, "order_T"):
+            elif dct_FILE['T1'] < binance_price(dct_FILE.get("symbol"))-binance_price(dct_FILE.get("symbol"))/100*percentage_limit_order_before_tx and not findkeys(dct_FILE, "order_T"):
                 targetTX('T1')
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************")
     elif not ".json" in filename and not ".log" in filename:
@@ -686,7 +701,7 @@ for filename in os.listdir(dir_SIGNALS):
 if processed_order==0:
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Aucun traitement",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 #    bot.sendMessage(chat_id=my_telegram_id, text="Aucun traitement")
-debugapp(str(sys._getframe().f_code.co_name)+"|"+"end script",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////end script:"+begin_time+"\n",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 sys.exit()
 #############################################################################################################
 #END SCRIPT##################################################################################################
