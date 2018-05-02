@@ -11,6 +11,7 @@ import logging
 import datetime
 import telegram
 import json
+import shutil
 
 #############################################################################################################
 #FUNCTIONS###############################################################################################
@@ -76,34 +77,37 @@ def debugapp(debugapp_str, **kwargs):
         if "signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/signals","/problems")+".laststate")
         #deplace le fichier de trade dans problems
         try:
-            os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/problems"))
+            shutil.move(dct_FILE.get("filename"), dir_PROBLEMS)
+            shutil.move(dct_FILE.get("filename")+".log", dir_PROBLEMS)
+#            os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/problems"))
         except: 
             pass
-        try:
-            os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/signals","/problems"))
-        except: 
-            pass
+#        try:
+#            os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/signals","/problems"))
+#        except: 
+#            pass
         #deplace le fichier de log dans problems
         try:
-            os.rename(log_file, log_file.replace("/logs","/problems"))
+            shutil.move(log_file, dir_PROBLEMS)
+#            os.rename(log_file, log_file.replace("/logs","/problems"))
         except: 
             pass
         #Sauve dct_FILE au format txt dans problems
         
-        if "trades" in  dct_FILE['filename']:
-            try:
-                text_file = open(dct_FILE['symbol']+dct_FILE['filename'].replace("/trades","/problems")+".txt", "w")
-                text_file.write(str(dct_FILE))
-                text_file.close()
-            except: 
-                pass
-        if "signals" in  dct_FILE['filename']:
-            try:
-                text_file = open(dct_FILE['symbol']+dct_FILE['filename'].replace("/signals","/problems")+".txt", "w")
-                text_file.write(str(dct_FILE))
-                text_file.close()
-            except: 
-                pass
+#        if "trades" in  dct_FILE['filename']:
+#            try:
+#                text_file = open(dct_FILE['symbol']+dct_FILE['filename'].replace("/trades","/problems")+".txt", "w")
+#                text_file.write(str(dct_FILE))
+#                text_file.close()
+#            except: 
+#                pass
+#        if "signals" in  dct_FILE['filename']:
+#            try:
+#                text_file = open(dct_FILE['symbol']+dct_FILE['filename'].replace("/signals","/problems")+".txt", "w")
+#                text_file.write(str(dct_FILE))
+#                text_file.close()
+#            except: 
+#                pass
     if debugapp_exit:
         sys.exit()
 
@@ -162,9 +166,10 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
             dct_FILE['last_orderId']=order.get("orderId")
     else:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+":orderId empty_"+str(order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
-        save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
+        if "trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
+        if "signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/signals","/problems")+".laststate")
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
-    time.sleep(1)
+#    time.sleep(1)
     return order
 
 def check_pause():
@@ -275,7 +280,8 @@ def b_trade_to_order(b_trade_to_order_file):
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK: deplace le fichier vers: "+dct_FILE['filename'].replace("/trades","/old"),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
                 save_obj(dct_FILE, dct_FILE['filename'])
                 try:
-                    os.rename(b_trade_to_order_file, b_trade_to_order_file.replace("/signals","/old"))  
+#                    os.rename(b_trade_to_order_file, b_trade_to_order_file.replace("/signals","/old")) 
+                    shutil.move(b_trade_to_order_file, dir_OLD)
                 except:
                     pass
             else:
@@ -285,14 +291,15 @@ def b_trade_to_order(b_trade_to_order_file):
     else:
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Inconnu: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
             try:
-                os.rename(b_trade_to_order_file, b_trade_to_order_file.replace("/signals","/problems"))
+                shutil.move(b_trade_to_order_file, dir_PROBLEMS)
+#                os.rename(b_trade_to_order_file, b_trade_to_order_file.replace("/signals","/problems"))
             except: 
                 pass
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def save_obj(obj, name ):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Sauve l objet vers: "+name,debugapp_DebugLevel="DEBUG")
-    if not ".json" in name:
+    if not ".json" in name and not ".laststate" in name:
         with open(name, 'wb') as f:
 #        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
             pass
@@ -340,7 +347,9 @@ def which_level_what_do(which_level_what_do_price):
     dct_which_level_what_do['vente_Qty'] = 'test'
     dct_which_level_what_do['vente_Qty_SL'] = 'test'
     dct_which_level_what_do['SL_Price'] = 'test'
+    print float8f(which_level_what_do_price)
     which_level_what_do_price=which_level_what_do_price-which_level_what_do_price/100*percentage_limit_order_before_tx
+    print float8f(which_level_what_do_price)
     
     #si t3 vend la mise executedQty_creation-executedQty_vendu
     if dct_FILE['T3'] < which_level_what_do_price:
@@ -378,9 +387,7 @@ def which_level_what_do(which_level_what_do_price):
 
 def get_stepSize(get_stepSize_coin):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    r=requests.get("https://www.binance.com/api/v1/exchangeInfo")
-    data=r.json()
-    symbols=data.get("symbols")
+    symbols=get_stepSize_request.get("symbols")
     coin=filter(lambda symbol: symbol['symbol'] == get_stepSize_coin, symbols)
     a_coin=coin[0]
     filters=a_coin.get("filters")
@@ -416,35 +423,90 @@ def binance_status(binance_status_symbol,  **kwargs):
         return binance_status_dict
     else:
         debugapp("Envoi du status de binance",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-        current_order=binance.orderStatus(binance_status_symbol, orderId=binance_status_orderId)
-        if current_order.get("orderId") is not None:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(current_order.get("orderId")),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+        binance_status_order=binance.orderStatus(binance_status_symbol, orderId=binance_status_orderId)
+        if binance_status_order.get("orderId") is not None:
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(binance_status_order.get("orderId")),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
             # Open a file for writing
-            out_file = open(dir_TEMP+str(current_order.get("orderId")),"w")
+            out_file = open(dir_TEMP+str(binance_status_order.get("orderId")),"w")
             # Save the dictionary into this file
             # (the 'indent=4' is optional, but makes it more readable)
-            json.dump(current_order,out_file, indent=4)                                    
+            json.dump(binance_status_order,out_file, indent=4)                                    
             # Close the file
             out_file.close()
-        return current_order
+        return binance_status_order
+
+def ToBeFilled():
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    for order_level_dictToBeFilled in dct_FILE['dictToBeFilled']:
+        allOrders=None
+        current_allOrders=None
+        order_filtred=None
+        if dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]==1:
+            allOrders=binance.allOrders(dct_FILE.get("symbol"))
+#                    allOrders=binance.allOrders("LOOOMBTC")
+#                    print order[0]['status']
+#                    if order[0]['status']=="FILLED": print "FILLED!!!"
+#                    debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("symbol")+"_Order_dictToBeFilled:"+str(dct_FILE[order_level_dictToBeFilled]['orderId']),debugapp_DebugLevel="DEBUG")
+#                    current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE[order_level_dictToBeFilled]['orderId'])
+#                    if current_order.get("orderId") is not None:
+#                    if allOrders is not None:
+            if allOrders :
+#                        print type(allOrders)
+                if isinstance(allOrders, (list,)):
+#                        symbols=get_stepSize_request.get("symbols")
+                    order_filtred=filter(lambda allOrders: allOrders['orderId'] == dct_FILE[order_level_dictToBeFilled]['orderId'], allOrders)
+                    current_allOrders=order_filtred[0]
+                    if current_allOrders['status']=="FILLED":
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade FILLED of order_ "+str(current_allOrders.get("orderId")),debugapp_DebugLevel="DEBUG")
+                        dct_FILE[order_level_dictToBeFilled+"_FILLED"]=current_allOrders
+                        dct_FILE['last_order_level']=order_level_dictToBeFilled+"_FILLED"
+                        dct_FILE['last_executedQty']=float(current_allOrders.get("executedQty"))
+                        if dct_FILE['executedQty_creation']==0:
+                            dct_FILE['executedQty_creation']=float(current_allOrders.get("executedQty"))
+                        dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
+                        if current_allOrders['side']=="SELL":
+                            dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+float(current_allOrders['executedQty'])
+                            prix_de_vente=float(current_allOrders['price'])
+                            prix_achat=float(dct_FILE['order_BUY_FILLED']['price'])
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Diff BTC: "+str(prix_de_vente-prix_achat))
+                            gain_BTC=(prix_de_vente-prix_achat)*float(current_allOrders['executedQty'])
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain BTC: "+str(gain_BTC))
+                            BTCUSDT=float(binance_prices.get("BTCUSDT"))
+                            gain_USD=gain_BTC*BTCUSDT
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente au level:"+order_level_dictToBeFilled,debugapp_Telegram=1)
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente de "+str(current_allOrders['executedQty'])+" de "+dct_FILE.get("symbol")+"\nGain $: "+str(gain_USD),debugapp_Telegram=1)
+                            sell_stats(current_allOrders, order_level_dictToBeFilled)
+                        save_obj(dct_FILE, dct_FILE.get("filename"))
+                    elif current_allOrders['status']=="CANCELED":
+                        dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
+                        save_obj(dct_FILE, dct_FILE.get("filename"))
+                    else:
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+                else:
+                    debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Error:"+str(allOrders['code'])+":"+allOrders['msg'],debugapp_DebugLevel="WARNING")
+            else:
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Orders empty:"+dct_FILE.get("symbol"),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+#    time.sleep(1)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def findkeys(d, findkeys_str):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     for key in d.keys():
         if findkeys_str in key:
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
             return 1
-    return 0
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    return 0
     
 def targetTX(targetTX_level):
     #Annule l Order SL
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au "+targetTX_level+"_"+float8f(dct_FILE[targetTX_level])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l Order SL",debugapp_DebugLevel="DEBUG")
-    current_order=binance.cancel(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
-#    current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
-    if current_order.get("orderId") is not None:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order.get("orderId")),debugapp_Telegram=1)
-        dct_FILE["order_SL_CANCELED_ASKED"]=current_order
+    current_order_cancel=binance.cancel(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
+#    current_order_cancel=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
+    if current_order_cancel.get("orderId") is not None:
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("orderId")),debugapp_Telegram=1)
+        dct_FILE["order_SL_CANCELED_ASKED"]=current_order_cancel
         count=0
         processed_order=1
         if targetTX_level=="T3":
@@ -455,50 +517,57 @@ def targetTX(targetTX_level):
             debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+"s apres debut Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
             #Check si Order bien CANCELED
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Check si Order bien CANCELED")
-            current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
-#            current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
-            if current_order.get("orderId") is not None:
-                if current_order.get("status")=="CANCELED":
-                    dct_FILE[dct_FILE.get("last_order_level")+"_CANCELED"]=current_order
+            current_order_status=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
+#            current_order_status=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
+            if current_order_status.get("orderId") is not None:
+                if current_order_status.get("status")=="CANCELED":
+                    dct_FILE[dct_FILE.get("last_order_level")+"_CANCELED"]=current_order_status
                     #lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs")
                     dct_which_level_what_do=which_level_what_do(binance_price(dct_FILE.get("symbol")))
                     if percentage_limit_order_before_tx<>0:
-                        current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], dct_which_level_what_do['Current_TX'],"SELL", "order_"+targetTX_level)
+                        current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], dct_which_level_what_do['Current_TX'],"SELL", "order_"+targetTX_level)
                     else:
-                        current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], binance_price(dct_FILE.get("symbol")),"SELL", "order_"+targetTX_level)
-#                    current_order=binance_status(dct_FILE.get("symbol"), orderId=43802508, binance_status_test=1, binance_status_orderId_type="NEW_SELL")
-                    if current_order.get("orderId") is not None:
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SELL "+dct_FILE['symbol']+targetTX_level+" id:"+str(current_order.get("orderId")),debugapp_Telegram=1)
-                        dct_FILE["order_"+targetTX_level]=current_order
+                        current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], binance_price(dct_FILE.get("symbol")),"SELL", "order_"+targetTX_level)
+#                    current_order_SELL=binance_status(dct_FILE.get("symbol"), orderId=43802508, binance_status_test=1, binance_status_orderId_type="NEW_SELL")
+                    if current_order_SELL.get("orderId") is not None:
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SELL "+dct_FILE['symbol']+targetTX_level+" id:"+str(current_order_SELL.get("orderId")),debugapp_Telegram=1)
+                        dct_FILE["order_"+targetTX_level]=current_order_SELL
                         dct_FILE["last_order_level"]="order_"+targetTX_level
                         save_obj(dct_FILE, dct_FILE.get("filename"))
                     if not targetTX_level=="T3":
                         #place le SL aussi
 #                        binance_balances=binance.balances()
 #                        dct_FILE["current_balance"] = binance_balances.get(dct_FILE["symbol"].replace("BTC", ""))
-                        time.sleep(1)
+#                        time.sleep(1)
                         debugapp(str(sys._getframe().f_code.co_name)+"|"+"place le SL aussi")
-                        current_order=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty_SL"], dct_which_level_what_do["SL_Price"],"STOP-LIMIT", "order_"+targetTX_level+"_SL")
-                        if current_order.get("orderId") is not None:
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+"_SL id:"+str(current_order.get("orderId")),debugapp_Telegram=1)
-                            dct_FILE["order_"+targetTX_level+"_SL"]=current_order
+                        current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty_SL"], dct_which_level_what_do["SL_Price"],"STOP-LIMIT", "order_"+targetTX_level+"_SL")
+                        if current_order_SELL.get("orderId") is not None:
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+"_SL id:"+str(current_order_SELL.get("orderId")),debugapp_Telegram=1)
+                            dct_FILE["order_"+targetTX_level+"_SL"]=current_order_SELL
                             dct_FILE["last_order_level"]="order_"+targetTX_level+"_SL"
                             save_obj(dct_FILE, dct_FILE.get("filename"))
                         else:
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+"_SL "+targetTX_level+":id empty:"+str(current_order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL")
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+"_SL "+targetTX_level+":id empty:"+str(current_order_SELL),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL")
                 else:
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Attend Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
                     count = count + 1
                     time.sleep(1)
             else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+str(dct_FILE.get("last_SL_orderId"))+":Status order empty:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+str(dct_FILE.get("last_SL_orderId"))+":Status order empty:"+str(current_order_status),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
         else:
             debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+ "s exit apres Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
     else:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+str(dct_FILE.get("last_SL_orderId"))+":Cancel order empty:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-    time.sleep(1)
-
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+str(dct_FILE.get("last_SL_orderId"))+":Cancel order empty:"+str(current_order_cancel),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+#    time.sleep(1)
+def setup_logger(logger_name, log_file):
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    log_setup = logging.getLogger(logger_name)
+    fileHandler = logging.FileHandler(log_file, mode='a')
+    fileHandler.setFormatter(formatter)
+    log_setup.addHandler(fileHandler) 
+    log_setup.setLevel(level)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 #############################################################################################################
 #END FUNCTIONS###############################################################################################
 #############################################################################################################
@@ -533,10 +602,14 @@ if not os.path.exists(cwd+"/temp"):
     os.makedirs(cwd+"/temp")
 if not os.path.exists(cwd+"/models"):
     os.makedirs(cwd+"/models")
+if not os.path.exists(cwd+"/old"):
+    os.makedirs(cwd+"/old")
+dir_PROBLEMS=cwd+"/problems/"
 dir_TEMP=cwd+"/temp/"
 dir_MODELS=cwd+"/models/"
 dir_SIGNALS=cwd+"/signals/"
 dir_TRADES=cwd+"/trades/"
+dir_OLD=cwd+"/old/"
 ###Logs
 logger = logging.getLogger("binance")
 log_level = str(ConfigSectionMap("BINANCE_API", load_params)['log_level'])
@@ -556,12 +629,16 @@ bot = telegram.Bot(token=my_telegram_bot_token)
 #debugapp(str(sys._getframe().f_code.co_name)+"|"+str(bot.get_me()),debugapp_DebugLevel="DEBUG")
 ###Variables
 processed_order=0
+gain_USD=0
+gain_BTC=0
 ###Binance
 binance_key = ConfigSectionMap("BINANCE_API", load_params)['binance_key']
 binance_secret = ConfigSectionMap("BINANCE_API", load_params)['binance_secret']
 binance.set(binance_key, binance_secret)
 #binance_balances=binance.balances()
 binance_prices=binance.prices()
+r_exchangeInfo=requests.get("https://www.binance.com/api/v1/exchangeInfo")
+get_stepSize_request=r_exchangeInfo.json()
 
 #print binance_prices
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////begin script:"+begin_time, debugapp_logger=logger)
@@ -572,24 +649,28 @@ debugapp(str(sys._getframe().f_code.co_name)+"|"+datetime.datetime.now().strftim
 #parse le dossier pour les fichiers
 for filename in os.listdir(dir_TRADES):
     dct_FILE = {}
-    logger_symbol=None
-    if ".json" in filename:
+#    logger_symbol=None
+#    var_exists = 'logger_symbol' in globals()
+#    if var_exists:
+##        hdlr_symbol.flush()
+#        logger_symbol.removeHandler(hdlr_symbol)
+#        hdlr_symbol.close()
+##        logging.shutdown()
+    if ".json" in filename and not ".log" in filename:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_TRADES+filename,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         dct_FILE=load_obj(dir_TRADES+filename)
         if not ".json" in dct_FILE['filename']:
             dct_FILE['filename']=dct_FILE['filename']+".json"
         if not dir_TRADES in dct_FILE['filename']:
             dct_FILE['filename']=dir_TRADES+filename
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"binance_prices.get(dct_FILE[symbol])"+str(binance_prices.get(dct_FILE['symbol'])),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         dct_FILE['binance_price'] = float(binance_prices.get(dct_FILE['symbol']))
 #        dct_FILE['current_balance'] = binance_balances.get(dct_FILE['symbol'].replace("BTC", ""))
         dct_FILE['LOT_SIZE_stepSize'] = float(get_stepSize(dct_FILE.get("symbol")))
-#        logger_symbol = logging.getLogger("symbol")
-#        log_file_symbol=dir_TRADES+filename+".log"
-#        hdlr_symbol = logging.FileHandler(log_file_symbol)
-#        hdlr_symbol.setFormatter(formatter)
-#        logger_symbol.addHandler(hdlr_symbol) 
-#        logger_symbol.setLevel(level)
+        setup_logger(dct_FILE['symbol'], dir_TRADES+filename+".log")
+        logger_symbol= logging.getLogger(dct_FILE['symbol'])
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cours actuel "+str(float8f(dct_FILE['binance_price']))+" "+dct_FILE['last_order_level'],debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+#        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cours actuel "+str(float8f(dct_FILE['binance_price']))+" "+dct_FILE['last_order_level'],debugapp_DebugLevel="DEBUG")
 
         if dct_FILE['executedQty_creation']=="test": dct_FILE['executedQty_creation']=0
     #############################################################################################################
@@ -619,45 +700,15 @@ for filename in os.listdir(dir_TRADES):
     #TESTS###############################################################################################
     #############################################################################################################
         if dct_FILE['dictToBeFilled'].has_key("order_BUY"):
-            for order_level_dictToBeFilled in dct_FILE['dictToBeFilled']:
-                if dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]==1:
-                    current_order=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE[order_level_dictToBeFilled]['orderId'])
-                    if current_order.get("orderId") is not None:
-                        if current_order.get("status")=="FILLED":
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade FILLED of order_ "+str(current_order.get("orderId")),debugapp_DebugLevel="DEBUG")
-                            dct_FILE[order_level_dictToBeFilled+"_FILLED"]=current_order
-                            dct_FILE['last_order_level']=order_level_dictToBeFilled+"_FILLED"
-                            dct_FILE['last_executedQty']=float(current_order.get("executedQty"))
-                            if dct_FILE['executedQty_creation']==0:
-                                dct_FILE['executedQty_creation']=float(current_order.get("executedQty"))
-                            dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
-                            if current_order['side']=="SELL":
-                                dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+float(current_order['executedQty'])
-                                prix_de_vente=float(current_order['price'])
-                                prix_achat=float(dct_FILE['order_BUY_FILLED']['price'])
-                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Diff BTC: "+str(prix_de_vente-prix_achat))
-                                gain_BTC=(prix_de_vente-prix_achat)*float(current_order['executedQty'])
-                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain BTC: "+str(gain_BTC))
-                                BTCUSDT=float(binance_prices.get("BTCUSDT"))
-                                gain_USD=gain_BTC*BTCUSDT
-                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente au level:"+order_level_dictToBeFilled,debugapp_Telegram=1)
-                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente de "+str(current_order['executedQty'])+" de "+dct_FILE.get("symbol")+"\nGain $: "+str(gain_USD),debugapp_Telegram=1)
-                                sell_stats(current_order, order_level_dictToBeFilled)
-                            save_obj(dct_FILE, dct_FILE.get("filename"))
-                        else:
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-                    else:
-						if current_order['msg'] is not None:
-							debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Error:"+str(current_order['code'])+":"+current_order['msg'],debugapp_DebugLevel="WARNING")
-						else:
-							debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Order empty:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-                    time.sleep(1)
+            ToBeFilled()
 
         if dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED' or (float(dct_FILE['executedQty_creation'])<float(dct_FILE['executedQty_vendu'])+float(dct_FILE['executedQty_creation'])/200 and dct_FILE['executedQty_creation']<>0):
             debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("last_order_level")+" Fin du trade: deplace le fichier dans old",debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
             save_obj(dct_FILE, dct_FILE.get("filename"))
             try:
-                os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
+#                os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
+                shutil.move(dct_FILE.get("filename"), dir_OLD)
+                shutil.move(dct_FILE.get("filename")+".log", dir_OLD)
 #                sys.exit()
             except: 
                 pass
@@ -665,43 +716,46 @@ for filename in os.listdir(dir_TRADES):
         if dct_FILE.get("last_order_level")=='order_BUY_FILLED':
             #lance l Order de SL avec les bonnes valeurs
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"last_order_level=order_BUY_FILLED",debugapp_DebugLevel="DEBUG")
-            current_order=b_order(dct_FILE.get("symbol"), dct_FILE.get('order_BUY_FILLED', {}).get('executedQty'), dct_FILE.get("SL"),"STOP-LIMIT", "order_SL")
-            if current_order.get("orderId") is not None:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Place SL order_ "+str(current_order.get("orderId")),debugapp_DebugLevel="DEBUG")
-                dct_FILE['order_SL']=current_order
+            current_order_BUY_FILLED=b_order(dct_FILE.get("symbol"), dct_FILE.get('order_BUY_FILLED', {}).get('executedQty'), dct_FILE.get("SL"),"STOP-LIMIT", "order_SL")
+            if current_order_BUY_FILLED.get("orderId") is not None:
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Place SL order_ "+str(current_order_BUY_FILLED.get("orderId")),debugapp_DebugLevel="DEBUG")
+                dct_FILE['order_SL']=current_order_BUY_FILLED
                 dct_FILE['last_order_level']='order_SL'
                 dct_FILE['current_SL']='order_SL'
                 save_obj(dct_FILE, dct_FILE.get("filename"))
             else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order empty:"+str(current_order),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order empty:"+str(current_order_BUY_FILLED),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
             #teste si prix actuel > T3, annule l Order et renome le fichier _T3_C
-            time.sleep(1)
+#            time.sleep(1)
             
         if 'order_BUY_FILLED' in dct_FILE.keys():
-            if dct_FILE['T3'] < binance_price(dct_FILE.get("symbol"))-binance_price(dct_FILE.get("symbol"))/100*percentage_limit_order_before_tx and not findkeys(dct_FILE, "order_T3"):
+            current_price=binance_price(dct_FILE.get("symbol"))-binance_price(dct_FILE.get("symbol"))/100*percentage_limit_order_before_tx
+            if dct_FILE['T3'] < current_price and not findkeys(dct_FILE, "order_T3"):
                 targetTX('T3')
-            elif dct_FILE['T2'] < binance_price(dct_FILE.get("symbol"))-binance_price(dct_FILE.get("symbol"))/100*percentage_limit_order_before_tx and not findkeys(dct_FILE, "order_T2") and not findkeys(dct_FILE, "order_T3"):
+            elif dct_FILE['T2'] < current_price and not findkeys(dct_FILE, "order_T2") and not findkeys(dct_FILE, "order_T3"):
                 targetTX('T2')
-            elif dct_FILE['T1'] < binance_price(dct_FILE.get("symbol"))-binance_price(dct_FILE.get("symbol"))/100*percentage_limit_order_before_tx and not findkeys(dct_FILE, "order_T"):
+            elif dct_FILE['T1'] < current_price and not findkeys(dct_FILE, "order_T"):
                 targetTX('T1')
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************")
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
     elif not ".json" in filename and not ".log" in filename:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_TRADES+filename,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         dct_FILE=load_obj(dir_TRADES+filename)
-        os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
+#        os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
+        shutil.move(dct_FILE.get("filename"), dir_OLD)
         dct_FILE['filename']=dir_TRADES+filename+".json"
         save_obj(dct_FILE, dct_FILE.get("filename"))
 
+logger_symbol = logging.getLogger("binance")
 for filename in os.listdir(dir_SIGNALS):
     dct_FILE = {}
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_SIGNALS+filename, debugapp_logger=logger)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_SIGNALS+filename)
     b_trade_to_order(dir_SIGNALS+filename)
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************")
 
 if processed_order==0:
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Aucun traitement",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Aucun traitement",debugapp_DebugLevel="DEBUG")
 #    bot.sendMessage(chat_id=my_telegram_id, text="Aucun traitement")
-debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////end script:"+begin_time+"\n",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////end script:"+begin_time+"\n",debugapp_DebugLevel="DEBUG")
 sys.exit()
 #############################################################################################################
 #END SCRIPT##################################################################################################
