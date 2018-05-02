@@ -130,7 +130,7 @@ def echo(bot, update):
         print "status"
         status_dict = {}
         for filename in os.listdir(api_path+"trades/"):
-            if ".json" in filename:
+            if ".json" in filename and not ".log" in filename:
                 print(api_path+"trades/"+filename)
                 dct_FILE=load_obj(api_path+"trades/"+filename)
                 status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level']
