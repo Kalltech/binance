@@ -101,7 +101,7 @@ def menu(bot):
     menu_keyboard = [['Status', 'Stats'], ['StartAutotrade', 'StopAutotrade'], ['/help']]
     menu_markup = ReplyKeyboardMarkup(menu_keyboard, one_time_keyboard=False, resize_keyboard=True)
 
-    bot.send_message(470236357, text='Select button:', reply_markup=menu_markup)
+    bot.send_message(my_telegram_id, text='Select button:', reply_markup=menu_markup)
 
 
 def help(bot, update):
@@ -297,6 +297,8 @@ def main():
     my_telegram_bot_token = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_bot_token']
     updater = Updater(my_telegram_bot_token)
     bot = telegram.Bot(my_telegram_bot_token)
+    global my_telegram_id
+    my_telegram_id = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_id']
     menu(bot)
 
     # Get the dispatcher to register handlers
