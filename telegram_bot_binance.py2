@@ -7,6 +7,8 @@ bot.
 """
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import telegram
+from telegram import ReplyKeyboardMarkup
 import logging
 import os
 import datetime
@@ -93,6 +95,15 @@ def start(bot, update):
     """Send a message when the command /start is issued."""
     update.message.reply_text('Hi!')
 
+def menu(bot):
+    """Send a message when the command /menu is issued."""
+#    update.message.reply_text('menu activating!')
+    menu_keyboard = [['Status'], ['Stats']]
+    menu_markup = ReplyKeyboardMarkup(menu_keyboard, one_time_keyboard=True, resize_keyboard=True)
+
+    bot.send_message(470236357, reply_markup=menu_markup)
+
+
 def help(bot, update):
     """Send a message when the command /help is issued."""
     update.message.reply_text('Help!\nPause:5 Met en pause pour 5min\nStatus Donne le status de chaque trade\nstopautotrade or startautotrade: Disable or enable auto_trade in INI\nStats Donne les stats de vente\nKill:XLMBTC Stop la surveillance de la paire\nSignal... Met en fil d attente la position selon les valeurs\n')
@@ -118,7 +129,6 @@ def echo(bot, update):
             update.message.reply_text("Stats empty")
         else:
             update.message.reply_text(stats())
-            cfgfile = open("binance_api.ini",'w')
     elif text_sent=="stopautotrade":
             cfgfile = open("binance_api.ini",'w')
             load_params.set('BINANCE_API','auto_trade',0)
@@ -265,6 +275,7 @@ def echo(bot, update):
 #            print str_file
     else:
         update.message.reply_text("I dont understand")
+    menu(bot)
     print "END response"
     
 def load_obj(name ):
@@ -285,12 +296,15 @@ def main():
     # Create the EventHandler and pass it your bot's token.
     my_telegram_bot_token = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_bot_token']
     updater = Updater(my_telegram_bot_token)
+    bot = telegram.Bot(my_telegram_bot_token)
+    menu(bot)
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
 
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("menu", menu))
     dp.add_handler(CommandHandler("help", help))
 
     # on noncommand i.e message - echo the message on Telegram
@@ -301,7 +315,7 @@ def main():
 
     # Start the Bot
     updater.start_polling()
-
+    
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
     # start_polling() is non-blocking and will stop the bot gracefully.
