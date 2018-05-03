@@ -99,9 +99,9 @@ def menu(bot):
     """Send a message when the command /menu is issued."""
 #    update.message.reply_text('menu activating!')
     menu_keyboard = [['Status'], ['Stats']]
-    menu_markup = ReplyKeyboardMarkup(menu_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    menu_markup = ReplyKeyboardMarkup(menu_keyboard, one_time_keyboard=False, resize_keyboard=True)
 
-    bot.send_message(470236357, reply_markup=menu_markup)
+    bot.send_message(470236357, text='Select button:', reply_markup=menu_markup)
 
 
 def help(bot, update):
@@ -275,7 +275,7 @@ def echo(bot, update):
 #            print str_file
     else:
         update.message.reply_text("I dont understand")
-    menu(bot)
+#    menu(bot)
     print "END response"
     
 def load_obj(name ):
