@@ -48,7 +48,7 @@ def debugapp(debugapp_str, **kwargs):
             debugapp_logger=logger
     if debugapp_Telegram: 
         try:
-            debugapp_str=dct_FILE['symbol']+debugapp_str
+            debugapp_str=dct_FILE['symbol']+":"+debugapp_str
             bot.sendMessage(chat_id=my_telegram_id, text=str(debugapp_str))
         except:
             debugapp_logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
