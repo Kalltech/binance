@@ -98,7 +98,7 @@ def start(bot, update):
 def menu(bot):
     """Send a message when the command /menu is issued."""
 #    update.message.reply_text('menu activating!')
-    menu_keyboard = [['Status'], ['Stats']]
+    menu_keyboard = [['Status', 'Stats'], ['StartAutotrade', 'StopAutotrade'], ['/help']]
     menu_markup = ReplyKeyboardMarkup(menu_keyboard, one_time_keyboard=False, resize_keyboard=True)
 
     bot.send_message(470236357, text='Select button:', reply_markup=menu_markup)
