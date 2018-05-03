@@ -95,7 +95,7 @@ def start(bot, update):
 
 def help(bot, update):
     """Send a message when the command /help is issued."""
-    update.message.reply_text('Help!\nPause:5 Met en pause pour 5min\nStatus Donne le status de chaque trade\nStats Donne les stats de vente\nKill:XLMBTC Stop la surveillance de la paire\nSignal... Met en fil d attente la position selon les valeurs\n')
+    update.message.reply_text('Help!\nPause:5 Met en pause pour 5min\nStatus Donne le status de chaque trade\nstopautotrade or startautotrade: Disable or enable auto_trade in INI\nStats Donne les stats de vente\nKill:XLMBTC Stop la surveillance de la paire\nSignal... Met en fil d attente la position selon les valeurs\n')
 
 def echo(bot, update):
     """Echo the user message."""
@@ -118,6 +118,17 @@ def echo(bot, update):
             update.message.reply_text("Stats empty")
         else:
             update.message.reply_text(stats())
+            cfgfile = open("binance_api.ini",'w')
+    elif text_sent=="stopautotrade":
+            cfgfile = open("binance_api.ini",'w')
+            load_params.set('BINANCE_API','auto_trade',0)
+            load_params.write(cfgfile)
+            cfgfile.close()
+    elif text_sent=="startautotrade":
+            cfgfile = open("binance_api.ini",'w')
+            load_params.set('BINANCE_API','auto_trade',1)
+            load_params.write(cfgfile)
+            cfgfile.close()
     elif "kill:" in text_sent:
         print text_sent
         for filename in os.listdir(api_path+"trades/"):
