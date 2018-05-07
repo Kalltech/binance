@@ -160,7 +160,7 @@ def button(bot, update):
                 dct_FILE=load_obj(api_path+"trades/"+filename)
                 percentage_gain_lost=float(dct_FILE['binance_price'])/float(dct_FILE['order_BUY_FILLED']['price'])*100-100
                 percentage_gain_lost=format(percentage_gain_lost, '.2f')
-                status_dict="Buy price: "+str(float8f(dct_FILE['order_BUY_FILLED']['price']))+"\n"+"Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+"Gain/Lost:"+str(percentage_gain_lost)+"%\n"+dct_FILE['last_order_level']
+                status_dict="Buy price:   "+str(float8f(dct_FILE['order_BUY_FILLED']['price']))+"\n"+"Last price:  "+str(float8f(dct_FILE['binance_price']))+"\n"+"SL price:     "+str(float8f(dct_FILE['SL']))+"\n"+"Gain/Lost: "+str(percentage_gain_lost)+"%\nLevel: "+dct_FILE['last_order_level']
                 str_msg=str_msg+"\n"+filename+"\n"+str(status_dict)
         if str_msg<>"":
             bot.editMessageText(text=str_msg,
