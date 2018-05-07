@@ -97,7 +97,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
     if b_order_side=="BUY":
         b_order_Qty=float(b_order_Qty)
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Achat de "+str(order_quantity)+" "+b_order_symbol+" a "+float8f(b_order_price))
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Achat de "+str(order_quantity)+" "+b_order_symbol+" a "+float8f(b_order_price),debugapp_Telegram=1)
         order=binance.order(b_order_symbol, binance.BUY, order_quantity, b_order_price, test=False)
         
     elif b_order_side=="SELL":
@@ -107,7 +107,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         if b_order_Qty_down <= float(dct_FILE['current_balance']['free']) <= b_order_Qty_up:
             b_order_Qty=float(dct_FILE['current_balance']['free'])
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente de "+str(order_quantity)+" "+b_order_symbol+" a "+float8f(b_order_price))
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente de "+str(order_quantity)+" "+b_order_symbol+" a "+float8f(b_order_price),debugapp_Telegram=1)
         order=binance.order(b_order_symbol, binance.SELL, order_quantity, b_order_price, test=False)
         
     elif b_order_side=="STOP-LIMIT":
@@ -120,7 +120,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
         b_order_price=float(floatXf(b_order_price))
         b_order_price_plus_01_percen=float(floatXf(b_order_price_plus_01_percen))
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+b_order_symbol+" @ "+floatXf(b_order_price)+" @ stop "+floatXf(b_order_price_plus_01_percen))
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+b_order_symbol+" @ "+floatXf(b_order_price)+" @ stop "+floatXf(b_order_price_plus_01_percen),debugapp_Telegram=1)
         order=binance.order(b_order_symbol, binance.SELL, order_quantity, floatXf(b_order_price), orderType=binance.STOP_LOSS_LIMIT, test=False, stopPrice=floatXf(b_order_price_plus_01_percen))
     if order.get("orderId") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK:"+str(order.get("orderId")),debugapp_DebugLevel="DEBUG")
