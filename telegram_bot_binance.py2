@@ -198,11 +198,13 @@ def echo(bot, update):
             load_params.set('BINANCE_API','auto_trade',0)
             load_params.write(cfgfile)
             cfgfile.close()
+            update.message.reply_text("OK")
     elif text_sent=="startautotrade":
             cfgfile = open("binance_api.ini",'w')
             load_params.set('BINANCE_API','auto_trade',1)
             load_params.write(cfgfile)
             cfgfile.close()
+            update.message.reply_text("OK")
     elif text_sent=="status":
         print "status"
         status_dict = {}
