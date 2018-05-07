@@ -628,7 +628,7 @@ for filename in os.listdir(dir_TRADES):
                 current_order_cancel=binance.cancel(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
 #                current_order_cancel=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
                 if current_order_cancel.get("orderId") is not None:
-                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("orderId")),debugapp_Telegram=1)
+                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("orderId")))
                     dct_FILE["order_SL_CANCELED_ASKED"]=current_order_cancel
                     count=0
                     processed_order=1
@@ -644,12 +644,12 @@ for filename in os.listdir(dir_TRADES):
                                 #lance l Order de SELL "+"Panicsell"+" avec les bonnes valeurs
                                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l Order de SELL "+"Panicsell"+" avec les bonnes valeurs")
                                 allQty=float(dct_FILE["executedQty_creation"])-float(dct_FILE["executedQty_vendu"])
-                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Panic sell",debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
+#                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Panic sell",debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
                                 current_order_SELL=b_order(dct_FILE.get("symbol"), allQty, binance_price(dct_FILE.get("symbol")),"SELL", "order_"+"Panicsell")
 #                                current_order_SELL=binance_status(dct_FILE.get("symbol"), orderId=43802508, binance_status_test=1, binance_status_orderId_type="NEW_SELL")
                                 if current_order_SELL.get("orderId") is not None:
                                     dct_FILE['panicsell']=0
-                                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SELL "+dct_FILE['symbol']+" Panicsell"+" id:"+str(current_order_SELL.get("orderId")),debugapp_Telegram=1)
+                                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Panicsell:"+dct_FILE['symbol']+" id:"+str(current_order_SELL.get("orderId")),debugapp_Telegram=1)
                                     dct_FILE["order_"+"Panicsell"]=current_order_SELL
                                     dct_FILE["last_order_level"]="order_"+"Panicsell"
                                     save_obj(dct_FILE, dct_FILE.get("filename"))
