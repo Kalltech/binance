@@ -6,9 +6,9 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler,  ConversationHandler
 import telegram
-from telegram import ReplyKeyboardMarkup
+from telegram import ReplyKeyboardMarkup,  InlineKeyboardMarkup,  InlineKeyboardButton
 import logging
 import os
 import datetime
@@ -28,6 +28,11 @@ api_path=cwd+"/"
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 level=logging.INFO)
+
+hot = u'\U0001F525'             # Code: 904
+clouds = u'\U00002601'          # Code: 802-803-804 clouds general
+croix = u'\U0000274C'          # Code: 802-803-804 clouds general
+interrogation = u'\U00002753'          # Code: 802-803-804 clouds general
 
 def findkeys(d, findkeys_str):
     for key in d.keys():
@@ -95,14 +100,72 @@ def start(bot, update):
     """Send a message when the command /start is issued."""
     update.message.reply_text('Hi!')
 
+def Detail_Status(bot, update):
+    """Send a message when the command /start is issued."""
+    update.message.reply_text('Hi!')
+
 def menu(bot):
     """Send a message when the command /menu is issued."""
 #    update.message.reply_text('menu activating!')
-    menu_keyboard = [['Status', 'Stats'], ['StartAutotrade', 'StopAutotrade'], ['/help']]
+    menu_keyboard = [['Status', 'Stats'], ['StartAutotrade', 'StopAutotrade'], ['Kill', 'Panicsell'], ['/help']]
     menu_markup = ReplyKeyboardMarkup(menu_keyboard, one_time_keyboard=False, resize_keyboard=True)
 
-    bot.send_message(my_telegram_id, text='Select button:', reply_markup=menu_markup)
+    try:
+        bot.send_message(my_telegram_id, text='Select button:', reply_markup=menu_markup)
+    except:
+        print "Timeout telegram"
 
+def build_menu(buttons,
+               n_cols,
+               header_buttons=None,
+               footer_buttons=None):
+    menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
+    if header_buttons:
+        menu.insert(0, header_buttons)
+    if footer_buttons:
+        menu.append(footer_buttons)
+#    print menu
+    return menu
+
+def button(bot, update):
+    query = update.callback_query
+    print query.data
+    str_msg=""
+    if "panicsell:" in query.data:
+        for filename in os.listdir(api_path+"trades/"):
+            if ".json" in filename and not ".log" in filename and query.data.replace("panicsell:","") in filename:
+                print(api_path+"trades/"+filename)
+                dct_FILE=load_obj(api_path+"trades/"+filename)
+                dct_FILE['panicsell']=1
+                save_obj(dct_FILE, dct_FILE.get("filename"))
+                str_msg=str_msg+"\n"+"Panic sell sent:"+query.data.replace("panicsell:","")
+        if str_msg<>"":
+            bot.editMessageText(text=str_msg,
+                                chat_id=query.message.chat_id,
+                                message_id=query.message.message_id)
+    elif "kill:" in query.data:
+        for filename in os.listdir(api_path+"trades/"):
+            if ".json" in filename and query.data.replace("kill:","") in filename:
+                print(api_path+"trades/"+filename)
+                os.rename(api_path+"trades/"+filename, api_path+"old/"+filename)
+                str_msg=str_msg+"\n"+"Kill ok:"+filename
+        if str_msg<>"":
+            bot.editMessageText(text=str_msg,
+                                    chat_id=query.message.chat_id,
+                                    message_id=query.message.message_id)
+    else:
+        for filename in os.listdir(api_path+"trades/"):
+            if ".json" in filename and not ".log" in filename and query.data in filename:
+                print(api_path+"trades/"+filename)
+                dct_FILE=load_obj(api_path+"trades/"+filename)
+                percentage_gain_lost=float(dct_FILE['binance_price'])/float(dct_FILE['order_BUY_FILLED']['price'])*100-100
+                percentage_gain_lost=format(percentage_gain_lost, '.2f')
+                status_dict="Buy price: "+str(float8f(dct_FILE['order_BUY_FILLED']['price']))+"\n"+"Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+"Gain/Lost:"+str(percentage_gain_lost)+"%\n"+dct_FILE['last_order_level']
+                str_msg=str_msg+"\n"+filename+"\n"+str(status_dict)
+        if str_msg<>"":
+            bot.editMessageText(text=str_msg,
+                                chat_id=query.message.chat_id,
+                                message_id=query.message.message_id)
 
 def help(bot, update):
     """Send a message when the command /help is issued."""
@@ -112,6 +175,7 @@ def echo(bot, update):
     """Echo the user message."""
     print "BEGIN response"
     text_sent=update.message.text.lower()
+    print text_sent
     printable = set(string.printable)
     text_sent=filter(lambda x: x in printable, text_sent)
     if "pause:" in text_sent:
@@ -139,14 +203,6 @@ def echo(bot, update):
             load_params.set('BINANCE_API','auto_trade',1)
             load_params.write(cfgfile)
             cfgfile.close()
-    elif "kill:" in text_sent:
-        print text_sent
-        for filename in os.listdir(api_path+"trades/"):
-            if ".json" in filename:
-                a_kill=text_sent.split("kill:")
-                if a_kill[1] in filename.lower():
-                    os.rename(api_path+"trades/"+filename, api_path+"old/"+filename)
-                    update.message.reply_text("Kill ok:"+filename)
     elif text_sent=="status":
         print "status"
         status_dict = {}
@@ -155,11 +211,40 @@ def echo(bot, update):
                 print(api_path+"trades/"+filename)
                 dct_FILE=load_obj(api_path+"trades/"+filename)
                 status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level']
+        button_list = []
         for symbols in sorted(status_dict):
-            update.message.reply_text(symbols+status_dict[symbols])
+            button_list.append(InlineKeyboardButton(interrogation+symbols, callback_data=symbols))
+        reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
         list_of_files = glob.glob(api_path+"logs/*")
         latest_file = max(list_of_files, key=os.path.getctime)
         update.message.reply_text("Dernier log:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file))))
+        bot.send_message(my_telegram_id, text='All trades :', reply_markup=reply_markup)
+    elif text_sent=="panicsell":
+        print "panicsell"
+        status_dict = {}
+        for filename in os.listdir(api_path+"trades/"):
+            if ".json" in filename and not ".log" in filename:
+                print(api_path+"trades/"+filename)
+                dct_FILE=load_obj(api_path+"trades/"+filename)
+                status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level']
+        button_list = []
+        for symbols in sorted(status_dict):
+            button_list.append(InlineKeyboardButton(hot+symbols, callback_data="panicsell:"+symbols))
+        reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+        bot.send_message(my_telegram_id, text='Which panic sell:', reply_markup=reply_markup)
+    elif text_sent=="kill":
+        print "kill"
+        status_dict = {}
+        for filename in os.listdir(api_path+"trades/"):
+            if ".json" in filename and not ".log" in filename:
+                print(api_path+"trades/"+filename)
+                dct_FILE=load_obj(api_path+"trades/"+filename)
+                status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level']
+        button_list = []
+        for symbols in sorted(status_dict):
+            button_list.append(InlineKeyboardButton(croix+symbols, callback_data="kill:"+symbols))
+        reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+        bot.send_message(my_telegram_id, text='Which kill trade:', reply_markup=reply_markup)
     elif "btc" in text_sent:
         print "signal"
         signal_dict = {}
@@ -287,6 +372,16 @@ def load_obj(name ):
         json_data.close()
         return dct_load_obj
 
+def save_obj(obj, name ):
+    if not ".json" in name and not ".laststate" in name:
+        with open(name, 'wb') as f:
+#        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+            pass
+    else:
+        save_obj_out_file = open(name,"w")
+        json.dump(obj,save_obj_out_file, indent=4, sort_keys=True)                                    
+        save_obj_out_file.close()
+
 def error(bot, update, error):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, error)
@@ -295,6 +390,7 @@ def main():
     """Start the bot."""
     # Create the EventHandler and pass it your bot's token.
     my_telegram_bot_token = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_bot_token']
+    global updater
     updater = Updater(my_telegram_bot_token)
     bot = telegram.Bot(my_telegram_bot_token)
     global my_telegram_id
@@ -311,6 +407,7 @@ def main():
 
     # on noncommand i.e message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text, echo))
+    dp.add_handler(CallbackQueryHandler(button))
 
     # log all errors
     dp.add_error_handler(error)
