@@ -612,6 +612,13 @@ for filename in os.listdir(dir_TRADES):
         setup_logger(dct_FILE['symbol'], dir_TRADES+filename+".log")
         logger_symbol= logging.getLogger(dct_FILE['symbol'])
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cours actuel "+str(float8f(dct_FILE['binance_price']))+" "+dct_FILE['last_order_level'],debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+        last_sl_stop=dct_FILE['SL']
+        if dct_FILE.has_key('order_T2_SL'): last_sl_stop=dct_FILE['order_T2_SL']['stopPrice']
+        if dct_FILE.has_key('order_T1_SL'): last_sl_stop=dct_FILE['order_T1_SL']['stopPrice']
+        percentage_near_sl=float(dct_FILE['binance_price'])/float(last_sl_stop)*100-100
+        percentage_near_sl=format(percentage_near_sl, '.1f')
+        print percentage_near_sl
+        if float(percentage_near_sl)<=1: debugapp(str(sys._getframe().f_code.co_name)+"|"+"Price:"+str(float8f(dct_FILE['binance_price']))+" near SL:"+str(float8f(last_sl_stop)), debugapp_logger=logger,debugapp_Telegram=1)
         save_obj(dct_FILE, dct_FILE.get("filename"))
 
         if dct_FILE['executedQty_creation']=="test": dct_FILE['executedQty_creation']=0
@@ -667,7 +674,7 @@ for filename in os.listdir(dir_TRADES):
         if dct_FILE['dictToBeFilled'].has_key("order_BUY"):
             ToBeFilled()
 
-        if dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED' or (float(dct_FILE['executedQty_creation'])<float(dct_FILE['executedQty_vendu'])+float(dct_FILE['executedQty_creation'])/200 and dct_FILE['executedQty_creation']<>0):
+        if (dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED' or float(dct_FILE['executedQty_creation'])<=(float(dct_FILE['executedQty_vendu'])+float(dct_FILE['executedQty_creation'])/100)) and float(dct_FILE['executedQty_creation'])<>0:
             debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("last_order_level")+" Fin du trade: deplace le fichier dans old",debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
             save_obj(dct_FILE, dct_FILE.get("filename"))
             try:
