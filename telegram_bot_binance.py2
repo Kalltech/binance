@@ -6,7 +6,7 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler,  ConversationHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 import telegram
 from telegram import ReplyKeyboardMarkup,  InlineKeyboardMarkup,  InlineKeyboardButton
 import logging
@@ -158,10 +158,23 @@ def button(bot, update):
             if ".json" in filename and not ".log" in filename and query.data in filename:
                 print(api_path+"trades/"+filename)
                 dct_FILE=load_obj(api_path+"trades/"+filename)
-                percentage_gain_lost=float(dct_FILE['binance_price'])/float(dct_FILE['order_BUY_FILLED']['price'])*100-100
-                percentage_gain_lost=format(percentage_gain_lost, '.2f')
-                status_dict="Buy price:   "+str(float8f(dct_FILE['order_BUY_FILLED']['price']))+"\n"+"Last price:  "+str(float8f(dct_FILE['binance_price']))+"\n"+"SL price:     "+str(float8f(dct_FILE['SL']))+"\n"+"Gain/Lost: "+str(percentage_gain_lost)+"%\nLevel: "+dct_FILE['last_order_level']
-                str_msg=str_msg+"\n"+filename+"\n"+str(status_dict)
+                if dct_FILE.has_key('order_BUY_FILLED'):
+                    percentage_gain_lost=float(dct_FILE['binance_price'])/float(dct_FILE['order_BUY_FILLED']['price'])*100-100
+                    percentage_gain_lost=format(percentage_gain_lost, '.2f')
+                    last_sl_stop=dct_FILE['SL']
+                    if dct_FILE.has_key('order_T2_SL'): last_sl_stop=dct_FILE['order_T2_SL']['stopPrice']
+                    if dct_FILE.has_key('order_T1_SL'): last_sl_stop=dct_FILE['order_T1_SL']['stopPrice']
+                    status_dict="Buy price:   "+str(float8f(dct_FILE['order_BUY_FILLED']['price']))\
+                        +"\n"+"Last price:  "+str(float8f(dct_FILE['binance_price']))\
+                        +"\n"+"Last SL :     "+str(float8f(last_sl_stop))\
+                        +"\n"+"Gain/Lost: "+str(percentage_gain_lost)+"%"\
+                        +"\n"+"T1: "+str(float8f(dct_FILE['T1']))\
+                        +"\n"+"T2: "+str(float8f(dct_FILE['T2']))\
+                        +"\n"+"T3: "+str(float8f(dct_FILE['T3']))\
+                        +"\nLevel: "+dct_FILE['last_order_level']
+                    str_msg=str_msg+"\n"+filename+"\n"+str(status_dict)
+                else:
+                    str_msg=str_msg+"\n"+filename+"\n"+"Order not filled"
         if str_msg<>"":
             bot.editMessageText(text=str_msg,
                                 chat_id=query.message.chat_id,
@@ -206,16 +219,24 @@ def echo(bot, update):
             cfgfile.close()
             update.message.reply_text("OK")
     elif text_sent=="status":
-        print "status"
+#        print "status"
         status_dict = {}
         for filename in os.listdir(api_path+"trades/"):
             if ".json" in filename and not ".log" in filename:
                 print(api_path+"trades/"+filename)
                 dct_FILE=load_obj(api_path+"trades/"+filename)
+                executedDate_creation= dct_FILE['executedDate_creation']
+                f_time=datetime.datetime.strptime(executedDate_creation.replace("_", " "), '%Y-%m-%d %H.%M.%S')
+                diff_time=datetime.datetime.now().replace(microsecond=0)-f_time
+#                print diff_time.days
                 status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level']
+#                print status_dict
+                status_dict[dct_FILE.get("symbol")+"Days"]=str(diff_time.days)
+#                print status_dict
         button_list = []
         for symbols in sorted(status_dict):
-            button_list.append(InlineKeyboardButton(interrogation+symbols, callback_data=symbols))
+            if not "Days" in symbols:
+                button_list.append(InlineKeyboardButton(symbols+":"+str(status_dict[symbols+"Days"])+"d", callback_data=symbols))
         reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
         list_of_files = glob.glob(api_path+"logs/*")
         latest_file = max(list_of_files, key=os.path.getctime)
