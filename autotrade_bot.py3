@@ -37,6 +37,7 @@ print("Starting autotrade")
 if auto_trade=="1": print("autotrade:on")
 @client.on(events.NewMessage(incoming=True,chats=telegram_chat))
 def my_event_handler(event):
+    load_params.read("binance_api.ini")
     auto_trade= ConfigSectionMap("BINANCE_API", load_params)['auto_trade']
     print(event.raw_text)
     if auto_trade=="1":
@@ -46,5 +47,5 @@ def my_event_handler(event):
             client.send_message(bot_name, event.raw_text)
     else:
         print("auto_trade disabled\n"+event.raw_text)
-        client.send_message(bot_name, "auto_trade disabled")
+#        client.send_message(bot_name, "auto_trade disabled")
 client.idle()
