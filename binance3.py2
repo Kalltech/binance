@@ -517,6 +517,7 @@ def setup_logger(logger_name, log_file):
     log_setup.addHandler(fileHandler) 
     log_setup.setLevel(level)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+	
 #############################################################################################################
 #END FUNCTIONS###############################################################################################
 #############################################################################################################
