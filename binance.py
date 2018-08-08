@@ -3,12 +3,8 @@ import hashlib
 import logging
 import requests
 import time
-try:
-    from urllib import urlencode
-
-# for python3
-except ImportError:
-    from urllib.parse import urlencode
+import eventlet
+from urllib.parse import urlencode
 
 
 ENDPOINT = "https://www.binance.com"
@@ -18,7 +14,6 @@ SELL = "SELL"
 
 LIMIT = "LIMIT"
 MARKET = "MARKET"
-STOP_LOSS_LIMIT = "STOP_LOSS_LIMIT"
 
 GTC = "GTC"
 IOC = "IOC"
@@ -35,9 +30,29 @@ def set(apiKey, secret):
     options["secret"] = secret
 
 
+def get_ping():
+    """Test request, returns []."""
+    print("Fetching ping: ")
+    r = request("GET", "/api/v1/ping", {})
+    return r
+
+
+def get_server_time():
+    """Fetches the binance server time, equivalent to the time.time() result, measured in milliseconds"""
+    r = request("GET", "/api/v1/time", {})
+    return r["serverTime"]
+
+
+def get_exchange_info():
+    """Get latest exchange information."""
+    print("Fetching exchange info: ")
+    r = request("GET", "/api/v1/exchangeInfo", {})
+    return r
+
+
 def prices():
     """Get latest prices for all symbols."""
-    data = request("GET", "/api/v1/ticker/allPrices")
+    data = request("GET", "/api/v3/ticker/price", {})
     return {d["symbol"]: d["price"] for d in data}
 
 
@@ -79,7 +94,7 @@ def klines(symbol, interval, **kwargs):
     Args:
         symbol (str)
         interval (str)
-        limit (int, optional): Default 500; max 500.
+        limit (int, optional): Default 500; max 1000.
         startTime (int, optional)
         endTime (int, optional)
 
@@ -105,14 +120,13 @@ def balances():
     data = signedRequest("GET", "/api/v3/account", {})
     if 'msg' in data:
         raise ValueError("Error from exchange: {}".format(data['msg']))
-
     return {d["asset"]: {
         "free": d["free"],
         "locked": d["locked"],
     } for d in data.get("balances", [])}
 
 
-def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC, 
+def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
           test=False, **kwargs):
     """Send in a new order.
 
@@ -121,7 +135,7 @@ def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
         side (str): BUY or SELL.
         quantity (float, str or decimal)
         price (float, str or decimal)
-        orderType (str, optional): LIMIT or MARKET or STOP_LOSS_LIMIT
+        orderType (str, optional): LIMIT or MARKET.
         timeInForce (str, optional): GTC or IOC.
         test (bool, optional): Creates and validates a new order but does not
             send it into the matching engine. Returns an empty dict if
@@ -231,7 +245,37 @@ def myTrades(symbol, **kwargs):
 
 
 def request(method, path, params=None):
-    resp = requests.request(method, ENDPOINT + path, params=params)
+    """Sends a request from the requests module
+
+        If there is a TimeOut error or a bad request is sent (Status Code: 400),
+        another request is sent and the previous ignored. When Binance responds with status code 200
+        the data is processed.
+
+        Args:
+            method (str)
+            path (str)
+
+    """
+    resp = None
+    eventlet.monkey_patch()
+
+    while not resp:
+        with eventlet.Timeout(5, False):
+            resp = requests.request(method, ENDPOINT + path, params=params)
+
+        if not resp:
+            print("Reattempting request: TimeOut")
+        elif resp:
+            if resp.status_code == 200:
+                print("200 OK Request.")
+            elif resp.status_code == 400:
+                print("400 Bad Request:\nThe server cannot or will not process the request due"
+                      " to an apparent client error (e.g., malformed request syntax, size too"
+                      " large, invalid request message framing, or deceptive request routing).")
+            else:
+                print(resp)
+        print()
+
     data = resp.json()
     if "msg" in data:
         logging.error(data['msg'])
@@ -239,6 +283,17 @@ def request(method, path, params=None):
 
 
 def signedRequest(method, path, params):
+    """Sends an api request from the requests module.
+
+        If there is a TimeOut error or a bad request is sent (Status Code: 400),
+        another request is sent and the previous ignored. When Binance responds with status code 200
+        the data is processed.
+
+        Args:
+            method (str)
+            path (str)
+
+    """
     if "apiKey" not in options or "secret" not in options:
         raise ValueError("Api key and secret must be set")
 
@@ -248,10 +303,27 @@ def signedRequest(method, path, params):
     signature = hmac.new(secret, query.encode("utf-8"),
                          hashlib.sha256).hexdigest()
     query += "&signature={}".format(signature)
-    resp = requests.request(method,
-                            ENDPOINT + path + "?" + query,
-                            headers={"X-MBX-APIKEY": options["apiKey"]})
+
+    resp = None
+    eventlet.monkey_patch()
+
+    while not resp:
+        with eventlet.Timeout(5, False):
+            resp = requests.request(method,
+                                    ENDPOINT + path + "?" + query,
+                                    headers={"X-MBX-APIKEY": options["apiKey"]})
+        if resp is not None:
+            if resp.status_code == 200:
+                print("200 OK Request.")
+            if resp.status_code == 400:
+                print("400 Bad Request:\nThe server cannot or will not process the request due"
+                      " to an apparent client error (e.g., malformed request syntax, size too"
+                      " large, invalid request message framing, or deceptive request routing).")
+        print()
+
     data = resp.json()
+    if "code" in data:
+        logging.error(data['code'])
     if "msg" in data:
         logging.error(data['msg'])
     return data
