@@ -12,6 +12,7 @@ import datetime
 import telegram
 import json
 import shutil
+import ntpath
 
 #############################################################################################################
 #FUNCTIONS###############################################################################################
@@ -72,13 +73,13 @@ def debugapp(debugapp_str, **kwargs):
         if "signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/signals","/problems")+".laststate")
         #deplace le fichier de trade dans problems
         try:
-            shutil.move(dct_FILE.get("filename"), dir_PROBLEMS)
-            shutil.move(dct_FILE.get("filename")+".log", dir_PROBLEMS)
+            shutil.move(dct_FILE.get("filename"), dir_PROBLEMS+ntpath.basename(dct_FILE.get("filename")))
+            shutil.move(dct_FILE.get("filename")+".log", dir_PROBLEMS+ntpath.basename(dct_FILE.get("filename")+".log"))
         except: 
             pass
         #deplace le fichier de log dans problems
         try:
-            shutil.move(log_file, dir_PROBLEMS)
+            shutil.move(log_file, dir_PROBLEMS+ntpath.basename(log_file))
         except: 
             pass
     if debugapp_exit:
@@ -228,6 +229,9 @@ def b_trade_to_order(b_trade_to_order_file):
     if dct_FILE['symbol'] not in blacklist:
         if (whitelist <> "" and dct_FILE['symbol'] in whitelist) or whitelist == "":
             if binance_prices.get(dct_FILE['symbol']) is not None:
+
+                dct_FILE['percentage_delta_buy']=percentage_delta_buy
+
                 dct_FILE['LOT_SIZE_stepSize'] = float(get_stepSize(dct_FILE.get("symbol")))
                 Buy_price_signal_down= percentage_calc(dct_FILE['BUY'], -dct_FILE['percentage_delta_buy'])
                 Buy_price_signal_up= percentage_calc(dct_FILE['BUY'], dct_FILE['percentage_delta_buy'])
@@ -253,7 +257,6 @@ def b_trade_to_order(b_trade_to_order_file):
                         dct_FILE['sell_part_t1']=sell_part_t1
                         dct_FILE['sell_part_t2']=sell_part_t2
                         dct_FILE['sell_part_t3']=sell_part_t3
-                        dct_FILE['percentage_delta_buy']=percentage_delta_buy
                         dct_FILE['percentage_control_balance']=percentage_control_balance
                         dct_FILE['percentage_sl_upside']=percentage_sl_upside
                         dct_FILE['percentage_limit_order_before_tx']=percentage_limit_order_before_tx
@@ -262,7 +265,7 @@ def b_trade_to_order(b_trade_to_order_file):
                         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK: deplace le fichier vers: "+dct_FILE['filename'].replace("/trades","/old"),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
                         save_obj(dct_FILE, dct_FILE['filename'])
                         try:
-                            shutil.move(b_trade_to_order_file, dir_OLD)
+                            shutil.move(b_trade_to_order_file, dir_OLD+ntpath.basename(b_trade_to_order_file))
                         except:
                             pass
                     else:
@@ -272,19 +275,19 @@ def b_trade_to_order(b_trade_to_order_file):
             else:
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Inconnu: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
                     try:
-                        shutil.move(b_trade_to_order_file, dir_PROBLEMS)
+                        shutil.move(b_trade_to_order_file, dir_PROBLEMS+ntpath.basename(b_trade_to_order_file))
                     except: 
                         pass
         else:
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Not in whitelist: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
                 try:
-                    shutil.move(b_trade_to_order_file, dir_PROBLEMS)
+                    shutil.move(b_trade_to_order_file, dir_PROBLEMS+ntpath.basename(b_trade_to_order_file))
                 except: 
                     pass
     else:
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"In blacklist: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
             try:
-                shutil.move(b_trade_to_order_file, dir_PROBLEMS)
+                shutil.move(b_trade_to_order_file, dir_PROBLEMS+ntpath.basename(b_trade_to_order_file))
             except: 
                 pass
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
@@ -716,8 +719,8 @@ for filename in os.listdir(dir_TRADES):
             debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("last_order_level")+" Fin du trade: deplace le fichier dans old",debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
             save_obj(dct_FILE, dct_FILE.get("filename"))
             try:
-                shutil.move(dct_FILE.get("filename"), dir_OLD)
-                shutil.move(dct_FILE.get("filename")+".log", dir_OLD)
+                shutil.move(dct_FILE.get("filename"), dir_OLD+ntpath.basename(dct_FILE.get("filename")))
+                shutil.move(dct_FILE.get("filename")+".log", dir_OLD+ntpath.basename(dct_FILE.get("filename")+".log"))
             except: 
                 pass
             
@@ -749,7 +752,7 @@ for filename in os.listdir(dir_TRADES):
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_TRADES+filename,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         dct_FILE=load_obj(dir_TRADES+filename)
 #        os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
-        shutil.move(dct_FILE.get("filename"), dir_OLD)
+        shutil.move(dct_FILE.get("filename"), dir_OLD+ntpath.basename(dct_FILE.get("filename")))
         dct_FILE['filename']=dir_TRADES+filename+".json"
         save_obj(dct_FILE, dct_FILE.get("filename"))
         
