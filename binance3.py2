@@ -102,8 +102,8 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         
     elif b_order_side=="SELL":
         b_order_Qty=float(b_order_Qty)
-        b_order_Qty_down= percentage_calc(b_order_Qty, -percentage_control_balance)
-        b_order_Qty_up= percentage_calc(b_order_Qty, percentage_control_balance)
+        b_order_Qty_down= percentage_calc(b_order_Qty, -dct_FILE['percentage_control_balance'])
+        b_order_Qty_up= percentage_calc(b_order_Qty, dct_FILE['percentage_control_balance'])
         if b_order_Qty_down <= float(dct_FILE['current_balance']['free']) <= b_order_Qty_up:
             b_order_Qty=float(dct_FILE['current_balance']['free'])
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
@@ -111,10 +111,11 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         order=binance.order(b_order_symbol, binance.SELL, order_quantity, b_order_price, test=False)
         
     elif b_order_side=="STOP-LIMIT":
-        b_order_price_plus_01_percen=float(format(b_order_price+b_order_price*0.001*float(percentage_sl_upside), '.8f'))
+        b_order_price_plus_01_percen=float(format(b_order_price+b_order_price*0.001*float(dct_FILE['percentage_sl_upside']), '.8f'))
+        b_order_price_plus_01_percen=percentage_calc(b_order_price, dct_FILE['percentage_sl_upside'])
         b_order_Qty=float(b_order_Qty)
-        b_order_Qty_down= percentage_calc(b_order_Qty, -percentage_control_balance)
-        b_order_Qty_up= percentage_calc(b_order_Qty, percentage_control_balance)
+        b_order_Qty_down= percentage_calc(b_order_Qty, -dct_FILE['percentage_control_balance'])
+        b_order_Qty_up= percentage_calc(b_order_Qty, dct_FILE['percentage_control_balance'])
         if b_order_Qty_down <= float(dct_FILE['current_balance']['free']) <= b_order_Qty_up:
             b_order_Qty=float(dct_FILE['current_balance']['free'])
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
@@ -161,16 +162,19 @@ def load_trade(load_trade_file):
     dct_FILE=create_dict()
     parse_Trade = ConfigParser.ConfigParser()
     parse_Trade.read(load_trade_file)
+    dct_FILE['percentage_under_tx']=percentage_under_tx
+    dct_FILE['percentage_force_sl']=percentage_force_sl
+
     dct_FILE['symbol'] = ConfigSectionMap("TRADE", parse_Trade)['c']
     dct_FILE['BUY'] = float(ConfigSectionMap("TRADE", parse_Trade)['ac'])
     dct_FILE['T1'] = float(ConfigSectionMap("TRADE", parse_Trade)['t1'])
-    dct_FILE['T1'] = percentage_calc(dct_FILE['T1'], percentage_under_tx)
+    dct_FILE['T1'] = percentage_calc(dct_FILE['T1'], dct_FILE['percentage_under_tx'])
     dct_FILE['T2'] = float(ConfigSectionMap("TRADE", parse_Trade)['t2'])
-    dct_FILE['T2'] = percentage_calc(dct_FILE['T2'], percentage_under_tx)
+    dct_FILE['T2'] = percentage_calc(dct_FILE['T2'], dct_FILE['percentage_under_tx'])
     dct_FILE['T3'] = float(ConfigSectionMap("TRADE", parse_Trade)['t3'])
-    dct_FILE['T3'] = percentage_calc(dct_FILE['T3'], percentage_under_tx)
+    dct_FILE['T3'] = percentage_calc(dct_FILE['T3'], dct_FILE['percentage_under_tx'])
     dct_FILE['SL'] = float(ConfigSectionMap("TRADE", parse_Trade)['sl'])
-    if percentage_force_sl <> 0: dct_FILE['SL'] = percentage_calc(dct_FILE['BUY'], percentage_force_sl)
+    if dct_FILE['percentage_force_sl'] <> 0: dct_FILE['SL'] = percentage_calc(dct_FILE['BUY'], dct_FILE['percentage_force_sl'])
     dct_FILE['USD'] = float(ConfigSectionMap("TRADE", parse_Trade)['usd'])
     dct_FILE['filename']=load_trade_file
     debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+"/"+float8f(dct_FILE['BUY'])+"/"+float8f(dct_FILE['T1'])+"/"+float8f(dct_FILE['T2'])+"/"+float8f(dct_FILE['T3'])+"/"+float8f(dct_FILE['SL']),debugapp_DebugLevel="DEBUG")
@@ -221,40 +225,64 @@ def b_trade_to_order(b_trade_to_order_file):
     #Prend le trade puis fait un achat s'il est dans les seuils
     #Calc if price is on seuils
     load_trade(b_trade_to_order_file)
-    if binance_prices.get(dct_FILE['symbol']) is not None:
-        dct_FILE['LOT_SIZE_stepSize'] = float(get_stepSize(dct_FILE.get("symbol")))
-        Buy_price_signal_down= percentage_calc(dct_FILE['BUY'], -percentage_delta_buy)
-        Buy_price_signal_up= percentage_calc(dct_FILE['BUY'], percentage_delta_buy)
-        dct_FILE['binance_price'] = float(binance_prices.get(dct_FILE['symbol']))
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix actuel du "+dct_FILE['symbol']+" est "+float8f(dct_FILE['binance_price']), debugapp_logger=logger)
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix demande du "+dct_FILE['symbol']+" est "+float8f(dct_FILE['BUY']), debugapp_logger=logger)
-        #Calc how many BTC vs USD demand
-        BTCUSDT=float(binance_prices.get("BTCUSDT"))
-        Qty_signal=1/dct_FILE['BUY']/BTCUSDT*dct_FILE['USD']
-        Qty_signal=format(Qty_signal, '.8f')
-        #achatcoin=USD/prixbtc*coinbtc
-        #200/7000*0.0000184
-        if Buy_price_signal_down <= dct_FILE['binance_price'] <= Buy_price_signal_up:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+":prix entre les seuils d achat:"+float8f(dct_FILE['binance_price']), debugapp_logger=logger)
-            b_TRADE=b_order(dct_FILE['symbol'], Qty_signal, dct_FILE['BUY'],"BUY", "order_BUY")
-            if b_TRADE.get("orderId") is not None:
-                dct_FILE['last_orderId']=b_TRADE.get("orderId")
-                dct_FILE['order_BUY']=b_TRADE
-                dct_FILE['executedDate_creation']=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
-                dct_FILE['last_order_level']='order_BUY'
-                dct_FILE['filename']=dir_TRADES+dct_FILE['symbol']+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json"
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK: deplace le fichier vers: "+dct_FILE['filename'].replace("/trades","/old"),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-                save_obj(dct_FILE, dct_FILE['filename'])
-                try:
-                    shutil.move(b_trade_to_order_file, dir_OLD)
-                except:
-                    pass
+    if dct_FILE['symbol'] not in blacklist:
+        if (whitelist <> "" and dct_FILE['symbol'] in whitelist) or whitelist == "":
+            if binance_prices.get(dct_FILE['symbol']) is not None:
+                dct_FILE['LOT_SIZE_stepSize'] = float(get_stepSize(dct_FILE.get("symbol")))
+                Buy_price_signal_down= percentage_calc(dct_FILE['BUY'], -dct_FILE['percentage_delta_buy'])
+                Buy_price_signal_up= percentage_calc(dct_FILE['BUY'], dct_FILE['percentage_delta_buy'])
+                dct_FILE['binance_price'] = float(binance_prices.get(dct_FILE['symbol']))
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix actuel du "+dct_FILE['symbol']+" est "+float8f(dct_FILE['binance_price']), debugapp_logger=logger)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix demande du "+dct_FILE['symbol']+" est "+float8f(dct_FILE['BUY']), debugapp_logger=logger)
+                #Calc how many BTC vs USD demand
+                BTCUSDT=float(binance_prices.get("BTCUSDT"))
+                Qty_signal=1/dct_FILE['BUY']/BTCUSDT*dct_FILE['USD']
+                Qty_signal=format(Qty_signal, '.8f')
+                #achatcoin=USD/prixbtc*coinbtc
+                #200/7000*0.0000184
+                if Buy_price_signal_down <= dct_FILE['binance_price'] <= Buy_price_signal_up:
+                    debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+":prix entre les seuils d achat:"+float8f(dct_FILE['binance_price']), debugapp_logger=logger)
+                    b_TRADE=b_order(dct_FILE['symbol'], Qty_signal, dct_FILE['BUY'],"BUY", "order_BUY")
+                    if b_TRADE.get("orderId") is not None:
+                        dct_FILE['last_orderId']=b_TRADE.get("orderId")
+                        dct_FILE['order_BUY']=b_TRADE
+                        dct_FILE['executedDate_creation']=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
+                        dct_FILE['last_order_level']='order_BUY'
+                        dct_FILE['filename']=dir_TRADES+dct_FILE['symbol']+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json"
+
+                        dct_FILE['sell_part_t1']=sell_part_t1
+                        dct_FILE['sell_part_t2']=sell_part_t2
+                        dct_FILE['sell_part_t3']=sell_part_t3
+                        dct_FILE['percentage_delta_buy']=percentage_delta_buy
+                        dct_FILE['percentage_control_balance']=percentage_control_balance
+                        dct_FILE['percentage_sl_upside']=percentage_sl_upside
+                        dct_FILE['percentage_limit_order_before_tx']=percentage_limit_order_before_tx
+                        dct_FILE['sl_replace_tx']=sl_replace_tx
+
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK: deplace le fichier vers: "+dct_FILE['filename'].replace("/trades","/old"),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+                        save_obj(dct_FILE, dct_FILE['filename'])
+                        try:
+                            shutil.move(b_trade_to_order_file, dir_OLD)
+                        except:
+                            pass
+                    else:
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order not OK:\n"+str(b_trade_to_order_file),debugapp_Telegram=1, debugapp_logger=logger)
+                else:
+                  debugapp(str(sys._getframe().f_code.co_name)+"|"+":prix PAS entre les seuils d achat:"+float8f(dct_FILE['binance_price']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
             else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order not OK:\n"+str(b_trade_to_order_file),debugapp_Telegram=1, debugapp_logger=logger)
+                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Inconnu: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
+                    try:
+                        shutil.move(b_trade_to_order_file, dir_PROBLEMS)
+                    except: 
+                        pass
         else:
-          debugapp(str(sys._getframe().f_code.co_name)+"|"+":prix PAS entre les seuils d achat:"+float8f(dct_FILE['binance_price']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Not in whitelist: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
+                try:
+                    shutil.move(b_trade_to_order_file, dir_PROBLEMS)
+                except: 
+                    pass
     else:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Inconnu: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"In blacklist: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
             try:
                 shutil.move(b_trade_to_order_file, dir_PROBLEMS)
             except: 
@@ -314,7 +342,7 @@ def which_level_what_do(which_level_what_do_price):
     dct_which_level_what_do['vente_Qty_SL'] = 'test'
     dct_which_level_what_do['SL_Price'] = 'test'
     print float8f(which_level_what_do_price)
-    which_level_what_do_price=percentage_calc(which_level_what_do_price, percentage_limit_order_before_tx)
+    which_level_what_do_price=percentage_calc(which_level_what_do_price, dct_FILE['percentage_limit_order_before_tx'])
     print float8f(which_level_what_do_price)
     
     #si t3 vend la mise executedQty_creation-executedQty_vendu
@@ -323,7 +351,7 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['Current_TX']=dct_FILE['T3']
     #si t2 mais pas t3 ni t1 vend 75% de la mise et met un SL de 25% de la mise a T1
     if dct_FILE['T2'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and not findkeys(dct_FILE, "order_T1"):
-        sell_part_t=sell_part_t1+sell_part_t2
+        sell_part_t=dct_FILE['sell_part_t1']+dct_FILE['sell_part_t2']
         sell_part_sl=1-sell_part_t
         dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation'] * sell_part_t
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation'] * sell_part_sl
@@ -331,17 +359,17 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['Current_TX']=dct_FILE['T2']
     #si t2 mais pas t3 mais t1 vend 25% de la mise et met un SL de 25% de la mise a T1
     elif dct_FILE['T2'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and findkeys(dct_FILE, "order_T"):
-        sell_part_t=sell_part_t1+sell_part_t2
+        sell_part_t=dct_FILE['sell_part_t1']+dct_FILE['sell_part_t2']
         sell_part_sl=1-sell_part_t
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*sell_part_t2
+        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*dct_FILE['sell_part_t2']
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
         dct_which_level_what_do['SL_Price']=dct_FILE['T1']
         dct_which_level_what_do['Current_TX']=dct_FILE['T2']
     #si t1 mais pas t3 ni t2 vend 50% de la mise et met un SL de ce qu il reste a Achat
     elif dct_FILE['T1'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and not findkeys(dct_FILE, "order_T2"):
-        sell_part_t=sell_part_t1
+        sell_part_t=dct_FILE['sell_part_t1']
         sell_part_sl=1-sell_part_t
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*sell_part_t1
+        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*dct_FILE['sell_part_t1']
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
         dct_which_level_what_do['SL_Price']=float(dct_FILE['order_BUY_FILLED']['price'])
         dct_which_level_what_do['Current_TX']=dct_FILE['T1']
@@ -478,7 +506,7 @@ def targetTX(targetTX_level):
                     #lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs")
                     dct_which_level_what_do=which_level_what_do(binance_price(dct_FILE.get("symbol")))
-                    if percentage_limit_order_before_tx<>0:
+                    if dct_FILE['percentage_limit_order_before_tx']<>0:
                         current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], dct_which_level_what_do['Current_TX'],"SELL", "order_"+targetTX_level)
                     else:
                         current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], binance_price(dct_FILE.get("symbol")),"SELL", "order_"+targetTX_level)
@@ -517,7 +545,6 @@ def setup_logger(logger_name, log_file):
     log_setup.addHandler(fileHandler) 
     log_setup.setLevel(level)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-	
 #############################################################################################################
 #END FUNCTIONS###############################################################################################
 #############################################################################################################
@@ -580,6 +607,9 @@ bot = telegram.Bot(token=my_telegram_bot_token)
 #debugapp(str(sys._getframe().f_code.co_name)+"|"+str(bot.get_me()),debugapp_DebugLevel="DEBUG")
 ###Variables
 processed_order=0
+###Whitelist,Blacklist
+whitelist = ConfigSectionMap("BINANCE_API", load_params)['whitelist']
+blacklist = ConfigSectionMap("BINANCE_API", load_params)['blacklist']
 ###Binance
 binance_key = ConfigSectionMap("BINANCE_API", load_params)['binance_key']
 binance_secret = ConfigSectionMap("BINANCE_API", load_params)['binance_secret']
@@ -706,9 +736,9 @@ for filename in os.listdir(dir_TRADES):
             #teste si prix actuel > T3, annule l Order et renome le fichier _T3_C
             
         if 'order_BUY_FILLED' in dct_FILE.keys() and not 'order_Panicsell_FILLED' in dct_FILE.keys():
-            current_price=percentage_calc(binance_price(dct_FILE.get("symbol")), percentage_limit_order_before_tx)
+            current_price=percentage_calc(binance_price(dct_FILE.get("symbol")), dct_FILE['percentage_limit_order_before_tx'])
             if dct_FILE['T3'] < current_price and not findkeys(dct_FILE, "order_T3"):
-                #si sl_replace_tx et T3 mais pas SLT2 alors annule SLT2 et ajoute sell_part_t2 Ã  sell_part_t3 puis lance SLT3 puis envoi une info trade a finir Ã  la main ou en mode auto SL qui suit le prix actuel
+                #si dct_FILE['sl_replace_tx'] et T3 mais pas SLT2 alors annule SLT2 et ajoute dct_FILE['sell_part_t2'] a dct_FILE['sell_part_t3'] puis lance SLT3 puis envoi une info trade a finir a la main ou en mode auto SL qui suit le prix actuel
                 targetTX('T3')
             elif dct_FILE['T2'] < current_price and not findkeys(dct_FILE, "order_T2") and not findkeys(dct_FILE, "order_T3"):
                 targetTX('T2')
