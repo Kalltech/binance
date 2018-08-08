@@ -18,7 +18,6 @@ SELL = "SELL"
 
 LIMIT = "LIMIT"
 MARKET = "MARKET"
-STOP_LOSS_LIMIT = "STOP_LOSS_LIMIT"
 
 GTC = "GTC"
 IOC = "IOC"
@@ -50,7 +49,6 @@ def tickers():
         "bidQty": d["bidQty"],
         "askQty": d["askQty"],
     } for d in data}
-
 
 def depth(symbol, **kwargs):
     """Get order book.
@@ -97,6 +95,53 @@ def klines(symbol, interval, **kwargs):
         "closeTime": d[6],
         "quoteVolume": d[7],
         "numTrades": d[8],
+        "takerBuyBaseVolume": d[9],
+        "takerBuyQuoteVolume": d[10]
+    } for d in data]
+
+def historicalTrades(symbol, **kwargs):
+    """Get historical trade data
+    
+    Name	Type	Mandatory	Description
+    symbol	STRING	YES	
+    limit	INT	NO	Default 500; max 500.
+    fromId	LONG	NO	TradeId to fetch from. Default gets most recent trades.
+    """
+    params = {"symbol": symbol}
+    params.update(kwargs)
+    data = requestWithAPIKey("GET", "/api/v1/historicalTrades", params)
+    return [{
+        "id": d["id"],
+        "price": d["price"],
+        "qty": d["qty"],
+        "time": d["time"],
+        "isBuyerMaker": d["isBuyerMaker"],
+        "isBestMatch": d["isBestMatch"]
+    } for d in data]
+
+def aggregateTrades(symbol, **kwargs):
+    """Get compressed, aggregate trades. Trades that fill at the time, from the same order, with the same price will have the quantity aggregated.
+    Name	Type	Mandatory	Description
+    symbol	STRING	YES	
+    fromId	LONG	NO	ID to get aggregate trades from INCLUSIVE.
+    startTime	LONG	NO	Timestamp in ms to get aggregate trades from INCLUSIVE.
+    endTime	LONG	NO	Timestamp in ms to get aggregate trades until INCLUSIVE.
+    limit	INT	NO	Default 500; max 500.
+    If both startTime and endTime are sent, limit should not be sent AND the distance between startTime and endTime must be less than 24 hours.
+    If frondId, startTime, and endTime are not sent, the most recent aggregate trades will be returned.
+    """
+    params = {"symbol": symbol}
+    params.update(kwargs)
+    data = requestWithAPIKey("GET", "/api/v1/aggTrades", params)
+    return [{
+        "aggregateID": d["a"],
+        "price": d["p"],
+        "qty": d["q"],
+        "firstTradeID": d["f"],
+        "lastTradeID": d["l"],
+        "timestamp": d["T"],
+        "isBuyerMaker": d["m"],
+        "isBestMatch": d["M"]
     } for d in data]
 
 
@@ -112,7 +157,7 @@ def balances():
     } for d in data.get("balances", [])}
 
 
-def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC, 
+def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
           test=False, **kwargs):
     """Send in a new order.
 
@@ -121,7 +166,7 @@ def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
         side (str): BUY or SELL.
         quantity (float, str or decimal)
         price (float, str or decimal)
-        orderType (str, optional): LIMIT or MARKET or STOP_LOSS_LIMIT
+        orderType (str, optional): LIMIT or MARKET.
         timeInForce (str, optional): GTC or IOC.
         test (bool, optional): Creates and validates a new order but does not
             send it into the matching engine. Returns an empty dict if
@@ -134,10 +179,10 @@ def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
     """
     params = {
         "symbol": symbol,
-        "side": side,
+        "side": formatNumber(side),
         "type": orderType,
         "timeInForce": timeInForce,
-        "quantity": formatNumber(quantity),
+        "quantity": quantity,
         "price": formatNumber(price),
     }
     params.update(kwargs)
@@ -232,11 +277,17 @@ def myTrades(symbol, **kwargs):
 
 def request(method, path, params=None):
     resp = requests.request(method, ENDPOINT + path, params=params)
-    data = resp.json()
-    if "msg" in data:
-        logging.error(data['msg'])
-    return data
+    return resp.json()
 
+def requestWithAPIKey(method, path, params=None):
+    if "apiKey" not in options:
+        raise ValueError("Api key must be set")
+
+    resp = requests.request(method, ENDPOINT + path, params=params,
+                            headers={"X-MBX-APIKEY": options["apiKey"]})
+    if resp.status_code != 200:
+        raise ValueError("Error on request: {} with {}".format(path, resp))
+    return resp.json()
 
 def signedRequest(method, path, params):
     if "apiKey" not in options or "secret" not in options:
