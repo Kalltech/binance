@@ -22,6 +22,7 @@ print "After import second:%d" % now.second
 #FUNCTIONS###############################################################################################
 #############################################################################################################
 def create_dict():
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     signal_dict = {}
     signal_dict['symbol'] = 'test'
     signal_dict['executedDate_creation'] = 'test'
@@ -36,9 +37,14 @@ def create_dict():
     signal_dict['dictToBeFilled'] = {}
     signal_dict['LOT_SIZE_stepSize'] = 'test'
     signal_dict['last_SL_orderId'] = 'test'
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     return signal_dict
     
 def debugapp(debugapp_str, **kwargs):
+    global tab
+    if "|begin" in debugapp_str:
+        tab=tab+"\t"
+    debugapp_str=tab+debugapp_str
     debugapp_str=debugapp_str.replace("<module>", "")
     debugapp_exit=kwargs.get('debugapp_exit', None)
     debugapp_SaveObj=kwargs.get('debugapp_SaveObj', None)
@@ -86,6 +92,8 @@ def debugapp(debugapp_str, **kwargs):
             shutil.move(log_file, dir_PROBLEMS+ntpath.basename(log_file))
         except: 
             pass
+    if "|end" in debugapp_str:
+        tab = tab[:-1]
     if debugapp_exit:
         sys.exit()
 
@@ -311,7 +319,7 @@ def b_trade_to_order(b_trade_to_order_file):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def save_obj(obj, name ):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Sauve l objet vers: "+name,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin"+"|"+"Sauve l objet vers: "+name,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     if not ".json" in name and not ".laststate" in name:
         with open(name, 'wb') as f:
 #        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
@@ -320,22 +328,26 @@ def save_obj(obj, name ):
         save_obj_out_file = open(name,"w")
         json.dump(obj,save_obj_out_file, indent=4, sort_keys=True)                                    
         save_obj_out_file.close()
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def load_obj(name ):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Ouvre l objet depuis: "+name,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin"+"|"+"Ouvre l objet depuis: "+name,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     if not ".json" in name:
         with open(name, 'rb') as f:
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
             return pickle.load(f)
     else:
         with open(name) as json_data:
             dct_load_obj = json.load(json_data)
             json_data.close()
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
             return dct_load_obj
 
 def binance_price(binance_price_symbol):
     return float(binance_prices.get(binance_price_symbol))
     
 def sell_stats(sell_stats_current_order, sell_stats_current_level, gain_BTC, gain_USD):
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     sell_stats_current_order["gain_USD"]=gain_USD
     sell_stats_current_order["gain_BTC"]=gain_BTC
     sell_stats_current_order["level"]=sell_stats_current_level
@@ -356,8 +368,10 @@ def sell_stats(sell_stats_current_order, sell_stats_current_level, gain_BTC, gai
         sell_stats_file_obj = open(sell_stats_file,"w")
         json.dump(dct_sell_stats,sell_stats_file_obj, indent=4, sort_keys=True)                                    
         sell_stats_file_obj.close()
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def which_level_what_do(which_level_what_do_price):
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     dct_which_level_what_do = {}
     dct_which_level_what_do['vente_Qty'] = 'test'
     dct_which_level_what_do['vente_Qty_SL'] = 'test'
@@ -394,6 +408,7 @@ def which_level_what_do(which_level_what_do_price):
         dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
         dct_which_level_what_do['SL_Price']=float(dct_FILE['order_BUY_FILLED']['price'])
         dct_which_level_what_do['Current_TX']=dct_FILE['T1']
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     return dct_which_level_what_do
 
 def get_stepSize(get_stepSize_coin):
@@ -410,6 +425,7 @@ def get_stepSize(get_stepSize_coin):
     return float(stepSize)
 
 def binance_status(binance_status_symbol,  **kwargs):
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     binance_status_test=kwargs.get('binance_status_test', None)
     binance_status_orderId=kwargs.get('orderId', None)
     binance_status_orderId_type=kwargs.get('binance_status_orderId_type', None)
@@ -431,6 +447,7 @@ def binance_status(binance_status_symbol,  **kwargs):
         # Close the file... we don't need it anymore  
         in_file.close()
         binance_status_dict['orderId']=binance_status_orderId
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         return binance_status_dict
     else:
         debugapp("Envoi du status de binance",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
@@ -438,6 +455,7 @@ def binance_status(binance_status_symbol,  **kwargs):
         if binance_status_order.get("orderId") is not None:
             debugapp(str(sys._getframe().f_code.co_name)+"|"+str(binance_status_order.get("orderId")),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
             save_json(dir_TEMP+str(binance_status_order.get("orderId")), binance_status_order)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         return binance_status_order
 
 def ToBeFilled():
@@ -496,6 +514,7 @@ def findkeys(d, findkeys_str):
     return 0
     
 def targetTX(targetTX_level):
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     #Annule l Order SL
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au "+targetTX_level+"_"+float8f(dct_FILE[targetTX_level])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l Order SL",debugapp_DebugLevel="DEBUG")
@@ -554,6 +573,8 @@ def targetTX(targetTX_level):
             debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+ "s exit apres Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
     else:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['symbol']+str(dct_FILE.get("last_SL_orderId"))+":Cancel order empty:"+str(current_order_cancel),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+
 def setup_logger(logger_name, log_file):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     log_setup = logging.getLogger(logger_name)
@@ -626,6 +647,7 @@ bot = telegram.Bot(token=my_telegram_bot_token)
 #debugapp(str(sys._getframe().f_code.co_name)+"|"+str(bot.get_me()),debugapp_DebugLevel="DEBUG")
 ###Variables
 processed_order=0
+tab=""
 ###Whitelist,Blacklist
 whitelist = ConfigSectionMap("BINANCE_API", load_params)['whitelist']
 blacklist = ConfigSectionMap("BINANCE_API", load_params)['blacklist']
