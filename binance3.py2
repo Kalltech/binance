@@ -517,7 +517,7 @@ def targetTX(targetTX_level):
     if current_order_cancel.get("orderId") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("orderId")))
         # Open a file for writing
-        out_file = open(dir_TEMP+current_order_cancel.get("orderId")+"_c","w")
+        out_file = open(dir_TEMP+current_order_cancel.get("orderId")+"_C","w")
         # Save the dictionary into this file
         # (the 'indent=4' is optional, but makes it more readable)
         json.dump(current_order_cancel,out_file, indent=4)                                    
@@ -599,6 +599,7 @@ sell_part_t1 = float(ConfigSectionMap("BINANCE_API", load_params)['sell_part_t1'
 sell_part_t2 = float(ConfigSectionMap("BINANCE_API", load_params)['sell_part_t2'])
 sell_part_t3 = float(ConfigSectionMap("BINANCE_API", load_params)['sell_part_t3'])
 percentage_force_sl = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_force_sl'])
+percentage_near_sl = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_near_sl'])
 sl_replace_tx = ConfigSectionMap("BINANCE_API", load_params)['sl_replace_tx']
 ###Directories
 cwd = os.getcwd()
@@ -689,9 +690,9 @@ for filename in os.listdir(dir_TRADES):
         last_sl_stop=dct_FILE['SL']
         if dct_FILE.has_key('order_T2_SL'): last_sl_stop=dct_FILE['order_T2_SL']['stopPrice']
         if dct_FILE.has_key('order_T1_SL'): last_sl_stop=dct_FILE['order_T1_SL']['stopPrice']
-        percentage_near_sl=float(dct_FILE['binance_price'])/float(last_sl_stop)*100-100
-        percentage_near_sl=format(percentage_near_sl, '.1f')
-        if float(percentage_near_sl)<=1: debugapp(str(sys._getframe().f_code.co_name)+"|"+"Price:"+str(float8f(dct_FILE['binance_price']))+" near SL:"+str(float8f(last_sl_stop)), debugapp_logger=logger,debugapp_Telegram=1)
+        near_sl=float(dct_FILE['binance_price'])/float(last_sl_stop)*100-100
+        near_sl=format(near_sl, '.1f')
+        if float(near_sl)<=percentage_near_sl: debugapp(str(sys._getframe().f_code.co_name)+"|"+"Price:"+str(float8f(dct_FILE['binance_price']))+" near SL:"+str(float8f(last_sl_stop)), debugapp_logger=logger,debugapp_Telegram=1)
         save_obj(dct_FILE, dct_FILE.get("filename"))
 
         if dct_FILE['executedQty_creation']=="test": dct_FILE['executedQty_creation']=0
@@ -710,7 +711,7 @@ for filename in os.listdir(dir_TRADES):
                 if current_order_cancel.get("orderId") is not None:
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("orderId")))
                     # Open a file for writing
-                    out_file = open(dir_TEMP+current_order_cancel.get("orderId")+"_c","w")
+                    out_file = open(dir_TEMP+current_order_cancel.get("orderId")+"_C","w")
                     # Save the dictionary into this file
                     # (the 'indent=4' is optional, but makes it more readable)
                     json.dump(current_order_cancel,out_file, indent=4)                                    
