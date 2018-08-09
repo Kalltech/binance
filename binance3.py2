@@ -89,17 +89,22 @@ def debugapp(debugapp_str, **kwargs):
     if debugapp_exit:
         sys.exit()
 
-def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
-    b_order_price=float(float8f(b_order_price))
+def save_json(save_json_path, save_json_data):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
-    binance_balances=binance.balances()
     # Open a file for writing
-    out_file = open(dir_TEMP+"binance_balances","w")
+    save_json_file = open(save_json_path,"w")
     # Save the dictionary into this file
     # (the 'indent=4' is optional, but makes it more readable)
-    json.dump(binance_balances,out_file, indent=4)                                    
+    json.dump(save_json_data,save_json_file, indent=4)                                    
     # Close the file
-    out_file.close()
+    save_json_file.close()
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
+
+def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
+    b_order_price=float(float8f(b_order_price))
+    binance_balances=binance.balances()
+    save_json(dir_TEMP+"binance_balances", binance_balances)
     dct_FILE["current_balance"] = binance_balances.get(dct_FILE["symbol"].replace("BTC", ""))
 #    debugapp(str(sys._getframe().f_code.co_name)+"|"+"tickSize:\n"+float8f(dct_FILE['PRICE_FILTER_tickSize'])+"\n"+float8f(b_order_price),debugapp_DebugLevel="DEBUG")
 #    debugapp(str(sys._getframe().f_code.co_name)+"|"+"tickSize:\n"+floatXf(dct_FILE['PRICE_FILTER_tickSize'])+"\n"+floatXf(b_order_price),debugapp_DebugLevel="DEBUG")
@@ -137,13 +142,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         order=binance.order(b_order_symbol, binance.SELL, order_quantity, floatXf(b_order_price), orderType=binance.STOP_LOSS_LIMIT, test=False, stopPrice=floatXf(b_order_price_plus_01_percen))
     if order.get("orderId") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK:"+str(order.get("orderId")),debugapp_DebugLevel="DEBUG")
-        # Open a file for writing
-        out_file = open(dir_TEMP+order.get("orderId"),"w")
-        # Save the dictionary into this file
-        # (the 'indent=4' is optional, but makes it more readable)
-        json.dump(order,out_file, indent=4)                                    
-        # Close the file
-        out_file.close()
+        save_json(dir_TEMP+str(order.get("orderId")), order)
         processed_order=1
         if b_order_side=="STOP-LIMIT":
             dct_FILE['last_SL_orderId']=order.get("orderId")
@@ -438,13 +437,7 @@ def binance_status(binance_status_symbol,  **kwargs):
         binance_status_order=binance.orderStatus(binance_status_symbol, orderId=binance_status_orderId)
         if binance_status_order.get("orderId") is not None:
             debugapp(str(sys._getframe().f_code.co_name)+"|"+str(binance_status_order.get("orderId")),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-            # Open a file for writing
-            out_file = open(dir_TEMP+str(binance_status_order.get("orderId")),"w")
-            # Save the dictionary into this file
-            # (the 'indent=4' is optional, but makes it more readable)
-            json.dump(binance_status_order,out_file, indent=4)                                    
-            # Close the file
-            out_file.close()
+            save_json(dir_TEMP+str(binance_status_order.get("orderId")), binance_status_order)
         return binance_status_order
 
 def ToBeFilled():
@@ -457,13 +450,7 @@ def ToBeFilled():
             allOrders=binance.allOrders(dct_FILE.get("symbol"))
 #                    allOrders=binance.allOrders("LOOOMBTC")
             if allOrders :
-                # Open a file for writing
-                out_file = open(dir_TEMP+"allOrders","w")
-                # Save the dictionary into this file
-                # (the 'indent=4' is optional, but makes it more readable)
-                json.dump(allOrders,out_file, indent=4)                                    
-                # Close the file
-                out_file.close()
+                save_json(dir_TEMP+"allOrders", allOrders)
                 if isinstance(allOrders, list):
                     order_filtred=filter(lambda allOrders: allOrders['orderId'] == dct_FILE[order_level_dictToBeFilled]['orderId'], allOrders)
                     current_allOrders=order_filtred[0]
@@ -516,13 +503,7 @@ def targetTX(targetTX_level):
 #    current_order_cancel=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
     if current_order_cancel.get("orderId") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("orderId")))
-        # Open a file for writing
-        out_file = open(dir_TEMP+current_order_cancel.get("orderId")+"_C","w")
-        # Save the dictionary into this file
-        # (the 'indent=4' is optional, but makes it more readable)
-        json.dump(current_order_cancel,out_file, indent=4)                                    
-        # Close the file
-        out_file.close()
+        save_json(dir_TEMP+str(current_order_cancel.get("orderId"))+"_C", current_order_cancel)
         dct_FILE["order_SL_CANCELED_ASKED"]=current_order_cancel
         count=0
         processed_order=1
@@ -711,13 +692,7 @@ for filename in os.listdir(dir_TRADES):
 #                current_order_cancel=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
                 if current_order_cancel.get("orderId") is not None:
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("orderId")))
-                    # Open a file for writing
-                    out_file = open(dir_TEMP+current_order_cancel.get("orderId")+"_C","w")
-                    # Save the dictionary into this file
-                    # (the 'indent=4' is optional, but makes it more readable)
-                    json.dump(current_order_cancel,out_file, indent=4)                                    
-                    # Close the file
-                    out_file.close()
+                    save_json(dir_TEMP+str(current_order_cancel.get("orderId"))+"_C", current_order_cancel)
                     dct_FILE["order_SL_CANCELED_ASKED"]=current_order_cancel
                     count=0
                     processed_order=1
