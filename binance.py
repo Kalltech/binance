@@ -3,6 +3,7 @@ import hashlib
 import logging
 import requests
 import time
+requests.adapters.DEFAULT_RETRIES = 2
 try:
     from urllib import urlencode
 
@@ -25,7 +26,6 @@ IOC = "IOC"
 
 options = {}
 
-
 def set(apiKey, secret):
     """Set API key and secret.
 
@@ -35,9 +35,30 @@ def set(apiKey, secret):
     options["secret"] = secret
 
 
+def get_ping():
+    """Test request, returns []."""
+    print("Fetching ping: ")
+    r = request("GET", "/api/v1/ping", {})
+    return r
+
+
+def get_server_time():
+    """Fetches the binance server time, equivalent to the time.time() result, measured in milliseconds"""
+    print("Fetching binance server time: ")
+    r = request("GET", "/api/v1/time", {})
+    return r["serverTime"]
+
+
+def get_exchange_info():
+    """Get latest exchange information."""
+    print("Fetching exchange info: ")
+    r = request("GET", "/api/v1/exchangeInfo", {})
+    return r
+
+
 def prices():
     """Get latest prices for all symbols."""
-    data = request("GET", "/api/v1/ticker/allPrices")
+    data = request("GET", "/api/v3/ticker/price", {})
     return {d["symbol"]: d["price"] for d in data}
 
 
@@ -79,7 +100,7 @@ def klines(symbol, interval, **kwargs):
     Args:
         symbol (str)
         interval (str)
-        limit (int, optional): Default 500; max 500.
+        limit (int, optional): Default 500; max 1000.
         startTime (int, optional)
         endTime (int, optional)
 
@@ -112,7 +133,7 @@ def balances():
     } for d in data.get("balances", [])}
 
 
-def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC, 
+def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
           test=False, **kwargs):
     """Send in a new order.
 
