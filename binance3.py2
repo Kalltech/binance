@@ -648,7 +648,7 @@ bot = telegram.Bot(token=my_telegram_bot_token)
 #debugapp(str(sys._getframe().f_code.co_name)+"|"+str(bot.get_me()),debugapp_DebugLevel="DEBUG")
 ###Variables
 processed_order=0
-tab="\t"
+tab=""
 ###Whitelist,Blacklist
 whitelist = ConfigSectionMap("BINANCE_API", load_params)['whitelist']
 blacklist = ConfigSectionMap("BINANCE_API", load_params)['blacklist']
