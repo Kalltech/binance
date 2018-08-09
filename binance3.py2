@@ -98,7 +98,7 @@ def debugapp(debugapp_str, **kwargs):
         sys.exit()
 
 def save_json(save_json_path, save_json_data):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     # Open a file for writing
     save_json_file = open(save_json_path,"w")
     # Save the dictionary into this file
@@ -106,7 +106,7 @@ def save_json(save_json_path, save_json_data):
     json.dump(save_json_data,save_json_file, indent=4)                                    
     # Close the file
     save_json_file.close()
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
@@ -514,6 +514,7 @@ def findkeys(d, findkeys_str):
     return 0
     
 def targetTX(targetTX_level):
+    global processed_order
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     #Annule l Order SL
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au "+targetTX_level+"_"+float8f(dct_FILE[targetTX_level])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
@@ -647,7 +648,7 @@ bot = telegram.Bot(token=my_telegram_bot_token)
 #debugapp(str(sys._getframe().f_code.co_name)+"|"+str(bot.get_me()),debugapp_DebugLevel="DEBUG")
 ###Variables
 processed_order=0
-tab=""
+tab="\t"
 ###Whitelist,Blacklist
 whitelist = ConfigSectionMap("BINANCE_API", load_params)['whitelist']
 blacklist = ConfigSectionMap("BINANCE_API", load_params)['blacklist']
