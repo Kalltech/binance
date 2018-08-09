@@ -468,7 +468,7 @@ def ToBeFilled():
                     order_filtred=filter(lambda allOrders: allOrders['orderId'] == dct_FILE[order_level_dictToBeFilled]['orderId'], allOrders)
                     current_allOrders=order_filtred[0]
                     if current_allOrders['status']=="FILLED":
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade FILLED of order_ "+str(current_allOrders.get("orderId")),debugapp_DebugLevel="DEBUG")
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade FILLED of order_"+str(current_allOrders.get("orderId")),debugapp_DebugLevel="DEBUG")
                         dct_FILE[order_level_dictToBeFilled+"_FILLED"]=current_allOrders
                         dct_FILE['last_order_level']=order_level_dictToBeFilled+"_FILLED"
                         dct_FILE['last_executedQty']=float(current_allOrders.get("executedQty"))
@@ -601,6 +601,7 @@ sell_part_t3 = float(ConfigSectionMap("BINANCE_API", load_params)['sell_part_t3'
 percentage_force_sl = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_force_sl'])
 percentage_near_sl = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_near_sl'])
 sl_replace_tx = ConfigSectionMap("BINANCE_API", load_params)['sl_replace_tx']
+percentage_delta_buyed_sold = ConfigSectionMap("BINANCE_API", load_params)['percentage_delta_buyed_sold']
 ###Directories
 cwd = os.getcwd()
 if not os.path.exists(cwd+"/trades"):
@@ -755,7 +756,8 @@ for filename in os.listdir(dir_TRADES):
         if dct_FILE['dictToBeFilled'].has_key("order_BUY"):
             ToBeFilled()
 
-        if (dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED' or float(dct_FILE['executedQty_creation'])<=(float(dct_FILE['executedQty_vendu'])+float(dct_FILE['executedQty_creation'])/100)) and float(dct_FILE['executedQty_creation'])<>0:
+#        if (dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED' or float(dct_FILE['executedQty_creation'])<=(float(dct_FILE['executedQty_vendu'])+float(dct_FILE['executedQty_creation'])/100)) and float(dct_FILE['executedQty_creation'])<>0:
+        if float(dct_FILE['executedQty_creation'])<=percentage_calc(dct_FILE['executedQty_vendu'], percentage_delta_buyed_sold) and float(dct_FILE['executedQty_creation'])<>0:
             debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("last_order_level")+" Fin du trade: deplace le fichier dans old",debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
             save_obj(dct_FILE, dct_FILE.get("filename"))
             try:
