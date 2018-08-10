@@ -149,10 +149,22 @@ def button(bot, update):
                 print(api_path+"trades/"+filename)
                 os.rename(api_path+"trades/"+filename, api_path+"old/"+filename)
                 str_msg=str_msg+"\n"+"Kill ok:"+filename
+        if "signals/" in query.data.replace("kill:",""):
+            filepath=query.data.replace("kill:","")
+            print(filepath)
+            os.rename(filepath, filepath.replace("signals/","old/"))
+            str_msg=str_msg+"\n"+"Kill ok: "+filepath.replace(api_path+"signals/","")
         if str_msg<>"":
             bot.editMessageText(text=str_msg,
                                     chat_id=query.message.chat_id,
                                     message_id=query.message.message_id)
+    elif "signals/" in query.data:
+        for filename in os.listdir(api_path+"signals/"):
+            if query.data in api_path+"signals/"+filename:
+                print(api_path+"signals/"+filename)
+                text_file = open(api_path+"signals/"+filename, "r")
+                str_msg=text_file.read()
+                text_file.close()
     else:
         for filename in os.listdir(api_path+"trades/"):
             if ".json" in filename and not ".log" in filename and query.data in filename:
@@ -175,10 +187,10 @@ def button(bot, update):
                     str_msg=str_msg+"\n"+filename+"\n"+str(status_dict)
                 else:
                     str_msg=str_msg+"\n"+filename+"\n"+"Order not filled"
-        if str_msg<>"":
-            bot.editMessageText(text=str_msg,
-                                chat_id=query.message.chat_id,
-                                message_id=query.message.message_id)
+    if str_msg<>"":
+        bot.editMessageText(text=str_msg,
+                            chat_id=query.message.chat_id,
+                            message_id=query.message.message_id)
 
 def help(bot, update):
     """Send a message when the command /help is issued."""
@@ -220,7 +232,17 @@ def echo(bot, update):
             update.message.reply_text("OK")
     elif text_sent=="status":
 #        print "status"
+        button_list = []
+        reply_markup=""
+        for filename in os.listdir(api_path+"signals/"):
+            print(api_path+"signals/"+filename)
+            button_list.append(InlineKeyboardButton(filename, callback_data=api_path+"signals/"+filename))
+            reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
+        if reply_markup <> "":
+            bot.send_message(my_telegram_id, text='All signals:', reply_markup=reply_markup)
         status_dict = {}
+        button_list = []
+        reply_markup=""
         for filename in os.listdir(api_path+"trades/"):
             if ".json" in filename and not ".log" in filename:
                 print(api_path+"trades/"+filename)
@@ -233,15 +255,17 @@ def echo(bot, update):
 #                print status_dict
                 status_dict[dct_FILE.get("symbol")+"Days"]=str(diff_time.days)
 #                print status_dict
-        button_list = []
-        for symbols in sorted(status_dict):
-            if not "Days" in symbols:
-                button_list.append(InlineKeyboardButton(symbols+":"+str(status_dict[symbols+"Days"])+"d", callback_data=symbols))
-        reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+        if status_dict<>{}:
+            for symbols in sorted(status_dict):
+                if not "Days" in symbols:
+                    button_list.append(InlineKeyboardButton(symbols+":"+str(status_dict[symbols+"Days"])+"d", callback_data=symbols))
+            reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
         list_of_files = glob.glob(api_path+"logs/*")
         latest_file = max(list_of_files, key=os.path.getctime)
         update.message.reply_text("Dernier log:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file))))
-        bot.send_message(my_telegram_id, text='All trades :', reply_markup=reply_markup)
+        print reply_markup
+        if reply_markup <> "":
+            bot.send_message(my_telegram_id, text='All trades:', reply_markup=reply_markup)
     elif text_sent=="panicsell":
         print "panicsell"
         status_dict = {}
@@ -254,20 +278,30 @@ def echo(bot, update):
         for symbols in sorted(status_dict):
             button_list.append(InlineKeyboardButton(hot+symbols, callback_data="panicsell:"+symbols))
         reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
-        bot.send_message(my_telegram_id, text='Which panic sell:', reply_markup=reply_markup)
+        bot.send_message(my_telegram_id, text='Which panicsell symbol(s):', reply_markup=reply_markup)
     elif text_sent=="kill":
         print "kill"
         status_dict = {}
+        button_list = []
+        reply_markup = ""
+        for filename in os.listdir(api_path+"signals/"):
+            print(api_path+"signals/"+filename)
+            button_list.append(InlineKeyboardButton(filename, callback_data="kill:"+api_path+"signals/"+filename))
+            reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
+        if reply_markup <> "":
+            bot.send_message(my_telegram_id, text='Which kill signal:', reply_markup=reply_markup)
         for filename in os.listdir(api_path+"trades/"):
             if ".json" in filename and not ".log" in filename:
                 print(api_path+"trades/"+filename)
                 dct_FILE=load_obj(api_path+"trades/"+filename)
                 status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level']
         button_list = []
+        reply_markup = ""
         for symbols in sorted(status_dict):
             button_list.append(InlineKeyboardButton(croix+symbols, callback_data="kill:"+symbols))
         reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
-        bot.send_message(my_telegram_id, text='Which kill trade:', reply_markup=reply_markup)
+        if reply_markup <> "":
+            bot.send_message(my_telegram_id, text='Which kill symbol(s):', reply_markup=reply_markup)
     elif "btc" in text_sent:
         print "signal"
         signal_dict = {}
@@ -283,6 +317,8 @@ def echo(bot, update):
         lines=lines.splitlines()
         for line in lines:
             line=line.replace(" ", "")
+            line=line.replace("/", "")
+            line=line.replace("#", ":")
             line=line.replace("$", "")
             line=line.replace("coin:", "")
 #            print(line)
@@ -309,6 +345,17 @@ def echo(bot, update):
                 signal_dict['T1'] = float8f(float(a_sell[0]))
                 signal_dict['T2'] = float8f(float(a_sell[1]))
                 signal_dict['T3'] = float8f(float(a_sell[2]))
+            if "t1:" in line and "t2:" in line and "t3:" in line :
+                a_t1t2t3=line.replace("t1","")
+                a_t1t2t3=a_t1t2t3.replace("t2","")
+                a_t1t2t3=a_t1t2t3.replace("t3","")
+                print a_t1t2t3
+                a_t1t2t3=a_t1t2t3.split(":")
+#                a_t1t2t3=a_t1t2t3[1].split(":")
+                print float8f(float(a_t1t2t3[1]))
+                signal_dict['T1'] = float8f(float(a_t1t2t3[1]))
+                signal_dict['T2'] = float8f(float(a_t1t2t3[2]))
+                signal_dict['T3'] = float8f(float(a_t1t2t3[3]))
             if "stop:" in line:
                 a_stop=line.split("stop:")
                 signal_dict['SL'] = float8f(float(a_stop[1]))
@@ -322,6 +369,11 @@ def echo(bot, update):
             if "buyzone:" in line:
                 a_buy=line
                 a_buy=a_buy.split("buyzone:")
+                a_buy=a_buy[1].split('-', 1)[0]
+                signal_dict['AC'] = float8f(float(a_buy))
+            if "buybelow:" in line:
+                a_buy=line
+                a_buy=a_buy.split("buybelow:")
                 a_buy=a_buy[1].split('-', 1)[0]
                 signal_dict['AC'] = float8f(float(a_buy))
             if "entryzone:" in line:
@@ -342,6 +394,20 @@ def echo(bot, update):
             if "target3:" in line:
                 a_t3=line
                 a_t3=a_t3.split("target3:")
+                a_t3=a_t3[1].split('(', 1)[0]
+            if "t1:" in line and signal_dict['T1']=="test":
+                a_t1=line
+                a_t1=a_t1.split("t1:")
+                a_t1=a_t1[1].split('(', 1)[0]
+                signal_dict['T1'] = float8f(float(a_t1))
+            if "t2:" in line and signal_dict['T2']=="test":
+                a_t2=line
+                a_t2=a_t2.split("t2:")
+                a_t2=a_t2[1].split('(', 1)[0]
+                signal_dict['T2'] = float8f(float(a_t2))
+            if "t3:" in line and signal_dict['T3']=="test":
+                a_t3=line
+                a_t3=a_t3.split("t3:")
                 a_t3=a_t3[1].split('(', 1)[0]
                 signal_dict['T3'] = float8f(float(a_t3))
             if "stoploss:" in line:
