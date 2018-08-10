@@ -777,6 +777,9 @@ for filename in os.listdir(dir_TRADES):
             else:
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order empty:"+str(current_order_BUY_FILLED),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
             #teste si prix actuel > T3, annule l Order et renome le fichier _T3_C
+
+        if dct_FILE['dictToBeFilled'].has_key("order_BUY"):
+            ToBeFilled()
             
         if 'order_BUY_FILLED' in dct_FILE.keys() and not 'order_Panicsell_FILLED' in dct_FILE.keys():
             current_price=percentage_calc(binance_price(dct_FILE.get("symbol")), dct_FILE['percentage_limit_order_before_tx'])
