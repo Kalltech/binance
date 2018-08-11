@@ -84,7 +84,7 @@ def debugapp(debugapp_str, **kwargs):
         #deplace le fichier de trade dans problems
         try:
             shutil.move(dct_FILE.get("filename"), dir_PROBLEMS+ntpath.basename(dct_FILE.get("filename")))
-            shutil.move(dct_FILE.get("filename")+".log", dir_PROBLEMS+ntpath.basename(dct_FILE.get("filename")+".log"))
+            if "trades" in  dct_FILE['filename']: shutil.move(dct_FILE.get("filename")+".log", dir_PROBLEMS+ntpath.basename(dct_FILE.get("filename")+".log"))
         except: 
             pass
         #deplace le fichier de log dans problems
@@ -110,7 +110,7 @@ def save_json(save_json_path, save_json_data):
 
 def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
-    b_order_price=float(float8f(b_order_price))
+    b_order_price=float(floatXf(b_order_price))
     binance_balances=binance.balances()
     save_json(dir_TEMP+"binance_balances", binance_balances)
     dct_FILE["current_balance"] = binance_balances.get(dct_FILE["symbol"].replace("BTC", ""))
@@ -122,7 +122,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
     if b_order_side=="BUY":
         b_order_Qty=float(b_order_Qty)
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Achat de "+str(order_quantity)+" "+b_order_symbol+" a "+float8f(b_order_price),debugapp_Telegram=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Achat de "+str(order_quantity)+" "+b_order_symbol+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
         order=binance.order(b_order_symbol, binance.BUY, order_quantity, b_order_price, test=False)
         
     elif b_order_side=="SELL":
@@ -132,7 +132,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         if b_order_Qty_down <= float(dct_FILE['current_balance']['free']) <= b_order_Qty_up:
             b_order_Qty=float(dct_FILE['current_balance']['free'])
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente de "+str(order_quantity)+" "+b_order_symbol+" a "+float8f(b_order_price),debugapp_Telegram=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente de "+str(order_quantity)+" "+b_order_symbol+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
         order=binance.order(b_order_symbol, binance.SELL, order_quantity, b_order_price, test=False)
         
     elif b_order_side=="STOP-LIMIT":
