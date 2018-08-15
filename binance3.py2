@@ -304,7 +304,6 @@ def b_trade_to_order(b_trade_to_order_file):
                         save_obj(dct_FILE, dct_FILE['filename'])
                         try:
                             shutil.move(b_trade_to_order_file, dir_OLD+ntpath.basename(b_trade_to_order_file))
-                            dct_FILE.clear()
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
                         except:
                             pass
