@@ -169,7 +169,7 @@ def main():
                     time.sleep(1)  # pause for 1 second to rate-limit automatic replies
         else:
             print("auto_trade disabled\n")
-        if "target" in event.message.message.lower() and "PeerChannel(channel_id=1150556645)" in str(event.message.to_id):
+        if "target" in event.message.message.lower() and "PeerChannel(channel_id=XXX)" in str(event.message.to_id):
 #        if "target" in event.message.message.lower():
             print("Target")
             current_time = datetime.datetime.now()
@@ -178,19 +178,20 @@ def main():
                 TX="T1"
                 T1.append(current_time)
                 T1 = count_T(T1, COIN, TX)
+                T1_global.append(current_time)
                 T1_global = count_T(T1_global, "T1_global", "T1_global")
             if "target 2" in event.message.message.lower():
                 TX="T2"
                 T2.append(current_time)
                 T2 = count_T(T2, COIN, TX)
+                T1_global.append(current_time)
                 T2_global = count_T(T2_global, "T2_global", "T2_global")
             if "target 3" in event.message.message.lower():
                 TX="T3"
                 T3.append(current_time)
                 T3 = count_T(T3, COIN, TX)
+                T1_global.append(current_time)
                 T3_global = count_T(T3_global, "T3_global", "T3_global")
-#            T_global.append(current_time)
-#            T_global = count_T(T_global, TX+"_T_global", TX+"_T_global")
 
     print(time.asctime(), '-', "Starting autotrade")
     print(str(api_id)+"/"+api_hash+"/"+bot_name+"/"+telegram_chat)
