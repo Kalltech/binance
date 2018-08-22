@@ -222,16 +222,16 @@ def echo(bot, update):
         else:
             update.message.reply_text(stats())
     elif text_sent=="stopautotrade":
-            cfgfile = open("binance_api.ini",'w')
             load_params.read("binance_api.ini")
             load_params.set('BINANCE_API','auto_trade',0)
+            cfgfile = open("binance_api.ini",'w')
             load_params.write(cfgfile)
             cfgfile.close()
             update.message.reply_text("OK")
     elif text_sent=="startautotrade":
-            cfgfile = open("binance_api.ini",'w')
             load_params.read("binance_api.ini")
             load_params.set('BINANCE_API','auto_trade',1)
+            cfgfile = open("binance_api.ini",'w')
             load_params.write(cfgfile)
             cfgfile.close()
             update.message.reply_text("OK")
@@ -396,17 +396,17 @@ def echo(bot, update):
                 a_t3=line
                 a_t3=a_t3.split("target3:")
                 a_t3=a_t3[1].split('(', 1)[0]
-            if "t1:" in line and signal_dict['T1']=="test":
+            if "t1:" in line and signal_dict['T1']=="init":
                 a_t1=line
                 a_t1=a_t1.split("t1:")
                 a_t1=a_t1[1].split('(', 1)[0]
                 signal_dict['T1'] = float8f(float(a_t1))
-            if "t2:" in line and signal_dict['T2']=="test":
+            if "t2:" in line and signal_dict['T2']=="init":
                 a_t2=line
                 a_t2=a_t2.split("t2:")
                 a_t2=a_t2[1].split('(', 1)[0]
                 signal_dict['T2'] = float8f(float(a_t2))
-            if "t3:" in line and signal_dict['T3']=="test":
+            if "t3:" in line and signal_dict['T3']=="init":
                 a_t3=line
                 a_t3=a_t3.split("t3:")
                 a_t3=a_t3[1].split('(', 1)[0]
@@ -429,7 +429,7 @@ def echo(bot, update):
                     signal_dict['SL'] = float8f(float(a_sl))
         key_not_find=0
         str_file="[TRADE]\n"
-        if signal_dict['USD']=="test": signal_dict['USD'] = ConfigSectionMap("BINANCE_API", load_params)['usd_to_bet']
+        if signal_dict['USD']=="init": signal_dict['USD'] = ConfigSectionMap("BINANCE_API", load_params)['usd_to_bet']
         for key, value in sorted(signal_dict.items()):
             if value == 'init':
                 update.message.reply_text("Valeur non trouvee:"+key)
