@@ -64,17 +64,24 @@ api_hash = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_app_api_has
 api_username = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_app_api_username']
 bot_name= ConfigSectionMap("BINANCE_API", load_params)['my_telegram_bot_name']
 telegram_chat= ConfigSectionMap("BINANCE_API", load_params)['telegram_chat']
-auto_trade= ConfigSectionMap("BINANCE_API", load_params)['auto_trade']
+InfluxDB_user= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_user']
+InfluxDB_password= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_password']
+InfluxDB_dbname= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_dbname']
+InfluxDB_dbuser= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_dbuser']
+InfluxDB_dbuser_password= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_dbuser_password']
+InfluxDB_host= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_host']
+InfluxDB_port= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_port']
+InfluxDB_enabled= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_enabled']
 
 def to_db(COIN="XXX",  TX="TX", TX_nb="0"):
     """Instantiate a connection to the InfluxDB."""
-    user = 'root'
-    password = 'xxx'
-    dbname = 'signals'
-    dbuser = 'johndoe'
-    dbuser_password = 'xxx'
-    host='localhost'
-    port=8086
+    user = InfluxDB_user
+    password = InfluxDB_password
+    dbname = InfluxDB_dbname
+    dbuser = InfluxDB_dbuser
+    dbuser_password = InfluxDB_dbuser_password
+    host=InfluxDB_host
+    port=InfluxDB_port
 #    query = 'select value from cpu_load_short;'
     current_time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
     json_body = [
@@ -169,7 +176,7 @@ def main():
                     time.sleep(1)  # pause for 1 second to rate-limit automatic replies
         else:
             print("auto_trade disabled\n")
-        if "target" in event.message.message.lower() and "PeerChannel(channel_id=XXX)" in str(event.message.to_id):
+        if InfluxDB_enabled == 1 and"target" in event.message.message.lower() and "PeerChannel(channel_id=1150556645)" in str(event.message.to_id):
 #        if "target" in event.message.message.lower():
             print("Target")
             current_time = datetime.datetime.now()
