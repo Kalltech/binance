@@ -51,20 +51,13 @@ def debugapp(debugapp_str, **kwargs):
     debugapp_SaveObj=kwargs.get('debugapp_SaveObj', None)
     debugapp_DebugLevel=kwargs.get('debugapp_DebugLevel', None)
     debugapp_Telegram=kwargs.get('debugapp_Telegram', None)
-    debugapp_Print=kwargs.get('debugapp_Print', None)
+    debugapp_NoPrintConsole=kwargs.get('debugapp_NoPrintConsole', None)
     debugapp_logger=kwargs.get('debugapp_logger', None)
     if not debugapp_logger: 
         if logger_symbol: 
             debugapp_logger=logger_symbol
         else:
             debugapp_logger=logger
-    if debugapp_Telegram: 
-        try:
-            debugapp_str=dct_FILE['symbol']+":"+debugapp_str
-            bot.sendMessage(chat_id=my_telegram_id, text=str(debugapp_str))
-        except:
-            debugapp_logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
-            print str("Impossible d envoyer vers Telegram"+str(debugapp_str))
     if debugapp_DebugLevel:
         if debugapp_DebugLevel=="ERROR":
             debugapp_logger.error(str(debugapp_str))
@@ -74,10 +67,17 @@ def debugapp(debugapp_str, **kwargs):
             debugapp_logger.warning(str(debugapp_str))
         elif debugapp_DebugLevel=="CRITICAL":
             debugapp_logger.critical(str(debugapp_str))
-        if not debugapp_Print: print str(debugapp_str)
+        if not debugapp_NoPrintConsole: print str(debugapp_str)
     else:
         debugapp_logger.info(str(debugapp_str))
-        if not debugapp_Print: print str(debugapp_str)
+        if not debugapp_NoPrintConsole: print str(debugapp_str)
+    if debugapp_Telegram: 
+        try:
+            debugapp_str=dct_FILE['symbol']+":"+debugapp_str
+            bot.sendMessage(chat_id=my_telegram_id, text=str(debugapp_str))
+        except:
+            debugapp_logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
+            print str("Impossible d envoyer vers Telegram"+str(debugapp_str))
     if debugapp_SaveObj:
         #Sauve le fichier au dernier etat
         if "trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
@@ -126,7 +126,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
     if b_order_side=="BUY":
         b_order_Qty=float(b_order_Qty)
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Achat de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande d achat de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
         order=binance.order(b_order_symbol, binance.BUY, order_quantity, b_order_price, test=False)
         
     elif b_order_side=="SELL":
@@ -136,7 +136,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         if b_order_Qty_down <= float(dct_FILE['current_balance']['free']) <= b_order_Qty_up:
             b_order_Qty=float(dct_FILE['current_balance']['free'])
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
         order=binance.order(b_order_symbol, binance.SELL, order_quantity, b_order_price, test=False)
         
     elif b_order_side=="STOP-LIMIT":
@@ -515,7 +515,11 @@ def ToBeFilled():
                             BTCUSDT=float(binance_prices.get("BTCUSDT"))
                             gain_USD=gain_BTC*BTCUSDT
 #                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente au level:"+order_level_dictToBeFilled,debugapp_Telegram=1)
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente de "+str(current_allOrders['executedQty'])+" de "+dct_FILE.get("symbol")+" au level:"+order_level_dictToBeFilled+"\nGain $: "+str(gain_USD),debugapp_Telegram=1)
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vendu "+str(current_allOrders['executedQty'])+" au level:"+order_level_dictToBeFilled+"\nGain $: "+str(gain_USD),debugapp_Telegram=1)
+                            if order_level_dictToBeFilled=="order_T1_SL" and dct_FILE['dictToBeFilled']['order_T1']==1:
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+order_level_dictToBeFilled+": vendu et T1 pas ATTEIND!",debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+                            if order_level_dictToBeFilled=="order_T2_SL" and dct_FILE['dictToBeFilled']["order_T2"]==1:
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+order_level_dictToBeFilled+": vendu et T2 pas ATTEIND!",debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
                             sell_stats(current_allOrders, order_level_dictToBeFilled, gain_BTC, gain_USD)
                         save_obj(dct_FILE, dct_FILE.get("filename"))
                     elif current_allOrders['status']=="CANCELED":
@@ -526,7 +530,7 @@ def ToBeFilled():
                 else:
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Error:"+str(allOrders['code'])+":"+allOrders['msg'],debugapp_DebugLevel="WARNING")
             else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Orders empty:"+dct_FILE.get("symbol"),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Orders empty:",debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def findkeys(d, findkeys_str):
