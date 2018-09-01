@@ -259,11 +259,13 @@ def echo(bot, update):
                 status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level']
 #                print status_dict
                 status_dict[dct_FILE.get("symbol")+"Days"]=str(diff_time.days)
+                status_dict[dct_FILE.get("symbol")+"LL"]=dct_FILE['last_order_level'].replace("order_", "")
 #                print status_dict
         if status_dict<>{}:
             for symbols in sorted(status_dict):
-                if not "Days" in symbols:
-                    button_list.append(InlineKeyboardButton(symbols+":"+str(status_dict[symbols+"Days"])+"d", callback_data=symbols))
+#                print symbols
+                if not "Days" in symbols and not "LL" in symbols:
+                    button_list.append(InlineKeyboardButton(symbols.replace("BTC", "")+":"+str(status_dict[symbols+"LL"])+":"+str(status_dict[symbols+"Days"])+"d", callback_data=symbols))
             reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
         list_of_files = glob.glob(api_path+"logs/*")
         latest_file = max(list_of_files, key=os.path.getctime)
