@@ -81,4 +81,3 @@ for event in notifier.event_gen():
             bar_update = 0
 #        print endTime
 #        if datetime.datetime.now() >= endTime and find_procs_by_name("python2") == false: print "supp"
-        
