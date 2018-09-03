@@ -64,24 +64,25 @@ api_hash = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_app_api_has
 api_username = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_app_api_username']
 bot_name= ConfigSectionMap("BINANCE_API", load_params)['my_telegram_bot_name']
 telegram_chat= ConfigSectionMap("BINANCE_API", load_params)['telegram_chat']
-InfluxDB_user= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_user']
-InfluxDB_password= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_password']
-InfluxDB_dbname= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_dbname']
-InfluxDB_dbuser= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_dbuser']
-InfluxDB_dbuser_password= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_dbuser_password']
-InfluxDB_host= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_host']
-InfluxDB_port= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_port']
-InfluxDB_enabled= ConfigSectionMap("BINANCE_API", load_params)['InfluxDB_enabled']
+influxdb_user= ConfigSectionMap("BINANCE_API", load_params)['influxdb_user']
+influxdb_password= ConfigSectionMap("BINANCE_API", load_params)['influxdb_password']
+influxdb_dbname= ConfigSectionMap("BINANCE_API", load_params)['influxdb_dbname']
+influxdb_dbuser= ConfigSectionMap("BINANCE_API", load_params)['influxdb_dbuser']
+influxdb_dbuser_password= ConfigSectionMap("BINANCE_API", load_params)['influxdb_dbuser_password']
+influxdb_host= ConfigSectionMap("BINANCE_API", load_params)['influxdb_host']
+influxdb_port= ConfigSectionMap("BINANCE_API", load_params)['influxdb_port']
+influxdb_enabled= ConfigSectionMap("BINANCE_API", load_params)['influxdb_enabled']
+auto_trade= ConfigSectionMap("BINANCE_API", load_params)['auto_trade']
 
 def to_db(COIN="XXX",  TX="TX", TX_nb="0"):
     """Instantiate a connection to the InfluxDB."""
-    user = InfluxDB_user
-    password = InfluxDB_password
-    dbname = InfluxDB_dbname
-    dbuser = InfluxDB_dbuser
-    dbuser_password = InfluxDB_dbuser_password
-    host=InfluxDB_host
-    port=InfluxDB_port
+    user = influxdb_user
+    password = influxdb_password
+    dbname = influxdb_dbname
+    dbuser = influxdb_dbuser
+    dbuser_password = influxdb_dbuser_password
+    host=influxdb_host
+    port=influxdb_port
 #    query = 'select value from cpu_load_short;'
     current_time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
     json_body = [
@@ -176,7 +177,7 @@ def main():
                     time.sleep(1)  # pause for 1 second to rate-limit automatic replies
         else:
             print("auto_trade disabled\n")
-        if InfluxDB_enabled == 1 and"target" in event.message.message.lower() and "PeerChannel(channel_id=1150556645)" in str(event.message.to_id):
+        if influxdb_enabled == 1 and"target" in event.message.message.lower() and "PeerChannel(channel_id=1150556645)" in str(event.message.to_id):
 #        if "target" in event.message.message.lower():
             print("Target")
             current_time = datetime.datetime.now()
