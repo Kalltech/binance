@@ -379,6 +379,11 @@ def echo(bot, update):
                 a_buy=a_buy.split("buybelow:")
                 a_buy=a_buy[1].split('-', 1)[0]
                 signal_dict['AC'] = float8f(float(a_buy))
+            if "buybeloworcloseto:" in line:
+                a_buy=line
+                a_buy=a_buy.split("buybeloworcloseto:")
+                a_buy=a_buy[1].split('-', 1)[0]
+                signal_dict['AC'] = float8f(float(a_buy))
             if "entryzone:" in line:
                 a_buy=line
                 a_buy=a_buy.split("entryzone:")
