@@ -361,9 +361,6 @@ def echo(bot, update):
             if "usd" in line:
                 a_usd=line.split("usd:")
                 signal_dict['USD'] = a_usd[1]
-#            if "buy:" in line:
-#                a_buy=line.split("buy:")
-#                signal_dict['AC'] = str(float(a_buy[1]))
             if "sell:" in line:
                 a_sell=line.split("sell:")
                 a_sell=a_sell[1].split("-")
@@ -378,35 +375,10 @@ def echo(bot, update):
                 signal_dict['T1'] = float8f(float(a_t1t2t3[1]))
                 signal_dict['T2'] = float8f(float(a_t1t2t3[2]))
                 signal_dict['T3'] = float8f(float(a_t1t2t3[3]))
-#            if "stop:" in line:
-#                a_stop=line.split("stop:")
-#                signal_dict['SL'] = float8f(float(a_stop[1]))
 #Signal Profits
-#            if "buy:" in line:
-#                a_buy=line
-#                a_buy=a_buy.split("buy:")
-#                a_buy=a_buy[1]
-#                a_buy=a_buy.split('-', 1)[0]
-#                signal_dict['AC'] = float8f(float(a_buy))
-#            if "buyzone:" in line:
-#                a_buy=line
-#                a_buy=a_buy.split("buyzone:")
-#                a_buy=a_buy[1].split('-', 1)[0]
-#                signal_dict['AC'] = float8f(float(a_buy))
-#            if "buybelow:" in line:
-#                a_buy=line
-#                a_buy=a_buy.split("buybelow:")
-#                a_buy=a_buy[1].split('-', 1)[0]
-#                signal_dict['AC'] = float8f(float(a_buy))
-#            if "buybeloworcloseto:" in line:
-#                a_buy=line
-#                a_buy=a_buy.split("buybeloworcloseto:")
-#                a_buy=a_buy[1].split('-', 1)[0]
-#                signal_dict['AC'] = float8f(float(a_buy))
             a={"buy:", "buyzone:", "buybelow:", "buybeloworcloseto:", "entryzone:"}
             if any(x in line for x in a) and signal_dict['AC']=="init":
                 signal_dict['AC'] = get_price_type(line, a)
-                
             a={"target1:", "t1:"}
             print line
             if any(x in line for x in a):
@@ -414,81 +386,16 @@ def echo(bot, update):
                     signal_dict['T1'] = get_price_type(line, a)
                 else:
                     signal_dict['T3'] = get_price_type(line, a)
-                
             a={"target2:", "t2:"}
             if any(x in line for x in a) and signal_dict['T2']=="init":
                 signal_dict['T2'] = get_price_type(line, a)
-
             a={"target3:", "t3:"}
             if any(x in line for x in a):
                 signal_dict['T3'] = get_price_type(line, a)
-
             a={"stop:", "stoploss:", "stoplimit:"}
             if any(x in line for x in a) and signal_dict['SL']=="init":
                 signal_dict['SL'] = get_price_type(line, a)
                 
-#            if "entryzone:" in line:
-#                a_buy=line
-#                a_buy=a_buy.split("entryzone:")
-#                if "-" in a_buy[1]:
-#                    a_buy=a_buy[1].split('-', 1)[0]
-#                elif "(" in a_buy[1]:
-#                    a_buy=a_buy[1].split('(', 1)[0]
-#                else:
-#                    a_buy=a_buy[1]
-#                signal_dict['AC'] = float8f(float(a_buy))
-#            if "target1:" in line and signal_dict['T1']=="init":
-#                a_t1=line
-#                a_t1=a_t1.split("target1:")
-#                a_t1=a_t1[1].split('(', 1)[0]
-#                signal_dict['T1'] = float8f(float(a_t1))
-#            if "target2:" in line and signal_dict['T2']=="init":
-#                a_t2=line
-#                a_t2=a_t2.split("target2:")
-#                a_t2=a_t2[1].split('(', 1)[0]
-#                signal_dict['T2'] = float8f(float(a_t2))
-#            if "target1:" in line and signal_dict['T1']<>"init" :
-#                print line
-#                a_t1=line
-#                a_t1=a_t1.split("target1:")
-#                a_t1=a_t1[1].split('(', 1)[0]
-#                signal_dict['T3'] = float8f(float(a_t1))
-#            if "target3:" in line and signal_dict['T2']<>"init":
-#                a_t3=line
-#                a_t3=a_t3.split("target3:")
-#                a_t3=a_t3[1].split('(', 1)[0]
-#                signal_dict['T3'] = float8f(float(a_t3))
-#            if "t1:" in line and signal_dict['T1']=="init":
-#                a_t1=line
-#                a_t1=a_t1.split("t1:")
-#                a_t1=a_t1[1].split('(', 1)[0]
-#                signal_dict['T1'] = float8f(float(a_t1))
-#            if "t2:" in line and signal_dict['T2']=="init":
-#                a_t2=line
-#                a_t2=a_t2.split("t2:")
-#                a_t2=a_t2[1].split('(', 1)[0]
-#                signal_dict['T2'] = float8f(float(a_t2))
-#            if "t3:" in line and signal_dict['T3']=="init":
-#                a_t3=line
-#                a_t3=a_t3.split("t3:")
-#                a_t3=a_t3[1].split('(', 1)[0]
-#                signal_dict['T3'] = float8f(float(a_t3))
-#            if "stoploss:" in line:
-#                a_stop=line
-#                a_stop=a_stop.split("stoploss:")
-#                signal_dict['SL'] = a_stop[1]
-#                if signal_dict['SL'].find("("):
-#                    a_sl=signal_dict['SL']
-#                    a_sl=a_sl.split('(', 1)[0]
-#                    signal_dict['SL'] = float8f(float(a_sl))
-#            if "stoplimit:" in line:
-#                a_sl=line
-#                a_sl=a_sl.split("stoplimit:")
-#                signal_dict['SL'] = a_sl[1]
-#                if signal_dict['SL'].find("("):
-#                    a_sl=signal_dict['SL']
-#                    a_sl=a_sl.split('(', 1)[0]
-#                    signal_dict['SL'] = float8f(float(a_sl))
         print signal_dict
         key_not_find=0
         str_file="[TRADE]\n"
