@@ -153,14 +153,23 @@ def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
         icebergQty (float, str or decimal, optional): Used with iceberg orders.
 
     """
-    params = {
-        "symbol": symbol,
-        "side": side,
-        "type": orderType,
-        "timeInForce": timeInForce,
-        "quantity": formatNumber(quantity),
-        "price": formatNumber(price),
-    }
+    if orderType==MARKET:
+        params = {
+            "symbol": symbol,
+            "side": side,
+            "type": orderType,
+            "quantity": formatNumber(quantity),
+        }
+    else:
+            params = {
+            "symbol": symbol,
+            "side": side,
+            "type": orderType,
+            "timeInForce": timeInForce,
+            "quantity": formatNumber(quantity),
+            "price": formatNumber(price),
+        }
+
     params.update(kwargs)
     path = "/api/v3/order/test" if test else "/api/v3/order"
     data = signedRequest("POST", path, params)
