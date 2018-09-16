@@ -136,8 +136,13 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         if b_order_Qty_down <= float(dct_FILE['current_balance']['free']) <= b_order_Qty_up:
             b_order_Qty=float(dct_FILE['current_balance']['free'])
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
-        order=binance.order(b_order_symbol, binance.SELL, order_quantity, b_order_price, test=False)
+        
+        if "Panicsell" in b_order_level: 
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente MARKET de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
+            order=binance.order(b_order_symbol, binance.SELL, order_quantity, b_order_price, orderType=binance.MARKET, test=False)
+        else:
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente LIMIT de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
+            order=binance.order(b_order_symbol, binance.SELL, order_quantity, b_order_price, test=False)
         
     elif b_order_side=="STOP-LIMIT":
         b_order_price_plus_01_percen=float(format(b_order_price+b_order_price*0.001*float(dct_FILE['percentage_sl_upside']), '.8f'))
@@ -508,6 +513,9 @@ def ToBeFilled():
                         if current_allOrders['side']=="SELL":
                             dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+float(current_allOrders['executedQty'])
                             prix_de_vente=float(current_allOrders['price'])
+                            if float(current_allOrders['price'])==0 and order_level_dictToBeFilled=="order_Panicsell":
+#                                current_order_status=binance_status(dct_FILE.get("symbol"), orderId=current_allOrders['orderId'])
+                                prix_de_vente=float(dct_FILE['order_Panicsell']['fills'][0]['price'])
                             prix_achat=float(dct_FILE['order_BUY_FILLED']['price'])
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Diff BTC: "+str(prix_de_vente-prix_achat))
                             gain_BTC=(prix_de_vente-prix_achat)*float(current_allOrders['executedQty'])
@@ -622,7 +630,7 @@ def panicsell():
     else:
         order_to_cancel=dct_FILE.get("last_SL_orderId")
     current_order_cancel=binance.cancel(dct_FILE.get("symbol"), orderId=order_to_cancel)
-#                current_order_cancel=binance_status(dct_FILE.get("symbol"), orderId=order_to_cancel, binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
+#    current_order_cancel=binance_status(dct_FILE.get("symbol"), orderId=order_to_cancel, binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
     if current_order_cancel.get("orderId") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("orderId")))
         save_json(dir_TEMP+dct_FILE['symbol']+"_"+str(current_order_cancel.get("orderId"))+"_C", current_order_cancel)
@@ -634,7 +642,7 @@ def panicsell():
             #Check si Order bien CANCELED
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Check si Order bien CANCELED")
             current_order_status=binance_status(dct_FILE.get("symbol"), orderId=current_order_cancel['orderId'])
-#                        current_order_status=binance_status(dct_FILE.get("symbol"), orderId=current_order_cancel['orderId'], binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
+#            current_order_status=binance_status(dct_FILE.get("symbol"), orderId=current_order_cancel['orderId'], binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
             if current_order_status.get("orderId") is not None:
                 if current_order_status.get("status")=="CANCELED":
                     dct_FILE[dct_FILE.get("last_order_level")+"_CANCELED"]=current_order_status
