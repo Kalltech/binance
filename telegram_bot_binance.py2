@@ -14,7 +14,7 @@ import os
 import datetime
 import time
 #import pickle
-import string
+import string,  re
 import ConfigParser
 import json
 import glob
@@ -46,6 +46,22 @@ def ConfigSectionMap(section, Config):
       print("exception on %s!" % option)
       dict1[option] = None
   return dict1
+
+def extract_numbers(extract_numbers_str):
+    extract_numbers_array=re.findall(r'\d+',extract_numbers_str)
+    if extract_numbers_array:
+        if extract_numbers_array[0]=="0":
+            return float8f(str(extract_numbers_array[0]+"."+extract_numbers_array[1]))
+        else:
+            return "init"
+    else:
+        return "init"
+
+def get_price_type(get_price_type_str, get_price_type_valeurs):
+    for valeur in get_price_type_valeurs:
+        if valeur in get_price_type_str:
+            return extract_numbers(get_price_type_str.replace(valeur, ""))
+    return "init"
 
 global my_telegram_id
 my_telegram_id = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_id']
@@ -203,9 +219,9 @@ def echo(bot, update):
     print "BEGIN response"
     global my_telegram_id
     text_sent=update.message.text.lower()
-    print text_sent
     printable = set(string.printable)
     text_sent=filter(lambda x: x in printable, text_sent)
+    print text_sent
     if "pause:" in text_sent:
         print "Create pause.txt"
         a_pause=text_sent.split("pause:")
@@ -308,7 +324,7 @@ def echo(bot, update):
         reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
         if reply_markup <> "":
             bot.send_message(my_telegram_id, text='Which kill symbol(s):', reply_markup=reply_markup)
-    elif "btc" in text_sent:
+    elif "btc" in text_sent or "coin:" in text_sent:
         print "signal"
         signal_dict = {}
         signal_dict['C'] = 'init'
@@ -326,7 +342,7 @@ def echo(bot, update):
             line=line.replace("/", "")
             line=line.replace("#", ":")
             line=line.replace("$", "")
-            line=line.replace("coin:", "")
+#            line=line.replace("coin:", "")
 #            print(line)
 #Crypto Signalist Pro
             if "btc" in line:
@@ -339,6 +355,9 @@ def echo(bot, update):
                     a_symbol=signal_dict['C']
                     a_symbol=a_symbol.split('-', 1)[0]
                     signal_dict['C'] = a_symbol
+            if "coin:" in line:
+                a_usd=line.split("coin:")
+                signal_dict['C'] = a_usd[1].upper()+"BTC"
             if "usd" in line:
                 a_usd=line.split("usd:")
                 signal_dict['USD'] = a_usd[1]
@@ -359,81 +378,118 @@ def echo(bot, update):
                 signal_dict['T1'] = float8f(float(a_t1t2t3[1]))
                 signal_dict['T2'] = float8f(float(a_t1t2t3[2]))
                 signal_dict['T3'] = float8f(float(a_t1t2t3[3]))
-            if "stop:" in line:
-                a_stop=line.split("stop:")
-                signal_dict['SL'] = float8f(float(a_stop[1]))
+#            if "stop:" in line:
+#                a_stop=line.split("stop:")
+#                signal_dict['SL'] = float8f(float(a_stop[1]))
 #Signal Profits
-            if "buy:" in line:
-                a_buy=line
-                a_buy=a_buy.split("buy:")
-                a_buy=a_buy[1]
-                a_buy=a_buy.split('-', 1)[0]
-                signal_dict['AC'] = float8f(float(a_buy))
-            if "buyzone:" in line:
-                a_buy=line
-                a_buy=a_buy.split("buyzone:")
-                a_buy=a_buy[1].split('-', 1)[0]
-                signal_dict['AC'] = float8f(float(a_buy))
-            if "buybelow:" in line:
-                a_buy=line
-                a_buy=a_buy.split("buybelow:")
-                a_buy=a_buy[1].split('-', 1)[0]
-                signal_dict['AC'] = float8f(float(a_buy))
-            if "buybeloworcloseto:" in line:
-                a_buy=line
-                a_buy=a_buy.split("buybeloworcloseto:")
-                a_buy=a_buy[1].split('-', 1)[0]
-                signal_dict['AC'] = float8f(float(a_buy))
-            if "entryzone:" in line:
-                a_buy=line
-                a_buy=a_buy.split("entryzone:")
-                a_buy=a_buy[1].split('-', 1)[0]
-                signal_dict['AC'] = float8f(float(a_buy))
-            if "target1:" in line:
-                a_t1=line
-                a_t1=a_t1.split("target1:")
-                a_t1=a_t1[1].split('(', 1)[0]
-                signal_dict['T1'] = float8f(float(a_t1))
-            if "target2:" in line:
-                a_t2=line
-                a_t2=a_t2.split("target2:")
-                a_t2=a_t2[1].split('(', 1)[0]
-                signal_dict['T2'] = float8f(float(a_t2))
-            if "target3:" in line:
-                a_t3=line
-                a_t3=a_t3.split("target3:")
-                a_t3=a_t3[1].split('(', 1)[0]
-            if "t1:" in line and signal_dict['T1']=="init":
-                a_t1=line
-                a_t1=a_t1.split("t1:")
-                a_t1=a_t1[1].split('(', 1)[0]
-                signal_dict['T1'] = float8f(float(a_t1))
-            if "t2:" in line and signal_dict['T2']=="init":
-                a_t2=line
-                a_t2=a_t2.split("t2:")
-                a_t2=a_t2[1].split('(', 1)[0]
-                signal_dict['T2'] = float8f(float(a_t2))
-            if "t3:" in line and signal_dict['T3']=="init":
-                a_t3=line
-                a_t3=a_t3.split("t3:")
-                a_t3=a_t3[1].split('(', 1)[0]
-                signal_dict['T3'] = float8f(float(a_t3))
-            if "stoploss:" in line:
-                a_stop=line
-                a_stop=a_stop.split("stoploss:")
-                signal_dict['SL'] = a_stop[1]
-                if signal_dict['SL'].find("("):
-                    a_sl=signal_dict['SL']
-                    a_sl=a_sl.split('(', 1)[0]
-                    signal_dict['SL'] = float8f(float(a_sl))
-            if "stoplimit:" in line:
-                a_sl=line
-                a_sl=a_sl.split("stoplimit:")
-                signal_dict['SL'] = a_sl[1]
-                if signal_dict['SL'].find("("):
-                    a_sl=signal_dict['SL']
-                    a_sl=a_sl.split('(', 1)[0]
-                    signal_dict['SL'] = float8f(float(a_sl))
+#            if "buy:" in line:
+#                a_buy=line
+#                a_buy=a_buy.split("buy:")
+#                a_buy=a_buy[1]
+#                a_buy=a_buy.split('-', 1)[0]
+#                signal_dict['AC'] = float8f(float(a_buy))
+#            if "buyzone:" in line:
+#                a_buy=line
+#                a_buy=a_buy.split("buyzone:")
+#                a_buy=a_buy[1].split('-', 1)[0]
+#                signal_dict['AC'] = float8f(float(a_buy))
+#            if "buybelow:" in line:
+#                a_buy=line
+#                a_buy=a_buy.split("buybelow:")
+#                a_buy=a_buy[1].split('-', 1)[0]
+#                signal_dict['AC'] = float8f(float(a_buy))
+#            if "buybeloworcloseto:" in line:
+#                a_buy=line
+#                a_buy=a_buy.split("buybeloworcloseto:")
+#                a_buy=a_buy[1].split('-', 1)[0]
+#                signal_dict['AC'] = float8f(float(a_buy))
+            a={"buy:", "buyzone:", "buybelow:", "buybeloworcloseto:", "entryzone:"}
+            if any(x in line for x in a) and signal_dict['AC']=="init":
+                signal_dict['AC'] = get_price_type(line, a)
+                
+            a={"target1:", "t1:"}
+            print line
+            if any(x in line for x in a):
+                if signal_dict['T1']=="init":
+                    signal_dict['T1'] = get_price_type(line, a)
+                else:
+                    signal_dict['T3'] = get_price_type(line, a)
+                
+            a={"target2:", "t2:"}
+            if any(x in line for x in a) and signal_dict['T2']=="init":
+                signal_dict['T2'] = get_price_type(line, a)
+
+            a={"target3:", "t3:"}
+            if any(x in line for x in a):
+                signal_dict['T3'] = get_price_type(line, a)
+
+            a={"stop:", "stoploss:", "stoplimit:"}
+            if any(x in line for x in a) and signal_dict['SL']=="init":
+                signal_dict['SL'] = get_price_type(line, a)
+                
+#            if "entryzone:" in line:
+#                a_buy=line
+#                a_buy=a_buy.split("entryzone:")
+#                if "-" in a_buy[1]:
+#                    a_buy=a_buy[1].split('-', 1)[0]
+#                elif "(" in a_buy[1]:
+#                    a_buy=a_buy[1].split('(', 1)[0]
+#                else:
+#                    a_buy=a_buy[1]
+#                signal_dict['AC'] = float8f(float(a_buy))
+#            if "target1:" in line and signal_dict['T1']=="init":
+#                a_t1=line
+#                a_t1=a_t1.split("target1:")
+#                a_t1=a_t1[1].split('(', 1)[0]
+#                signal_dict['T1'] = float8f(float(a_t1))
+#            if "target2:" in line and signal_dict['T2']=="init":
+#                a_t2=line
+#                a_t2=a_t2.split("target2:")
+#                a_t2=a_t2[1].split('(', 1)[0]
+#                signal_dict['T2'] = float8f(float(a_t2))
+#            if "target1:" in line and signal_dict['T1']<>"init" :
+#                print line
+#                a_t1=line
+#                a_t1=a_t1.split("target1:")
+#                a_t1=a_t1[1].split('(', 1)[0]
+#                signal_dict['T3'] = float8f(float(a_t1))
+#            if "target3:" in line and signal_dict['T2']<>"init":
+#                a_t3=line
+#                a_t3=a_t3.split("target3:")
+#                a_t3=a_t3[1].split('(', 1)[0]
+#                signal_dict['T3'] = float8f(float(a_t3))
+#            if "t1:" in line and signal_dict['T1']=="init":
+#                a_t1=line
+#                a_t1=a_t1.split("t1:")
+#                a_t1=a_t1[1].split('(', 1)[0]
+#                signal_dict['T1'] = float8f(float(a_t1))
+#            if "t2:" in line and signal_dict['T2']=="init":
+#                a_t2=line
+#                a_t2=a_t2.split("t2:")
+#                a_t2=a_t2[1].split('(', 1)[0]
+#                signal_dict['T2'] = float8f(float(a_t2))
+#            if "t3:" in line and signal_dict['T3']=="init":
+#                a_t3=line
+#                a_t3=a_t3.split("t3:")
+#                a_t3=a_t3[1].split('(', 1)[0]
+#                signal_dict['T3'] = float8f(float(a_t3))
+#            if "stoploss:" in line:
+#                a_stop=line
+#                a_stop=a_stop.split("stoploss:")
+#                signal_dict['SL'] = a_stop[1]
+#                if signal_dict['SL'].find("("):
+#                    a_sl=signal_dict['SL']
+#                    a_sl=a_sl.split('(', 1)[0]
+#                    signal_dict['SL'] = float8f(float(a_sl))
+#            if "stoplimit:" in line:
+#                a_sl=line
+#                a_sl=a_sl.split("stoplimit:")
+#                signal_dict['SL'] = a_sl[1]
+#                if signal_dict['SL'].find("("):
+#                    a_sl=signal_dict['SL']
+#                    a_sl=a_sl.split('(', 1)[0]
+#                    signal_dict['SL'] = float8f(float(a_sl))
+        print signal_dict
         key_not_find=0
         str_file="[TRADE]\n"
         if signal_dict['USD']=="init": signal_dict['USD'] = ConfigSectionMap("BINANCE_API", load_params)['usd_to_bet']
@@ -446,7 +502,7 @@ def echo(bot, update):
 
         if key_not_find<>1:
             if not float(signal_dict['SL'])<=float(signal_dict['AC'])<=float(signal_dict['T1'])<=float(signal_dict['T2'])<=float(signal_dict['T3']):
-                update.message.reply_text("Signal false:\n"+"Check numbers")
+                update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
             else:
                 text_file = open(api_path+"/signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
                 text_file.write(str_file)
