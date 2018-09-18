@@ -63,6 +63,7 @@ def ConfigSectionMap(section, Config):
 api_id = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_app_api_id']
 api_hash = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_app_api_hash']
 api_username = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_app_api_username']
+api_number = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_app_api_number']
 bot_name= ConfigSectionMap("BINANCE_API", load_params)['my_telegram_bot_name']
 telegram_chat= ConfigSectionMap("BINANCE_API", load_params)['telegram_chat']
 influxdb_user= ConfigSectionMap("BINANCE_API", load_params)['influxdb_user']
@@ -146,7 +147,7 @@ def count_T(count_T_TX, count_T_COIN,  count_T_Name):
 def main():
     # Create the client and connect
     client = TelegramClient(api_username, api_id, api_hash, update_workers=1, spawn_read_thread=False)
-    client.start("0033603369242")
+    client.start(api_number)
 
     @client.on(events.NewMessage(incoming=True))
     def _(event):
@@ -161,6 +162,8 @@ def main():
         bot_name= ConfigSectionMap("BINANCE_API", load_params)['my_telegram_bot_name']
         telegram_chat= ConfigSectionMap("BINANCE_API", load_params)['telegram_chat']
         a_telegram_chat = telegram_chat.split(",")
+        influxdb_collectors= ConfigSectionMap("BINANCE_API", load_params)['influxdb_collectors']
+        a_influxdb_collectors = influxdb_collectors.split(",")
         auto_trade= ConfigSectionMap("BINANCE_API", load_params)['auto_trade']
 #        print(event.message)
 #        print(event.message.from_id)
@@ -183,29 +186,30 @@ def main():
                     time.sleep(1)  # pause for 1 second to rate-limit automatic replies
         else:
             print("auto_trade disabled\n")
-        if influxdb_enabled == "1" and"target" in text_sent and ("PeerChannel(channel_id=1150556645)" in str(event.message.to_id) or "PeerUser(user_id=677414303)" in str(event.message.to_id)):
-            print("influxdb_enabled")
-#        if "target" in text_sent:
-            current_time = datetime.datetime.now()
-            COIN=text_sent.split(" touched")[0]
-            if "target 1" in text_sent:
-                TX="T1"
-                T1.append(current_time)
-                T1 = count_T(T1, COIN, TX)
-                T1_global.append(current_time)
-                T1_global = count_T(T1_global, "T1_global", "T1_global")
-            if "target 2" in text_sent:
-                TX="T2"
-                T2.append(current_time)
-                T2 = count_T(T2, COIN, TX)
-                T2_global.append(current_time)
-                T2_global = count_T(T2_global, "T2_global", "T2_global")
-            if "target 3" in text_sent:
-                TX="T3"
-                T3.append(current_time)
-                T3 = count_T(T3, COIN, TX)
-                T3_global.append(current_time)
-                T3_global = count_T(T3_global, "T3_global", "T3_global")
+        for collectors in a_influxdb_collectors:
+            if influxdb_enabled == "1" and"target" in text_sent and collectors in str(event.message.to_id):
+                print("influxdb_enabled")
+    #        if "target" in text_sent:
+                current_time = datetime.datetime.now()
+                COIN=text_sent.split(" touched")[0]
+                if "target 1" in text_sent:
+                    TX="T1"
+                    T1.append(current_time)
+                    T1 = count_T(T1, COIN, TX)
+                    T1_global.append(current_time)
+                    T1_global = count_T(T1_global, "T1_global", "T1_global")
+                if "target 2" in text_sent:
+                    TX="T2"
+                    T2.append(current_time)
+                    T2 = count_T(T2, COIN, TX)
+                    T2_global.append(current_time)
+                    T2_global = count_T(T2_global, "T2_global", "T2_global")
+                if "target 3" in text_sent:
+                    TX="T3"
+                    T3.append(current_time)
+                    T3 = count_T(T3, COIN, TX)
+                    T3_global.append(current_time)
+                    T3_global = count_T(T3_global, "T3_global", "T3_global")
 
     print(time.asctime(), '-', "Starting autotrade")
     print(str(api_id)+"/"+api_hash+"/"+bot_name+"/"+telegram_chat)
