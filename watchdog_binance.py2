@@ -7,8 +7,10 @@ import ConfigParser
 import progressbar
 load_params = ConfigParser.ConfigParser()
 
+cwd = os.getcwd()
+
 notifier = inotify.adapters.Inotify()
-notifier.add_watch('/root/scripts/signals')
+notifier.add_watch(cwd+"/signals")
 endTime = datetime.datetime.now() + datetime.timedelta(minutes=15)
 
 script_name = "binance3.py2"
@@ -52,9 +54,9 @@ for event in notifier.event_gen():
         if 'IN_CREATE' in event[1]:
             print "file '{0}' created in '{1}'".format(event[3], event[2])
             if find_procs_by_name("python2") <> "found:":
-                print("launching:" + "/root/scripts/binance3.py2")
-                os.chdir('/root/scripts/')
-                os.system("/root/scripts/binance3.py2")
+                print("launching:" + cwd+"/binance3.py2")
+                os.chdir(cwd+"/")
+                os.system(cwd+"/binance3.py2")
     else:
 #        for i in xrange(20):
         bar_update = bar_update+1
@@ -64,13 +66,13 @@ for event in notifier.event_gen():
 #            sleep(0.1)
 
         diff_time=datetime.datetime.now()-loop_time
-#        print "loop in " + '/root/scripts/signals'+" for "+str(int(diff_time.total_seconds()))
+#        print "loop in " + cwd+"/signals"+" for "+str(int(diff_time.total_seconds()))
         if int(diff_time.total_seconds()) > int(loop_schedule_binance3)-1:
             bar.finish()
             if find_procs_by_name("python2") <> "found:":
-                print("launching:" + "/root/scripts/binance3.py2")
-                os.chdir('/root/scripts/')
-                os.system("/root/scripts/binance3.py2")
+                print("launching:" + cwd+"/binance3.py2")
+                os.chdir(cwd+"/")
+                os.system(cwd+"/binance3.py2")
             loop_time = datetime.datetime.now()
             load_params.read("binance_api.ini")
             loop_schedule_binance3 = ConfigSectionMap("BINANCE_API", load_params)['loop_schedule_binance3']
