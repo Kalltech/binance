@@ -145,8 +145,8 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
             order=binance.order(b_order_symbol, binance.SELL, order_quantity, b_order_price, test=False)
         
     elif b_order_side=="STOP-LIMIT":
-        b_order_price_plus_01_percen=float(format(b_order_price+b_order_price*0.001*float(dct_FILE['percentage_sl_upside']), '.8f'))
-        b_order_price_plus_01_percen=percentage_calc(b_order_price, dct_FILE['percentage_sl_upside'])
+        b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['percentage_sl_upside'])
+#        controle de la quantitie et la balance
         b_order_Qty=float(b_order_Qty)
         b_order_Qty_down= percentage_calc(b_order_Qty, -dct_FILE['percentage_control_balance'])
         b_order_Qty_up= percentage_calc(b_order_Qty, dct_FILE['percentage_control_balance'])
@@ -154,16 +154,33 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
             b_order_Qty=float(dct_FILE['current_balance']['free'])
         order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
         b_order_price=float(floatXf(b_order_price))
-        b_order_price_plus_01_percen=float(floatXf(b_order_price_plus_01_percen))
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @Price "+floatXf(b_order_price)+" @stopPrice "+floatXf(b_order_price_plus_01_percen),debugapp_Telegram=1)
-        order=binance.order(b_order_symbol, binance.SELL, order_quantity, floatXf(b_order_price), orderType=binance.STOP_LOSS_LIMIT, test=False, stopPrice=floatXf(b_order_price_plus_01_percen))
+        b_order_price_plus_sl_percen=float(floatXf(b_order_price_plus_sl_percen))
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @Price "+floatXf(b_order_price)+" @stopPrice "+floatXf(b_order_price_plus_sl_percen),debugapp_Telegram=1)
+        order=binance.order(b_order_symbol, binance.SELL, order_quantity, floatXf(b_order_price), orderType=binance.STOP_LOSS_LIMIT, test=False, stopPrice=floatXf(b_order_price_plus_sl_percen))
+
+    elif b_order_side=="STOP-LIMIT_TX":
+        b_order_price=percentage_calc(b_order_price, dct_FILE['sl_replace_tx_percentage_downside']-0.1)
+        b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['percentage_sl_upside'])
+#        controle de la quantitie et la balance
+        b_order_Qty=float(b_order_Qty)
+        b_order_Qty_down= percentage_calc(b_order_Qty, -dct_FILE['percentage_control_balance'])
+        b_order_Qty_up= percentage_calc(b_order_Qty, dct_FILE['percentage_control_balance'])
+        if b_order_Qty_down <= float(dct_FILE['current_balance']['free']) <= b_order_Qty_up:
+            b_order_Qty=float(dct_FILE['current_balance']['free'])
+        order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
+        
+        b_order_price=float(floatXf(b_order_price))
+        b_order_price_plus_sl_percen=float(floatXf(b_order_price_plus_sl_percen))
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente STOP-LIMIT_TX de "+str(order_quantity)+" "+" @Price "+floatXf(b_order_price)+" @stopPrice "+floatXf(b_order_price_plus_sl_percen),debugapp_Telegram=1)
+        order=binance.order(b_order_symbol, binance.SELL, order_quantity, floatXf(b_order_price), orderType=binance.STOP_LOSS_LIMIT, test=False, stopPrice=floatXf(b_order_price_plus_sl_percen))
+
     if order.get("orderId") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK:"+str(order.get("orderId")),debugapp_DebugLevel="DEBUG")
         save_json(dir_TEMP+dct_FILE['symbol']+"_"+b_order_level+"_"+str(order.get("orderId")), order)
         processed_order=1
         if b_order_side=="STOP-LIMIT":
             dct_FILE['last_SL_orderId']=order.get("orderId")
-            dct_FILE['last_SL_stopPrice']=floatXf(b_order_price_plus_01_percen)
+            dct_FILE['last_SL_stopPrice']=floatXf(b_order_price_plus_sl_percen)
         dct_FILE['dictToBeFilled'][b_order_level]=1
         if dct_FILE['last_orderId']=="init":
             dct_FILE['last_orderId']=order.get("orderId")
@@ -298,6 +315,7 @@ def b_trade_to_order(b_trade_to_order_file):
                 #200/7000*0.0000184
                 if Buy_price_signal_down <= dct_FILE['binance_price'] <= Buy_price_signal_up:
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+":prix entre les seuils d achat:"+float8f(dct_FILE['binance_price']), debugapp_logger=logger)
+                    dct_FILE['BUY'] = float(dct_FILE['binance_price'])
                     b_TRADE=b_order(dct_FILE['symbol'], Qty_signal, dct_FILE['BUY'],"BUY", "order_BUY")
                     if b_TRADE.get("orderId") is not None:
                         dct_FILE['last_orderId']=b_TRADE.get("orderId")
@@ -313,6 +331,10 @@ def b_trade_to_order(b_trade_to_order_file):
                         dct_FILE['percentage_sl_upside']=percentage_sl_upside
                         dct_FILE['percentage_limit_order_before_tx']=percentage_limit_order_before_tx
                         dct_FILE['sl_replace_tx']=sl_replace_tx
+                        if -sl_replace_tx_percentage_downside<percentage_sl_upside:
+                            dct_FILE['sl_replace_tx_percentage_downside']=-percentage_sl_upside
+                        else:
+                            dct_FILE['sl_replace_tx_percentage_downside']=sl_replace_tx_percentage_downside
 
                         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK: deplace le fichier vers: "+dct_FILE['filename'].replace("/trades","/old"),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
                         save_obj(dct_FILE, dct_FILE['filename'])
@@ -490,16 +512,16 @@ def binance_status(binance_status_symbol,  **kwargs):
 
 def ToBeFilled():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    for order_level_dictToBeFilled in dct_FILE['dictToBeFilled']:
-        allOrders=None
-        current_allOrders=None
-        order_filtred=None
-        if dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]==1:
-            allOrders=binance.allOrders(dct_FILE.get("symbol"))
+    allOrders=binance.allOrders(dct_FILE.get("symbol"))
+    if allOrders :
+        if isinstance(allOrders, list):
+            save_json(dir_TEMP+dct_FILE['symbol']+"_"+"allOrders", allOrders)
+            for order_level_dictToBeFilled in dct_FILE['dictToBeFilled']:
+#            allOrders=None
+#            current_allOrders=None
+#            order_filtred=None
+                if dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]==1:
 #                    allOrders=binance.allOrders("LOOOMBTC")
-            if allOrders :
-                save_json(dir_TEMP+dct_FILE['symbol']+"_"+"allOrders", allOrders)
-                if isinstance(allOrders, list):
                     order_filtred=filter(lambda allOrders: allOrders['orderId'] == dct_FILE[order_level_dictToBeFilled]['orderId'], allOrders)
                     current_allOrders=order_filtred[0]
                     if current_allOrders['status']=="FILLED":
@@ -535,10 +557,10 @@ def ToBeFilled():
                         save_obj(dct_FILE, dct_FILE.get("filename"))
                     else:
                         debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-                else:
-                    debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Error:"+str(allOrders['code'])+":"+allOrders['msg'],debugapp_DebugLevel="WARNING")
-            else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Orders empty:",debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+        else:
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Error:"+str(allOrders['code'])+":"+allOrders['msg'],debugapp_DebugLevel="WARNING")
+    else:
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Orders empty:",debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def findkeys(d, findkeys_str):
@@ -583,7 +605,10 @@ def targetTX(targetTX_level):
                     if dct_FILE['percentage_limit_order_before_tx']<>0:
                         current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], dct_which_level_what_do['Current_TX'],"SELL", "order_"+targetTX_level)
                     else:
-                        current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], binance_price(dct_FILE.get("symbol")),"SELL", "order_"+targetTX_level)
+                        if dct_FILE['sl_replace_tx']=="1":
+                            current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], binance_price(dct_FILE.get("symbol")),"STOP-LIMIT_TX", "order_"+targetTX_level)
+                        else:
+                            current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], binance_price(dct_FILE.get("symbol")),"SELL", "order_"+targetTX_level)
 #                    current_order_SELL=binance_status(dct_FILE.get("symbol"), orderId=43802508, binance_status_test=1, binance_status_orderId_type="NEW_SELL")
                     if current_order_SELL.get("orderId") is not None:
                         debugapp(str(sys._getframe().f_code.co_name)+"|"+"SELL "+targetTX_level+" id:"+str(current_order_SELL.get("orderId")))
@@ -710,6 +735,8 @@ percentage_force_sl = float(ConfigSectionMap("BINANCE_API", load_params)['percen
 percentage_max_sl = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_max_sl'])
 percentage_near_sl = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_near_sl'])
 sl_replace_tx = ConfigSectionMap("BINANCE_API", load_params)['sl_replace_tx']
+sl_replace_tx_percentage_downside = float(ConfigSectionMap("BINANCE_API", load_params)['sl_replace_tx_percentage_downside'])
+
 percentage_delta_buyed_sold = ConfigSectionMap("BINANCE_API", load_params)['percentage_delta_buyed_sold']
 signal_lifetime_hours = int(ConfigSectionMap("BINANCE_API", load_params)['signal_lifetime_hours'])
 ###Directories
@@ -745,8 +772,7 @@ formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
 logger.setLevel(level)
-###Check pause
-check_pause()
+tab=""
 ###Telegram
 my_telegram_bot_token = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_bot_token']
 my_telegram_id = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_id']
@@ -754,7 +780,6 @@ bot = telegram.Bot(token=my_telegram_bot_token)
 #debugapp(str(sys._getframe().f_code.co_name)+"|"+str(bot.get_me()),debugapp_DebugLevel="DEBUG")
 ###Variables
 processed_order=0
-tab=""
 ###Whitelist,Blacklist
 whitelist = ConfigSectionMap("BINANCE_API", load_params)['whitelist']
 blacklist = ConfigSectionMap("BINANCE_API", load_params)['blacklist']
@@ -776,6 +801,9 @@ if test_binance_prices is None:
     test_binance_prices=float(binance_prices.get("NEOBTC"))
     if not isinstance(test_binance_prices, float):
         binance_prices=binance.prices()
+logger_symbol=None
+###Check pause
+check_pause()
 
 #print binance_prices
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////begin script:"+begin_time, debugapp_logger=logger)
