@@ -5,6 +5,7 @@ import datetime
 import psutil
 import ConfigParser
 import progressbar
+import subprocess
 load_params = ConfigParser.ConfigParser()
 
 cwd = os.getcwd()
@@ -70,9 +71,24 @@ for event in notifier.event_gen():
         if int(diff_time.total_seconds()) > int(loop_schedule_binance3)-1:
             bar.finish()
             if find_procs_by_name("python2") <> "found:":
-                print("launching:" + cwd+"/binance3.py2")
                 os.chdir(cwd+"/")
-                os.system(cwd+"/binance3.py2")
+                last_error=""
+                print("launching:" + cwd+"/binance3.py2")
+                p = subprocess.Popen([cwd+"/binance3.py2", ""], stderr=subprocess.PIPE)
+                p_com=p.communicate()
+                if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
+                print("launching:" + cwd+"/binance4.py2")
+                p = subprocess.Popen([cwd+"/binance4.py2", ""], stderr=subprocess.PIPE)
+                p_com=p.communicate()
+                if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
+                print("launching:" + cwd+"/bitmex3.py2")
+                p = subprocess.Popen([cwd+"/bitmex3.py2", ""], stderr=subprocess.PIPE)
+                p_com=p.communicate()
+                if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
+                if last_error<>"":
+                    text_file = open(cwd+"/whatchdog_error.log", "w")
+                    text_file.write(last_error)
+                    text_file.close()
             loop_time = datetime.datetime.now()
             load_params.read("binance_api.ini")
             loop_schedule_binance3 = ConfigSectionMap("BINANCE_API", load_params)['loop_schedule_binance3']
