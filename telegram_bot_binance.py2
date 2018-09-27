@@ -21,7 +21,10 @@ import glob
 
 load_params = ConfigParser.ConfigParser()
 load_params.read("binance_api.ini")
+#load_params_bitmex = ConfigParser.ConfigParser()
+#load_params_bitmex.read("bitmex_api.ini")
 json_stats="sell_stats.json"
+signal_dict = {}
 
 cwd = os.getcwd()
 api_path=cwd+"/"
@@ -47,24 +50,42 @@ def ConfigSectionMap(section, Config):
       dict1[option] = None
   return dict1
 
-def extract_numbers(extract_numbers_str):
+def extract_numbers(extract_numbers_str, **kwargs):
     extract_numbers_array=re.findall(r'\d+',extract_numbers_str)
+#    print extract_numbers_array
+    global signal_dict
+#    print signal_dict
     if extract_numbers_array:
         if extract_numbers_array[0]=="0":
             return float8f(str(extract_numbers_array[0]+"."+extract_numbers_array[1]))
+        elif "USD" in signal_dict['C']:
+            return str(extract_numbers_array[0])
+        elif kwargs.get("satoshi_extract_numbers")==1:
+            temp=8-len(str(extract_numbers_array[0]))
+            temp2=""
+            for x in range(1, temp):
+                temp2=temp2+"0"
+#            print "0."+temp2+str(extract_numbers_array[0])
+            return "0."+temp2+str(extract_numbers_array[0])
         else:
-            return "init"
+            return "vide"
     else:
-        return "init"
+        return "vide"
 
-def get_price_type(get_price_type_str, get_price_type_valeurs):
+def get_price_type(get_price_type_str, get_price_type_valeurs, **kwargs):
+#    for key, value in kwargs.items():
+#        setattr(self, key, value)
     for valeur in get_price_type_valeurs:
         if valeur in get_price_type_str:
-            return extract_numbers(get_price_type_str.replace(valeur, ""))
-    return "init"
+#            print get_price_type_str.replace(valeur, "")
+            return extract_numbers(get_price_type_str.replace(valeur, ""), satoshi_extract_numbers=kwargs.get("satoshi"))
+    return "vide"
 
 global my_telegram_id
 my_telegram_id = ConfigSectionMap("BINANCE_API", load_params)['my_telegram_id']
+percentage_max_hodl_sl = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_max_hodl_sl'])
+percentage_sl_upside = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_sl_upside'])
+percentage_control_balance = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_control_balance'])
 
 def findkeys(d, findkeys_str):
     for key in d.keys():
@@ -184,6 +205,30 @@ def button(bot, update):
                 text_file = open(api_path+"signals/"+filename, "r")
                 str_msg=text_file.read()
                 text_file.close()
+    elif ".bitmex_trades" in query.data:
+        print(api_path+"bitmex_trades/")
+        for filename in os.listdir(api_path+"bitmex_trades/"):
+            if ".json" in filename and not ".log" in filename and query.data.replace(".bitmex_trades", "") in filename:
+                print(api_path+"bitmex_trades/"+filename)
+                dct_FILE=load_obj(api_path+"bitmex_trades/"+filename)
+                if dct_FILE.has_key('order_BUY_FILLED'):
+                    percentage_gain_lost=float(dct_FILE['bitmex_price'])/float(dct_FILE['order_BUY_FILLED']['price'])*100-100
+                    if dct_FILE['POS']=="short":percentage_gain_lost=-percentage_gain_lost
+                    percentage_gain_lost=format(percentage_gain_lost, '.2f')
+                    last_sl_stop=dct_FILE['SL']
+                    if dct_FILE.has_key('order_T2_SL') or dct_FILE.has_key('order_T1_SL'): last_sl_stop=dct_FILE['last_SL_stopPrice']
+                    status_dict="Buy price:   "+str(float8f(dct_FILE['order_BUY_FILLED']['price']))\
+                        +"\n"+"Last price:  "+str(float8f(dct_FILE['bitmex_price']))\
+                        +"\n"+"Last SL :     "+str(float8f(last_sl_stop))\
+                        +"\n"+"Gain/Lost: "+str(percentage_gain_lost)+"%"\
+                        +"\n"+"POS: "+str(dct_FILE['POS'])\
+                        +"\n"+"T1: "+str(float8f(dct_FILE['T1']))\
+                        +"\n"+"T2: "+str(float8f(dct_FILE['T2']))\
+                        +"\n"+"T3: "+str(float8f(dct_FILE['T3']))\
+                        +"\nLevel: "+dct_FILE['last_order_level']
+                    str_msg=str_msg+"\n"+filename+"\n"+str(status_dict)
+                else:
+                    str_msg=str_msg+"\n"+filename+"\n"+"Order not filled"
     else:
         for filename in os.listdir(api_path+"trades/"):
             if ".json" in filename and not ".log" in filename and query.data in filename:
@@ -221,7 +266,8 @@ def echo(bot, update):
     text_sent=update.message.text.lower()
     printable = set(string.printable)
     text_sent=filter(lambda x: x in printable, text_sent)
-    print text_sent
+#    print text_sent
+#    print text_sent[:5]
     if "pause:" in text_sent:
         print "Create pause.txt"
         a_pause=text_sent.split("pause:")
@@ -237,6 +283,25 @@ def echo(bot, update):
             update.message.reply_text("Stats empty")
         else:
             update.message.reply_text(stats())
+    elif text_sent[:5]=="hodl:":
+        hodl_dict = {}
+        hodl_dict['symbol'] = text_sent.replace("hodl:", "")
+        hodl_dict['symbol'] = hodl_dict['symbol'].upper()
+        hodl_dict['SL'] = 'init'
+        hodl_dict['last_orderId'] = 'init'
+        hodl_dict['max_price'] = 'init'
+        hodl_dict['last_order_level'] = 'init'
+        hodl_dict['executedQty_creation'] = 0
+        hodl_dict['executedQty_vendu'] = 0
+        hodl_dict['filename'] = 'init'
+        hodl_dict['dictToBeFilled'] = {}
+        hodl_dict['percentage_max_hodl_sl']=percentage_max_hodl_sl
+        hodl_dict['percentage_sl_upside']=percentage_sl_upside
+        hodl_dict['percentage_control_balance']=percentage_control_balance
+
+        print("creation hodl file:"+api_path+"hodl/"+hodl_dict['symbol'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json")
+        save_obj(hodl_dict, api_path+"hodl/"+hodl_dict['symbol'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json")
+
     elif text_sent=="stopautotrade":
             load_params.read("binance_api.ini")
             load_params.set('BINANCE_API','auto_trade',0)
@@ -285,9 +350,40 @@ def echo(bot, update):
             reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
         list_of_files = glob.glob(api_path+"logs/*")
         latest_file = max(list_of_files, key=os.path.getctime)
-        update.message.reply_text("Dernier log:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file))))
+        load_params.read("binance_api.ini")
+        auto_trade = ConfigSectionMap("BINANCE_API", load_params)['auto_trade']
+#        update.message.reply_text("Dernier log:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file)))+"\nAutotrade:"+str(auto_trade))
         if reply_markup <> "":
             bot.send_message(my_telegram_id, text='All trades:', reply_markup=reply_markup)
+        status_dict = {}
+        button_list = []
+        reply_markup=""
+        for filename in os.listdir(api_path+"bitmex_trades/"):
+            if ".json" in filename and not ".log" in filename:
+                print(api_path+"bitmex_trades/"+filename)
+                dct_FILE=load_obj(api_path+"bitmex_trades/"+filename)
+                executedDate_creation= dct_FILE['executedDate_creation']
+                f_time=datetime.datetime.strptime(executedDate_creation.replace("_", " "), '%Y-%m-%d %H.%M.%S')
+                diff_time=datetime.datetime.now().replace(microsecond=0)-f_time
+#                print diff_time.days
+                status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['bitmex_price']))+"\n"+dct_FILE['last_order_level']
+#                print status_dict
+                status_dict[dct_FILE.get("symbol")+"Days"]=str(diff_time.days)
+                status_dict[dct_FILE.get("symbol")+"LL"]=dct_FILE['last_order_level'].replace("order_", "")
+#                print status_dict
+        if status_dict<>{}:
+            for symbols in sorted(status_dict):
+#                print symbols
+                if not "Days" in symbols and not "LL" in symbols:
+                    button_list.append(InlineKeyboardButton(symbols+":"+str(status_dict[symbols+"LL"])+":"+str(status_dict[symbols+"Days"])+"d", callback_data=symbols+".bitmex_trades"))
+            reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+        list_of_files = glob.glob(api_path+"logs/*")
+        latest_file = max(list_of_files, key=os.path.getctime)
+        load_params.read("binance_api.ini")
+        auto_trade = ConfigSectionMap("BINANCE_API", load_params)['auto_trade']
+        if reply_markup <> "":
+            bot.send_message(my_telegram_id, text='All bitmex_trades:', reply_markup=reply_markup)
+        update.message.reply_text("Dernier log:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file)))+"\n"+"Derniere erreur:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime("whatchdog_error.log")))+"\nAutotrade:"+str(auto_trade))
     elif text_sent=="panicsell":
         print "panicsell"
         status_dict = {}
@@ -324,6 +420,154 @@ def echo(bot, update):
         reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
         if reply_markup <> "":
             bot.send_message(my_telegram_id, text='Which kill symbol(s):', reply_markup=reply_markup)
+
+    elif "PeerChannel(channel_id=1229891129)".lower() in text_sent or "bitmex_kall" in text_sent:
+        print "GPS"
+        symbol_dict=load_obj("binance_prices.json")
+#        symbol_dict = ['XBTUSD','.XRPXBT','.XRPXBT30M','.EVOL7D','.EOSXBT','.EOSXBT30M','.JPYBON','.JPYBON2H','.JPYBON8H','.BCHXBT','.BCHXBT30M','.KRWBON','.KRWBON2H','.KRWBON8H','.XBTKRWPI','.XBTKRWPI2H','.XBTKRWPI8H','.XBTKRW','.XBTKRW30M','.ADAXBT','.ADAXBT30M','.TRXXBT','.TRXXBT30M','.BADAXBT','.BADAXBT30M','.BBCHXBT','.BBCHXBT30M','.BEOSXBT','.BEOSXBT30M','.BXRPXBT','.BXRPXBT30M','BCHU18','ADAU18','EOSU18','XRPU18','TRXU18','XRPZ18','BCHZ18','ADAZ18','EOSZ18','TRXZ18','BTC/KRW','.XBT','.XBT30M','.XBTBON','.XBTBON8H','.XBTUSDPI','.XBTUSDPI8H','.XBTBON2H','.XBTUSDPI2H','.BXBT','.BXBT30M','.XBTJPY','.XBTJPY30M','.BXBTJPY','.BXBTJPY30M','.XBTJPYPI','.XBTJPYPI2H','.XBTJPYPI8H','.BVOL','.BVOL24H','.BVOL7D','.ETHXBT','.ETHXBT30M','.ETHXBTPI','.ETHXBTPI8H','.ETHBON','.ETHBON2H','.ETHBON8H','.ETHXBTPI2H','.BETH','.BETH30M','.ETHUSDPI','.ETHUSDPI2H','.ETHUSDPI8H','.BETHXBT','.BETHXBT30M','.LTCXBT','.LTCXBT30M','.BLTCXBT','.BLTCXBT30M','.USDBON','.USDBON8H','.USDBON2H','BTC/USD','XBT7D_U105','XBT7D_D95','XBTU18','XBTZ18','XBTH19','BTC/JPY','ETH/BTC','ETH/USD','ETHU18','ETHZ18','LTCU18','LTCZ18']
+        global signal_dict
+        signal_dict = {}
+        signal_dict['C'] = 'init'
+        signal_dict['AC'] = 'init'
+        signal_dict['T1'] = 'init'
+        signal_dict['T2'] = 'init'
+        signal_dict['T3'] = 'init'
+        signal_dict['SL'] = 'init'
+        signal_dict['USD'] = 'init'
+#        signal_dict['BAD'] = 'init'
+        lines=text_sent
+        lines=lines.splitlines()
+        for line in lines:
+            line=line.replace(" ", "")
+            line=line.replace("/", "")
+            line=line.replace("#", ":")
+            line=line.replace("$", "")
+            line=line.replace("~", ":")
+            print line
+#            print line.upper()+"BTC"
+            if line.upper()+"BTC" in symbol_dict and signal_dict['C']=="init":
+                signal_dict['C'] = line.upper()+"BTC"
+            if "coin:" in line and signal_dict['C']=="init":
+                a_coin=line.split("coin:")
+                signal_dict['C'] = a_coin[1].upper()+"BTC"
+            a={"buy", "buyunder", "buy:"}
+            if any(x in line for x in a) and signal_dict['AC']=="init":
+                signal_dict['AC'] = get_price_type(line, a, satoshi=1)
+            if "shorttermtargets:" in line:
+                a_sell=line.split("shorttermtargets:")
+                a_sell=a_sell[1].split("-")
+                signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=1)
+                signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=1)
+                signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=1)
+            a={"target1:", "t1:"}
+            if any(x in line for x in a) and signal_dict['T1']=="init":
+                signal_dict['T1'] = get_price_type(line, a, satoshi=1)
+            a={"target2:", "t2:"}
+            if any(x in line for x in a) and signal_dict['T2']=="init":
+                signal_dict['T2'] = get_price_type(line, a, satoshi=1)
+            a={"target3:", "t3:"}
+            if any(x in line for x in a) and signal_dict['T3']=="init":
+                signal_dict['T3'] = get_price_type(line, a, satoshi=1)
+            a={"stop:", "stoploss", "stoplimit:", "stop-loss:"}
+            if any(x in line for x in a) and signal_dict['SL']=="init":
+                signal_dict['SL'] = get_price_type(line, a, satoshi=1)
+
+        print signal_dict
+        key_not_find=0
+        str_file="[TRADE]\n"
+        if signal_dict['USD']=="init": signal_dict['USD'] = ConfigSectionMap("BINANCE_API", load_params)['usd_to_bet']
+        for key, value in sorted(signal_dict.items()):
+            if value == 'init' or value == 'vide':
+                update.message.reply_text("Valeur non trouvee:"+key)
+                key_not_find=1
+            else:
+                str_file=str_file+key.upper()+":"+value.strip()+"\n"
+
+        if key_not_find<>1:
+            if not float(signal_dict['SL'])<=float(signal_dict['AC'])<=float(signal_dict['T1'])<=float(signal_dict['T2'])<=float(signal_dict['T3']):
+                update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
+            else:
+                text_file = open(api_path+"/signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
+                text_file.write(str_file)
+                text_file.close()
+                update.message.reply_text("Signal resolu:\n"+str_file)
+        else:
+            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
+    elif "PeerChannel(channel_id=1321818269)".lower() in text_sent:
+        print "bitmex"
+        load_params_bitmex = ConfigParser.ConfigParser()
+        load_params_bitmex.read("bitmex_api.ini")
+        symbol_dict=load_obj("bitmex_contracts.json")
+
+#        symbol_dict = ['XBTUSD','.XRPXBT','.XRPXBT30M','.EVOL7D','.EOSXBT','.EOSXBT30M','.JPYBON','.JPYBON2H','.JPYBON8H','.BCHXBT','.BCHXBT30M','.KRWBON','.KRWBON2H','.KRWBON8H','.XBTKRWPI','.XBTKRWPI2H','.XBTKRWPI8H','.XBTKRW','.XBTKRW30M','.ADAXBT','.ADAXBT30M','.TRXXBT','.TRXXBT30M','.BADAXBT','.BADAXBT30M','.BBCHXBT','.BBCHXBT30M','.BEOSXBT','.BEOSXBT30M','.BXRPXBT','.BXRPXBT30M','BCHU18','ADAU18','EOSU18','XRPU18','TRXU18','XRPZ18','BCHZ18','ADAZ18','EOSZ18','TRXZ18','BTC/KRW','.XBT','.XBT30M','.XBTBON','.XBTBON8H','.XBTUSDPI','.XBTUSDPI8H','.XBTBON2H','.XBTUSDPI2H','.BXBT','.BXBT30M','.XBTJPY','.XBTJPY30M','.BXBTJPY','.BXBTJPY30M','.XBTJPYPI','.XBTJPYPI2H','.XBTJPYPI8H','.BVOL','.BVOL24H','.BVOL7D','.ETHXBT','.ETHXBT30M','.ETHXBTPI','.ETHXBTPI8H','.ETHBON','.ETHBON2H','.ETHBON8H','.ETHXBTPI2H','.BETH','.BETH30M','.ETHUSDPI','.ETHUSDPI2H','.ETHUSDPI8H','.BETHXBT','.BETHXBT30M','.LTCXBT','.LTCXBT30M','.BLTCXBT','.BLTCXBT30M','.USDBON','.USDBON8H','.USDBON2H','BTC/USD','XBT7D_U105','XBT7D_D95','XBTU18','XBTZ18','XBTH19','BTC/JPY','ETH/BTC','ETH/USD','ETHU18','ETHZ18','LTCU18','LTCZ18']
+        global signal_dict
+        signal_dict = {}
+        signal_dict['C'] = 'init'
+        signal_dict['POS'] = 'init'
+        signal_dict['AC'] = 'init'
+        signal_dict['T1'] = 'init'
+        signal_dict['T2'] = 'init'
+        signal_dict['T3'] = 'init'
+        signal_dict['SL'] = 'init'
+        signal_dict['USD'] = 'init'
+#        signal_dict['BAD'] = 'init'
+        lines=text_sent
+        lines=lines.splitlines()
+        for line in lines:
+            line=line.replace(" ", "")
+            line=line.replace("/", "")
+            line=line.replace("#", ":")
+            line=line.replace("$", "")
+#            print line
+            if (line.upper() in symbol_dict or 'XBTUSD' in line.upper()) and signal_dict['C']=="init":
+                signal_dict['C'] = line.upper()
+            if "position:" in line and signal_dict['POS']=="init":
+                signal_dict['POS'] = line.replace("position:", "")
+            a={"buyaboveorin:", "buybeloworin:"}
+            if any(x in line for x in a) and signal_dict['AC']=="init":
+                signal_dict['AC'] = get_price_type(line, a)
+            a={"target1:", "t1:"}
+            if any(x in line for x in a) and signal_dict['T1']=="init":
+                signal_dict['T1'] = get_price_type(line, a)
+            a={"target2:", "t2:"}
+            if any(x in line for x in a) and signal_dict['T2']=="init":
+                signal_dict['T2'] = get_price_type(line, a)
+            a={"target3:", "t3:"}
+            if any(x in line for x in a) and signal_dict['T3']=="init":
+                signal_dict['T3'] = get_price_type(line, a)
+            a={"stop:", "stoploss:", "stoplimit:", "stop-loss:"}
+            if any(x in line for x in a) and signal_dict['SL']=="init":
+                signal_dict['SL'] = get_price_type(line, a)
+            a={"usd:", "usdt:"}
+            if any(x in line for x in a) and signal_dict['USD']=="init":
+                for x in a:
+                    if x in line:
+                        a_usd=line.split(x)
+                        signal_dict['USD'] = a_usd[1]
+
+        print signal_dict
+        key_not_find=0
+        str_file="[TRADE]\n"
+        if signal_dict['USD']=="init": signal_dict['USD'] = ConfigSectionMap("BITMEX_API", load_params_bitmex)['usd_to_bet']
+        for key, value in sorted(signal_dict.items()):
+            if value == 'init' or value == 'vide':
+                update.message.reply_text("Valeur non trouvee:"+key)
+                key_not_find=1
+            else:
+                str_file=str_file+key.upper()+":"+value.strip()+"\n"
+
+        if key_not_find<>1:
+            if signal_dict['POS'] == "long" and not float(signal_dict['SL'])<=float(signal_dict['AC'])<=float(signal_dict['T1'])<=float(signal_dict['T2'])<=float(signal_dict['T3']):
+                update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
+            if signal_dict['POS'] == "short" and not float(signal_dict['SL'])>=float(signal_dict['AC'])>=float(signal_dict['T1'])>=float(signal_dict['T2'])>=float(signal_dict['T3']):
+                update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
+            else:
+                text_file = open(api_path+"/bitmex_signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
+                text_file.write(str_file)
+                text_file.close()
+                update.message.reply_text("Signal resolu:\n"+str_file)
+        else:
+            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
     elif "btc" in text_sent or "coin:" in text_sent:
         print "signal"
         signal_dict = {}
@@ -345,7 +589,7 @@ def echo(bot, update):
 #            line=line.replace("coin:", "")
 #            print(line)
 #Crypto Signalist Pro
-            if "btc" in line:
+            if "btc" in line and signal_dict['C']=="init":
                 signal_dict['C'] = line.upper()
                 if signal_dict['C'].find("("):
                     a_symbol=signal_dict['C']
@@ -355,7 +599,7 @@ def echo(bot, update):
                     a_symbol=signal_dict['C']
                     a_symbol=a_symbol.split('-', 1)[0]
                     signal_dict['C'] = a_symbol
-            if "coin:" in line:
+            if "coin:" in line and signal_dict['C']=="init":
                 a_usd=line.split("coin:")
                 signal_dict['C'] = a_usd[1].upper()+"BTC"
             if "usd" in line:
@@ -376,32 +620,38 @@ def echo(bot, update):
                 signal_dict['T2'] = float8f(float(a_t1t2t3[2]))
                 signal_dict['T3'] = float8f(float(a_t1t2t3[3]))
 #Signal Profits
+            else:
+                a={"target1:", "t1:"}
+                if any(x in line for x in a):
+                    if signal_dict['T1']=="init":
+                        signal_dict['T1'] = get_price_type(line, a)
+                    else:
+                        signal_dict['T3'] = get_price_type(line, a)
+                a={"target2:", "t2:"}
+                if any(x in line for x in a) and signal_dict['T2']=="init":
+                    signal_dict['T2'] = get_price_type(line, a)
+                a={"target3:", "t3:"}
+                if any(x in line for x in a):
+                    signal_dict['T3'] = get_price_type(line, a)
             a={"buy:", "buyzone:", "buybelow:", "buybeloworcloseto:", "entryzone:"}
             if any(x in line for x in a) and signal_dict['AC']=="init":
                 signal_dict['AC'] = get_price_type(line, a)
-            a={"target1:", "t1:"}
-            print line
-            if any(x in line for x in a):
-                if signal_dict['T1']=="init":
-                    signal_dict['T1'] = get_price_type(line, a)
-                else:
-                    signal_dict['T3'] = get_price_type(line, a)
-            a={"target2:", "t2:"}
-            if any(x in line for x in a) and signal_dict['T2']=="init":
-                signal_dict['T2'] = get_price_type(line, a)
-            a={"target3:", "t3:"}
-            if any(x in line for x in a):
-                signal_dict['T3'] = get_price_type(line, a)
-            a={"stop:", "stoploss:", "stoplimit:"}
+            a={"stop:", "stoploss:", "stoplimit:", "stop-loss:"}
             if any(x in line for x in a) and signal_dict['SL']=="init":
                 signal_dict['SL'] = get_price_type(line, a)
+            a={"usd:", "usdt:"}
+            if any(x in line for x in a) and signal_dict['USD']=="init":
+                for x in a:
+                    if x in line:
+                        a_usd=line.split(x)
+                        signal_dict['USD'] = a_usd[1]
                 
         print signal_dict
         key_not_find=0
         str_file="[TRADE]\n"
         if signal_dict['USD']=="init": signal_dict['USD'] = ConfigSectionMap("BINANCE_API", load_params)['usd_to_bet']
         for key, value in sorted(signal_dict.items()):
-            if value == 'init':
+            if value == 'init' or value == 'vide':
                 update.message.reply_text("Valeur non trouvee:"+key)
                 key_not_find=1
             else:
