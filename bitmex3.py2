@@ -3,11 +3,11 @@ print "Starting"
 import datetime
 now = datetime.datetime.now()
 print "Before import:%d" % now.second
-import time
+#import time
 import sys
 import ConfigParser
 #import bitmex
-import requests
+#import requests
 import pickle
 import os
 import math
@@ -174,7 +174,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         
         if "Panicsell" in b_order_level: 
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente MARKET de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
-            order=bitmex.order(b_order_symbol, bitmex.SELL, order_quantity, b_order_price, orderType=bitmex.MARKET, test=False)
+#            order=bitmex.order(b_order_symbol, bitmex.SELL, order_quantity, b_order_price, orderType=bitmex.MARKET, test=False)
         else:
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente LIMIT de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
 #            order=bitmex.order(b_order_symbol, bitmex.SELL, order_quantity, b_order_price, test=False)
@@ -212,7 +212,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         b_order_price=float(floatXf_tickSize(b_order_price))
         b_order_price_plus_sl_percen=float(floatXf_tickSize(b_order_price_plus_sl_percen))
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente STOP-LIMIT_TX de "+str(order_quantity)+" "+" @Price "+floatXf_tickSize(b_order_price)+" @stopPrice "+floatXf_tickSize(b_order_price_plus_sl_percen),debugapp_Telegram=1)
-        order=bitmex.order(b_order_symbol, bitmex.SELL, order_quantity, floatXf_tickSize(b_order_price), orderType=bitmex.STOP_LOSS_LIMIT, test=False, stopPrice=floatXf_tickSize(b_order_price_plus_sl_percen))
+#        order=bitmex.order(b_order_symbol, bitmex.SELL, order_quantity, floatXf_tickSize(b_order_price), orderType=bitmex.STOP_LOSS_LIMIT, test=False, stopPrice=floatXf_tickSize(b_order_price_plus_sl_percen))
 
     if order.get("id") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK:"+str(order.get("id")),debugapp_DebugLevel="DEBUG")
@@ -454,8 +454,9 @@ def load_obj(name ):
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
             return dct_load_obj
 
-def bitmex_price(bitmex_price_symbol):
-    return float(bitmex_prices.get(bitmex_price_symbol))
+#def bitmex_price(bitmex_price_symbol):
+#    global bitmex_prices
+#    return float(bitmex_prices.get(bitmex_price_symbol))
     
 def sell_stats(sell_stats_current_order, sell_stats_current_level, gain_BTC, gain_USD):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
@@ -522,52 +523,53 @@ def which_level_what_do(which_level_what_do_price):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     return dct_which_level_what_do
 
-def get_stepSize(get_stepSize_coin):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    symbols=get_stepSize_request.get("symbols")
-    coin=filter(lambda symbol: symbol['symbol'] == get_stepSize_coin, symbols)
-    a_coin=coin[0]
-    filters=a_coin.get("filters")
-    LOT_SIZE=filter(lambda filterType: filterType['filterType'] == 'LOT_SIZE', filters)
-    a_LOT_SIZE=LOT_SIZE[0]
-    stepSize=a_LOT_SIZE.get("stepSize")
-    dct_FILE['PRICE_FILTER_tickSize']=float(a_coin['filters'][0]['tickSize'])
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    return float(stepSize)
+#def get_stepSize(get_stepSize_coin):
+#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+#    symbols=get_stepSize_request.get("symbols")
+#    coin=filter(lambda symbol: symbol['symbol'] == get_stepSize_coin, symbols)
+#    a_coin=coin[0]
+#    filters=a_coin.get("filters")
+#    LOT_SIZE=filter(lambda filterType: filterType['filterType'] == 'LOT_SIZE', filters)
+#    a_LOT_SIZE=LOT_SIZE[0]
+#    stepSize=a_LOT_SIZE.get("stepSize")
+#    dct_FILE['PRICE_FILTER_tickSize']=float(a_coin['filters'][0]['tickSize'])
+#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+#    return float(stepSize)
 
-def bitmex_status(bitmex_status_symbol,  **kwargs):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    bitmex_status_test=kwargs.get('bitmex_status_test', None)
-    bitmex_status_id=kwargs.get('id', None)
-    bitmex_status_id_type=kwargs.get('bitmex_status_id_type', None)
-    if bitmex_status_test:
-        debugapp("Envoi d un faux status",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-        # Open the file for reading
-        if not bitmex_status_id_type:
-            in_file = open("NEW_BUY","r")
-        else:
-            if bitmex_status_id_type=="NEW_BUY": in_file = open(dir_MODELS+"NEW_BUY","r")
-            if bitmex_status_id_type=="NEW_SELL": in_file = open(dir_MODELS+"NEW_SELL","r")
-            if bitmex_status_id_type=="FILLED_BUY": in_file = open(dir_MODELS+"FILLED_BUY","r")
-            if bitmex_status_id_type=="FILLED_SELL": in_file = open(dir_MODELS+"FILLED_SELL","r")
-            if bitmex_status_id_type=="CANCELED_BUY": in_file = open(dir_MODELS+"CANCELED_BUY","r")
-            if bitmex_status_id_type=="CANCELED_SELL": in_file = open(dir_MODELS+"CANCELED_SELL","r")
-            if bitmex_status_id_type=="CANCELED_SL": in_file = open(dir_MODELS+"CANCELED_SL","r")
-        # Load the contents from the file, which creates a new dictionary
-        bitmex_status_dict = json.load(in_file)
-        # Close the file... we don't need it anymore  
-        in_file.close()
-        bitmex_status_dict['id']=bitmex_status_id
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-        return bitmex_status_dict
-    else:
-        debugapp("Envoi du status de bitmex",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-        bitmex_status_order=bitmex.orderStatus(bitmex_status_symbol, id=bitmex_status_id)
-        if bitmex_status_order.get("id") is not None:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(bitmex_status_order.get("id")),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-            save_json(dir_TEMP+dct_FILE['symbol']+"_"+str(bitmex_status_order.get("id")), bitmex_status_order)
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-        return bitmex_status_order
+#def bitmex_status(bitmex_status_symbol,  **kwargs):
+#    global bitmex
+#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+#    bitmex_status_test=kwargs.get('bitmex_status_test', None)
+#    bitmex_status_id=kwargs.get('id', None)
+#    bitmex_status_id_type=kwargs.get('bitmex_status_id_type', None)
+#    if bitmex_status_test:
+#        debugapp("Envoi d un faux status",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+#        # Open the file for reading
+#        if not bitmex_status_id_type:
+#            in_file = open("NEW_BUY","r")
+#        else:
+#            if bitmex_status_id_type=="NEW_BUY": in_file = open(dir_MODELS+"NEW_BUY","r")
+#            if bitmex_status_id_type=="NEW_SELL": in_file = open(dir_MODELS+"NEW_SELL","r")
+#            if bitmex_status_id_type=="FILLED_BUY": in_file = open(dir_MODELS+"FILLED_BUY","r")
+#            if bitmex_status_id_type=="FILLED_SELL": in_file = open(dir_MODELS+"FILLED_SELL","r")
+#            if bitmex_status_id_type=="CANCELED_BUY": in_file = open(dir_MODELS+"CANCELED_BUY","r")
+#            if bitmex_status_id_type=="CANCELED_SELL": in_file = open(dir_MODELS+"CANCELED_SELL","r")
+#            if bitmex_status_id_type=="CANCELED_SL": in_file = open(dir_MODELS+"CANCELED_SL","r")
+#        # Load the contents from the file, which creates a new dictionary
+#        bitmex_status_dict = json.load(in_file)
+#        # Close the file... we don't need it anymore  
+#        in_file.close()
+#        bitmex_status_dict['id']=bitmex_status_id
+#        debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+#        return bitmex_status_dict
+#    else:
+#        debugapp("Envoi du status de bitmex",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+#        bitmex_status_order=bitmex.orderStatus(bitmex_status_symbol, id=bitmex_status_id)
+#        if bitmex_status_order.get("id") is not None:
+#            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(bitmex_status_order.get("id")),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+#            save_json(dir_TEMP+dct_FILE['symbol']+"_"+str(bitmex_status_order.get("id")), bitmex_status_order)
+#        debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+#        return bitmex_status_order
 
 def ToBeFilled():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
@@ -642,72 +644,72 @@ def findkeys(d, findkeys_str):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     return 0
     
-def targetTX(targetTX_level):
-    global processed_order
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    #Annule l Order SL
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au "+targetTX_level+"_"+float8f(dct_FILE[targetTX_level])+"<"+str(bitmex_prices.get(dct_FILE.get("symbol"))))
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l Order SL",debugapp_DebugLevel="DEBUG")
-    current_order_cancel=bitmex.cancel(dct_FILE.get("symbol"), id=dct_FILE.get("last_SL_id"))
+#def targetTX(targetTX_level):
+#    global processed_order
+#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+#    #Annule l Order SL
+#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au "+targetTX_level+"_"+float8f(dct_FILE[targetTX_level])+"<"+str(bitmex_prices.get(dct_FILE.get("symbol"))))
+#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l Order SL",debugapp_DebugLevel="DEBUG")
+#    current_order_cancel=bitmex.cancel(dct_FILE.get("symbol"), id=dct_FILE.get("last_SL_id"))
 #    current_order_cancel=bitmex_status(dct_FILE.get("symbol"), id=dct_FILE.get("last_SL_id"), bitmex_status_test=1, bitmex_status_id_type="CANCELED_SL")
-    if current_order_cancel.get("id") is not None:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("id")))
-        save_json(dir_TEMP+dct_FILE['symbol']+"_"+str(current_order_cancel.get("id"))+"_C", current_order_cancel)
-        dct_FILE["order_SL_CANCELED_ASKED"]=current_order_cancel
-        count=0
-        processed_order=1
-        if targetTX_level=="T3":
-            next_order_level="order_"+targetTX_level
-        else:
-            next_order_level="order_"+targetTX_level+"_SL"
-        while count < 30 and dct_FILE["last_order_level"]<>next_order_level:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+"s apres debut Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
-            #Check si Order bien CANCELED
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Check si Order bien CANCELED")
-            current_order_status=bitmex_status(dct_FILE.get("symbol"), id=dct_FILE.get("last_SL_id"))
+#    if current_order_cancel.get("id") is not None:
+#        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("id")))
+#        save_json(dir_TEMP+dct_FILE['symbol']+"_"+str(current_order_cancel.get("id"))+"_C", current_order_cancel)
+#        dct_FILE["order_SL_CANCELED_ASKED"]=current_order_cancel
+#        count=0
+#        processed_order=1
+#        if targetTX_level=="T3":
+#            next_order_level="order_"+targetTX_level
+#        else:
+#            next_order_level="order_"+targetTX_level+"_SL"
+#        while count < 30 and dct_FILE["last_order_level"]<>next_order_level:
+#            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+"s apres debut Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
+#            #Check si Order bien CANCELED
+#            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Check si Order bien CANCELED")
+#            current_order_status=bitmex_status(dct_FILE.get("symbol"), id=dct_FILE.get("last_SL_id"))
 #            current_order_status=bitmex_status(dct_FILE.get("symbol"), id=dct_FILE.get("last_SL_id"), bitmex_status_test=1, bitmex_status_id_type="CANCELED_SL")
-            if current_order_status.get("id") is not None:
-                if current_order_status.get("status")=="CANCELED":
-                    dct_FILE[dct_FILE.get("last_order_level")+"_CANCELED"]=current_order_status
-                    #lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs
-                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs")
-                    dct_which_level_what_do=which_level_what_do(bitmex_price(dct_FILE.get("symbol")))
-                    if dct_FILE['percentage_limit_order_before_tx']<>0:
-                        current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], dct_which_level_what_do['Current_TX'],"SELL", "order_"+targetTX_level)
-                    else:
-                        if dct_FILE['sl_replace_tx']=="1":
-                            current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], bitmex_price(dct_FILE.get("symbol")),"STOP-LIMIT_TX", "order_"+targetTX_level)
-                        else:
-                            current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], bitmex_price(dct_FILE.get("symbol")),"SELL", "order_"+targetTX_level)
+#            if current_order_status.get("id") is not None:
+#                if current_order_status.get("status")=="CANCELED":
+#                    dct_FILE[dct_FILE.get("last_order_level")+"_CANCELED"]=current_order_status
+#                    #lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs
+#                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs")
+#                    dct_which_level_what_do=which_level_what_do(bitmex_price(dct_FILE.get("symbol")))
+#                    if dct_FILE['percentage_limit_order_before_tx']<>0:
+#                        current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], dct_which_level_what_do['Current_TX'],"SELL", "order_"+targetTX_level)
+#                    else:
+#                        if dct_FILE['sl_replace_tx']=="1":
+#                            current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], bitmex_price(dct_FILE.get("symbol")),"STOP-LIMIT_TX", "order_"+targetTX_level)
+#                        else:
+#                            current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], bitmex_price(dct_FILE.get("symbol")),"SELL", "order_"+targetTX_level)
 #                    current_order_SELL=bitmex_status(dct_FILE.get("symbol"), id=43802508, bitmex_status_test=1, bitmex_status_id_type="NEW_SELL")
-                    if current_order_SELL.get("id") is not None:
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SELL "+targetTX_level+" id:"+str(current_order_SELL.get("id")))
-                        dct_FILE["order_"+targetTX_level]=current_order_SELL
-                        dct_FILE["last_order_level"]="order_"+targetTX_level
-                        save_obj(dct_FILE, dct_FILE.get("filename"))
-                    if not targetTX_level=="T3":
-                        #place le SL aussi
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"place le SL aussi")
-                        current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty_SL"], dct_which_level_what_do["SL_Price"],"STOP-LIMIT", "order_"+targetTX_level+"_SL")
-                        if current_order_SELL.get("id") is not None:
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"_SL id:"+str(current_order_SELL.get("id")))
-                            dct_FILE["order_"+targetTX_level+"_SL"]=current_order_SELL
-                            dct_FILE["last_order_level"]="order_"+targetTX_level+"_SL"
-                            save_obj(dct_FILE, dct_FILE.get("filename"))
-                        else:
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"_SL "+targetTX_level+":id empty:"+str(current_order_SELL),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL")
-                else:
-                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Attend Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
-                    count = count + 1
-                    time.sleep(1)
-            else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_id"))+":Status order empty:"+str(current_order_status),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-        else:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+ "s exit apres Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
-    else:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_id"))+":Cancel order empty:"+str(current_order_cancel),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-
+#                    if current_order_SELL.get("id") is not None:
+#                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SELL "+targetTX_level+" id:"+str(current_order_SELL.get("id")))
+#                        dct_FILE["order_"+targetTX_level]=current_order_SELL
+#                        dct_FILE["last_order_level"]="order_"+targetTX_level
+#                        save_obj(dct_FILE, dct_FILE.get("filename"))
+#                    if not targetTX_level=="T3":
+#                        #place le SL aussi
+#                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"place le SL aussi")
+#                        current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty_SL"], dct_which_level_what_do["SL_Price"],"STOP-LIMIT", "order_"+targetTX_level+"_SL")
+#                        if current_order_SELL.get("id") is not None:
+#                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"_SL id:"+str(current_order_SELL.get("id")))
+#                            dct_FILE["order_"+targetTX_level+"_SL"]=current_order_SELL
+#                            dct_FILE["last_order_level"]="order_"+targetTX_level+"_SL"
+#                            save_obj(dct_FILE, dct_FILE.get("filename"))
+#                        else:
+#                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"_SL "+targetTX_level+":id empty:"+str(current_order_SELL),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL")
+#                else:
+#                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Attend Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
+#                    count = count + 1
+#                    time.sleep(1)
+#            else:
+#                debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_id"))+":Status order empty:"+str(current_order_status),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+#        else:
+#            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+ "s exit apres Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
+#    else:
+#        debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_id"))+":Cancel order empty:"+str(current_order_cancel),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+#
 def setup_logger(logger_name, log_file):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     log_setup = logging.getLogger(logger_name)
@@ -717,71 +719,71 @@ def setup_logger(logger_name, log_file):
     log_setup.setLevel(level)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
-def panicsell():
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l Order",debugapp_DebugLevel="DEBUG")
-    global processed_order
-    if dct_FILE.get("last_order_level") =="order_BUY":
-        order_to_cancel=dct_FILE['order_BUY']['id']
-    else:
-        order_to_cancel=dct_FILE.get("last_SL_id")
-    current_order_cancel=bitmex.cancel(dct_FILE.get("symbol"), id=order_to_cancel)
-#    current_order_cancel=bitmex_status(dct_FILE.get("symbol"), id=order_to_cancel, bitmex_status_test=1, bitmex_status_id_type="CANCELED_SL")
-    if current_order_cancel.get("id") is not None:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("id")))
-        save_json(dir_TEMP+dct_FILE['symbol']+"_"+str(current_order_cancel.get("id"))+"_C", current_order_cancel)
-        dct_FILE["order_CANCELED_ASKED"]=current_order_cancel
-        count=0
-        processed_order=1
-        while count < 30 and dct_FILE["last_order_level"]<>"order_"+"Panicsell":
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+"s apres debut Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
-            #Check si Order bien CANCELED
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Check si Order bien CANCELED")
-            current_order_status=bitmex_status(dct_FILE.get("symbol"), id=current_order_cancel['id'])
-#            current_order_status=bitmex_status(dct_FILE.get("symbol"), id=current_order_cancel['id'], bitmex_status_test=1, bitmex_status_id_type="CANCELED_SL")
-            if current_order_status.get("id") is not None:
-                if current_order_status.get("status")=="CANCELED":
-                    dct_FILE[dct_FILE.get("last_order_level")+"_CANCELED"]=current_order_status
-                    if dct_FILE["executedQty_creation"] <>0:
-                        #lance l Order de SELL "+"Panicsell"+" avec les bonnes valeurs
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l Order de SELL "+" avec les bonnes valeurs")
-                        allQty=float(dct_FILE["executedQty_creation"])-float(dct_FILE["executedQty_vendu"])
-#                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Panic sell",debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
-                        current_order_SELL=b_order(dct_FILE.get("symbol"), allQty, bitmex_price(dct_FILE.get("symbol")),"SELL", "order_"+"Panicsell")
-#                                current_order_SELL=bitmex_status(dct_FILE.get("symbol"), id=43802508, bitmex_status_test=1, bitmex_status_id_type="NEW_SELL")
-                        if current_order_SELL.get("id") is not None:
-                            dct_FILE['panicsell']=0
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+" id:"+str(current_order_SELL.get("id")),debugapp_Telegram=1)
-                            dct_FILE["order_"+"Panicsell"]=current_order_SELL
-                            dct_FILE["last_order_level"]="order_"+"Panicsell"
-                            save_obj(dct_FILE, dct_FILE.get("filename"))
-#                            try:
-#                                shutil.move(dct_FILE.get("filename"), dir_OLD+ntpath.basename(dct_FILE.get("filename")))
-#                                shutil.move(dct_FILE.get("filename")+".log", dir_OLD+ntpath.basename(dct_FILE.get("filename")+".log"))
-#                            except: 
-#                                pass
-#                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
-                        else:
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Attend Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
-                            count = count + 1
-                    else:
-                        dct_FILE['panicsell']=0
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+" id:"+str(current_order_status.get("id")),debugapp_Telegram=1)
-                        dct_FILE["order_"+"Panicsell"]=dct_FILE['last_order_level']
-                        dct_FILE["last_order_level"]="order_"+"Panicsell"
-                        save_obj(dct_FILE, dct_FILE.get("filename"))
-#                        try:
-#                            shutil.move(dct_FILE.get("filename"), dir_OLD+ntpath.basename(dct_FILE.get("filename")))
-#                            shutil.move(dct_FILE.get("filename")+".log", dir_OLD+ntpath.basename(dct_FILE.get("filename")+".log"))
-#                        except: 
-#                            pass
-#                        debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
-            else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+str(current_order_cancel['id'])+":Status order empty:"+str(current_order_status),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-            time.sleep(1)
-        else:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+ "s exit apres Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
-    else:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+str(order_to_cancel)+":Cancel order empty:"+str(current_order_cancel),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+#def panicsell():
+#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l Order",debugapp_DebugLevel="DEBUG")
+#    global processed_order
+#    if dct_FILE.get("last_order_level") =="order_BUY":
+#        order_to_cancel=dct_FILE['order_BUY']['id']
+#    else:
+#        order_to_cancel=dct_FILE.get("last_SL_id")
+#    current_order_cancel=bitmex.cancel(dct_FILE.get("symbol"), id=order_to_cancel)
+##    current_order_cancel=bitmex_status(dct_FILE.get("symbol"), id=order_to_cancel, bitmex_status_test=1, bitmex_status_id_type="CANCELED_SL")
+#    if current_order_cancel.get("id") is not None:
+#        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("id")))
+#        save_json(dir_TEMP+dct_FILE['symbol']+"_"+str(current_order_cancel.get("id"))+"_C", current_order_cancel)
+#        dct_FILE["order_CANCELED_ASKED"]=current_order_cancel
+#        count=0
+#        processed_order=1
+#        while count < 30 and dct_FILE["last_order_level"]<>"order_"+"Panicsell":
+#            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+"s apres debut Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
+#            #Check si Order bien CANCELED
+#            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Check si Order bien CANCELED")
+#            current_order_status=bitmex_status(dct_FILE.get("symbol"), id=current_order_cancel['id'])
+##            current_order_status=bitmex_status(dct_FILE.get("symbol"), id=current_order_cancel['id'], bitmex_status_test=1, bitmex_status_id_type="CANCELED_SL")
+#            if current_order_status.get("id") is not None:
+#                if current_order_status.get("status")=="CANCELED":
+#                    dct_FILE[dct_FILE.get("last_order_level")+"_CANCELED"]=current_order_status
+#                    if dct_FILE["executedQty_creation"] <>0:
+#                        #lance l Order de SELL "+"Panicsell"+" avec les bonnes valeurs
+#                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l Order de SELL "+" avec les bonnes valeurs")
+#                        allQty=float(dct_FILE["executedQty_creation"])-float(dct_FILE["executedQty_vendu"])
+##                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Panic sell",debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
+#                        current_order_SELL=b_order(dct_FILE.get("symbol"), allQty, dct_FILE['bitmex_price'],"SELL", "order_"+"Panicsell")
+##                                current_order_SELL=bitmex_status(dct_FILE.get("symbol"), id=43802508, bitmex_status_test=1, bitmex_status_id_type="NEW_SELL")
+#                        if current_order_SELL.get("id") is not None:
+#                            dct_FILE['panicsell']=0
+#                            debugapp(str(sys._getframe().f_code.co_name)+"|"+" id:"+str(current_order_SELL.get("id")),debugapp_Telegram=1)
+#                            dct_FILE["order_"+"Panicsell"]=current_order_SELL
+#                            dct_FILE["last_order_level"]="order_"+"Panicsell"
+#                            save_obj(dct_FILE, dct_FILE.get("filename"))
+##                            try:
+##                                shutil.move(dct_FILE.get("filename"), dir_OLD+ntpath.basename(dct_FILE.get("filename")))
+##                                shutil.move(dct_FILE.get("filename")+".log", dir_OLD+ntpath.basename(dct_FILE.get("filename")+".log"))
+##                            except: 
+##                                pass
+##                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
+#                        else:
+#                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Attend Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
+#                            count = count + 1
+#                    else:
+#                        dct_FILE['panicsell']=0
+#                        debugapp(str(sys._getframe().f_code.co_name)+"|"+" id:"+str(current_order_status.get("id")),debugapp_Telegram=1)
+#                        dct_FILE["order_"+"Panicsell"]=dct_FILE['last_order_level']
+#                        dct_FILE["last_order_level"]="order_"+"Panicsell"
+#                        save_obj(dct_FILE, dct_FILE.get("filename"))
+##                        try:
+##                            shutil.move(dct_FILE.get("filename"), dir_OLD+ntpath.basename(dct_FILE.get("filename")))
+##                            shutil.move(dct_FILE.get("filename")+".log", dir_OLD+ntpath.basename(dct_FILE.get("filename")+".log"))
+##                        except: 
+##                            pass
+##                        debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
+#            else:
+#                debugapp(str(sys._getframe().f_code.co_name)+"|"+str(current_order_cancel['id'])+":Status order empty:"+str(current_order_status),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+#            time.sleep(1)
+#        else:
+#            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+ "s exit apres Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
+#    else:
+#        debugapp(str(sys._getframe().f_code.co_name)+"|"+str(order_to_cancel)+":Cancel order empty:"+str(current_order_cancel),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
 
 def all_sold():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
