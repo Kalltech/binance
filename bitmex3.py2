@@ -44,7 +44,7 @@ def create_dict():
     return signal_dict
     
 def debugapp(debugapp_str, **kwargs):
-    global tab
+    global tab,  annonce_scriptname
     if "|begin" in debugapp_str:
         tab=tab+"\t"
     debugapp_str=tab+debugapp_str
@@ -76,7 +76,11 @@ def debugapp(debugapp_str, **kwargs):
     if debugapp_Telegram: 
         try:
             debugapp_str=dct_FILE['symbol']+":"+debugapp_str
-            bot.sendMessage(chat_id=my_telegram_id, text=str(debugapp_str))
+            if annonce_scriptname==False:
+                annonce_scriptname=True
+                bot.sendMessage(chat_id=my_telegram_id, text=str(str(os.path.basename(__file__)).upper()+"\n"+debugapp_str))
+            else:
+                bot.sendMessage(chat_id=my_telegram_id, text=str(debugapp_str))
         except:
             debugapp_logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
             print str("Impossible d envoyer vers Telegram"+str(debugapp_str))
@@ -116,111 +120,51 @@ def save_json(save_json_path, save_json_data):
 def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
     global processed_order
-    b_order_price=float(floatXf_tickSize(b_order_price))
-#    bitmex_balances=bitmex.balances()
-#    save_json(dir_TEMP+"bitmex_balances", bitmex_balances)
-#    dct_FILE["current_balance"] = bitmex_balances.get(dct_FILE["symbol"].replace("BTC", ""))
-#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"tickSize:\n"+float8f(dct_FILE['PRICE_FILTER_tickSize'])+"\n"+float8f(b_order_price),debugapp_DebugLevel="DEBUG")
-#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"tickSize:\n"+floatXf_tickSize(dct_FILE['PRICE_FILTER_tickSize'])+"\n"+floatXf_tickSize(b_order_price),debugapp_DebugLevel="DEBUG")
-#    debugapp(str(sys._getframe().f_code.co_name)+"|"+":free:"+ str(dct_FILE['current_balance']['free']),debugapp_DebugLevel="DEBUG")
-#Place l Order selon les parametres et enregistre le fichier COIN_(AC,SL,T1...)
-    
+    b_order_price=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price))
     if "order_T" in b_order_level:
-#        if b_order_side=="buy":
-#            b_order_price_plus_sl_percen=percentage_calc(b_order_price, -dct_FILE['percentage_sl_upside'])
-#        else:
-#            b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['percentage_sl_upside'])
         b_order_Qty=float(b_order_Qty)
-        order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-#        b_order_price_plus_sl_percen=float(floatXf_tickSize(b_order_price_plus_sl_percen))
-#        debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+" of "+str(order_quantity)+" "+" @Price "+floatXf_tickSize(b_order_price)+" @stopPrice "+floatXf_tickSize(b_order_price_plus_sl_percen),debugapp_Telegram=1)
+        order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
+        type = 'limit'  # or 'LimitIfTouched'  # or 'market', or 'Stop' or 'StopLimit'
+        params = {
+#            'stopPx': exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),  # if needed
+            'text': filename,  # if needed
+        }
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande "+b_order_side+" de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
-#        type = 'LimitIfTouched'  # or 'market', or 'Stop' or 'StopLimit'
-        type = 'limit'  # or 'market', or 'Stop' or 'StopLimit'
-        params = {
-#            'stopPx': floatXf_tickSize(b_order_price_plus_sl_percen),  # if needed
-        }
-#        order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
         order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
-    elif b_order_side=="buy" and b_order_level<>"order_SL":
-#        symbol=dct_FILE['symbol']
-        type = 'limit'
-#        order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        params = {
-        #    'stopPx': 6500.0,  # if needed
-        }
-
+    elif (b_order_side=="buy" or b_order_side=="sell") and b_order_level<>"order_SL":
         b_order_Qty=float(b_order_Qty)
-        order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande d achat de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
-#        order=bitmex.order(b_order_symbol, bitmex.BUY, order_quantity, b_order_price, test=False)
-        order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
-        
-    elif b_order_side=="sell" and b_order_level<>"order_SL":
-        b_order_Qty=float(b_order_Qty)
-#        b_order_Qty_down= percentage_calc(b_order_Qty, -dct_FILE['percentage_control_balance'])
-#        b_order_Qty_up= percentage_calc(b_order_Qty, dct_FILE['percentage_control_balance'])
-#        if b_order_Qty_down <= float(dct_FILE['current_balance']['free']) <= b_order_Qty_up:
-#            b_order_Qty=float(dct_FILE['current_balance']['free'])
-#        if not "XBTU" in dct_FILE['symbol']:
-#            order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-#        else:
-#            order_quantity=b_order_Qty
-        order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
+        order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
         type = 'limit'
         params = {
         #    'stopPx': 6500.0,  # if needed
+            'text': filename,  # if needed
         }
-        
-        if "Panicsell" in b_order_level: 
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente MARKET de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
-#            order=bitmex.order(b_order_symbol, bitmex.SELL, order_quantity, b_order_price, orderType=bitmex.MARKET, test=False)
-        else:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente LIMIT de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
-#            order=bitmex.order(b_order_symbol, bitmex.SELL, order_quantity, b_order_price, test=False)
-            order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
-        
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande "+b_order_side+" de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
+        order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
     elif b_order_level=="order_SL":
         if b_order_side=="sell":
-            type = 'LimitIfTouched'  # or 'market', or 'Stop' or 'StopLimit'
+            type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit' or LimitIfTouched or MarketIfTouched
             b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['percentage_sl_upside'])
         else:
-            type = 'StopLimit'  # or 'market', or 'Stop' or 'StopLimit'
+            type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit'
             b_order_price_plus_sl_percen=percentage_calc(b_order_price, -dct_FILE['percentage_sl_upside'])
-#        b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['percentage_sl_upside'])
         b_order_Qty=float(b_order_Qty)
-        order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        b_order_price_plus_sl_percen=float(floatXf_tickSize(b_order_price_plus_sl_percen))
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+" of "+str(order_quantity)+" "+" @Price "+floatXf_tickSize(b_order_price)+" @stopPrice "+floatXf_tickSize(b_order_price_plus_sl_percen),debugapp_Telegram=1)
+        order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
+        b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
         params = {
-            'stopPx': floatXf_tickSize(b_order_price_plus_sl_percen),  # if needed
+            'stopPx': b_order_price,  # if needed
+            'text': filename,  # if needed
         }
-        order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
-#        order=bitmex.order(b_order_symbol, bitmex.SELL, order_quantity, floatXf_tickSize(b_order_price), orderType=bitmex.STOP_LOSS_LIMIT, test=False, stopPrice=floatXf_tickSize(b_order_price_plus_sl_percen))
-
-    elif b_order_side=="STOP-LIMIT_TX":
-        b_order_price=percentage_calc(b_order_price, dct_FILE['sl_replace_tx_percentage_downside']-0.1)
-        b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['percentage_sl_upside'])
-#        controle de la quantitie et la balance
-        b_order_Qty=float(b_order_Qty)
-        b_order_Qty_down= percentage_calc(b_order_Qty, -dct_FILE['percentage_control_balance'])
-        b_order_Qty_up= percentage_calc(b_order_Qty, dct_FILE['percentage_control_balance'])
-        if b_order_Qty_down <= float(dct_FILE['current_balance']['free']) <= b_order_Qty_up:
-            b_order_Qty=float(dct_FILE['current_balance']['free'])
-        order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        
-        b_order_price=float(floatXf_tickSize(b_order_price))
-        b_order_price_plus_sl_percen=float(floatXf_tickSize(b_order_price_plus_sl_percen))
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente STOP-LIMIT_TX de "+str(order_quantity)+" "+" @Price "+floatXf_tickSize(b_order_price)+" @stopPrice "+floatXf_tickSize(b_order_price_plus_sl_percen),debugapp_Telegram=1)
-#        order=bitmex.order(b_order_symbol, bitmex.SELL, order_quantity, floatXf_tickSize(b_order_price), orderType=bitmex.STOP_LOSS_LIMIT, test=False, stopPrice=floatXf_tickSize(b_order_price_plus_sl_percen))
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+" of "+str(order_quantity)+" "+" @Price "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price),debugapp_Telegram=1)
+        order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, None, params)
 
     if order.get("id") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK:"+str(order.get("id")),debugapp_DebugLevel="DEBUG")
-        save_json(dir_TEMP+dct_FILE['symbol']+"_"+b_order_level+"_"+str(order.get("id")), order)
+        save_json(dir_TEMP+dct_FILE['symbol'].replace("/", "")+"_"+b_order_level+"_"+str(order.get("id")), order)
         processed_order=1
         if b_order_level=="order_SL":
             dct_FILE['last_SL_id']=order.get("id")
-            dct_FILE['last_SL_stopPrice']=floatXf_tickSize(b_order_price_plus_sl_percen)
+            dct_FILE['last_SL_stopPrice']=exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen)
         dct_FILE['dictToBeFilled'][b_order_level]=1
         if dct_FILE['last_id']=="init":
             dct_FILE['last_id']=order.get("id")
@@ -328,6 +272,7 @@ def percentage_calc(percentage_calc_number, percentage_calc_percent):
 
 def b_trade_to_order(b_trade_to_order_file):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    global bitmex_actual_market
     #Prend le trade puis fait un achat s'il est dans les seuils
     #Calc if price is on seuils
     load_trade(b_trade_to_order_file)
@@ -344,96 +289,99 @@ def b_trade_to_order(b_trade_to_order_file):
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1,  debugapp_logger=logger)
     if dct_FILE['symbol'] not in blacklist:
         if (whitelist <> "" and dct_FILE['symbol'] in whitelist) or whitelist == "":
-            if dct_FILE['symbol']=="XBTUSD":dct_FILE['symbol']="XBTU18"
-            bitmex_contract=list(filter(lambda d: d['id'] in dct_FILE['symbol'], bitmex_markets))
-            if bitmex_contract is not None:
-                bitmex_contract_xbt=list(filter(lambda d: d['id'] in ".XBT", bitmex_markets))
+            for market in bitmex_markets:
+                if market['id']==dct_FILE['symbol']:
+                    dct_FILE['symbol']=market['symbol']
+                    bitmex_actual_market=market
+#            bitmex_actual_market=list(filter(lambda d: d['id'] in dct_FILE['symbol'], bitmex_markets))
+            if bitmex_actual_market is not None:
+                bitmex_market_xbt=list(filter(lambda d: d['id'] in ".XBT", bitmex_markets))
                 dct_FILE['percentage_delta_buy_bitmex']=percentage_delta_buy_bitmex
-                dct_FILE['LOT_SIZE_stepSize'] = bitmex_contract[0]['info']['lotSize']
+                dct_FILE['LOT_SIZE_stepSize'] = bitmex_actual_market['info']['lotSize']
                 Buy_price_signal_down= percentage_calc(dct_FILE['BUY'], -dct_FILE['percentage_delta_buy_bitmex'])
                 Buy_price_signal_up= percentage_calc(dct_FILE['BUY'], dct_FILE['percentage_delta_buy_bitmex'])
-                dct_FILE['bitmex_price'] = bitmex_contract[0]['info']['askPrice']
+                dct_FILE['bitmex_price'] = bitmex_actual_market['info']['askPrice']
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix actuel est "+float8f(dct_FILE['bitmex_price']), debugapp_logger=logger)
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix demande est "+float8f(dct_FILE['BUY']), debugapp_logger=logger)
-                #Calc how many BTC vs USD demand
-#                BTCUSDT=float(bitmex_prices.get("BTCUSDT"))
-#                Qty_signal=1/dct_FILE['BUY']/BTCUSDT*dct_FILE['USD']
-#                Qty_signal=format(Qty_signal, '.8f')
-                #achatcoin=USD/prixbtc*coinbtc
-                #200/7000*0.0000184
                 if Buy_price_signal_down <= dct_FILE['bitmex_price'] <= Buy_price_signal_up:
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+":prix entre les seuils d achat:"+float8f(dct_FILE['bitmex_price']), debugapp_logger=logger)
-#                    dct_FILE['BUY'] = float(dct_FILE['bitmex_price'])
                     if dct_FILE['POS']=="long":
                         side="buy"
                     elif dct_FILE['POS']=="short":
                         side="sell"
-                    if not "XBTU" in dct_FILE['symbol']:
-                        Qty_signal=dct_FILE['USD']/(bitmex_contract_xbt[0]['info']['lastPrice']*dct_FILE['bitmex_price'])
+                    if not "BTC"==bitmex_actual_market['base']:
+                        Qty_signal=dct_FILE['USD']/(bitmex_market_xbt[0]['info']['lastPrice']*dct_FILE['bitmex_price'])
                     else:
                         Qty_signal=dct_FILE['USD']
-                    dct_FILE['PRICE_FILTER_tickSize']=bitmex_contract[0]['info']['tickSize']
+                    dct_FILE['PRICE_FILTER_tickSize']=bitmex_actual_market['info']['tickSize']
+                    sell_part_tx_low=sell_part_t3
+                    if sell_part_tx_low>sell_part_t2:sell_part_tx_low=sell_part_t2
+                    if sell_part_tx_low>sell_part_t1:sell_part_tx_low=sell_part_t1
+                    Qty_signal_min=exchange.amount_to_precision(dct_FILE['symbol'],Qty_signal*sell_part_tx_low)
+                    if Qty_signal_min<>0:
+                        b_TRADE=b_order(dct_FILE['symbol'], Qty_signal, dct_FILE['BUY'],side.lower(), "order_BUY")
+                        if b_TRADE.get("id") is not None:
+                            dct_FILE['last_id']=b_TRADE.get("id")
+                            dct_FILE['order_BUY']=b_TRADE
+                            dct_FILE['executedDate_creation']=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
+                            dct_FILE['last_order_level']='order_BUY'
+                            dct_FILE['filename']=dir_BITMEX_TRADES+dct_FILE['symbol'].replace("/", "")+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json"
 
-#                    b_TRADE = exchange.create_order(symbol, type, side, amount, price, params)
-                    b_TRADE=b_order(dct_FILE['symbol'], Qty_signal, dct_FILE['BUY'],side.lower(), "order_BUY")
-                    if b_TRADE.get("id") is not None:
-                        dct_FILE['last_id']=b_TRADE.get("id")
-                        dct_FILE['order_BUY']=b_TRADE
-                        dct_FILE['executedDate_creation']=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
-                        dct_FILE['last_order_level']='order_BUY'
-                        dct_FILE['filename']=dir_BITMEX_TRADES+dct_FILE['symbol']+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json"
+                            dct_FILE['sell_part_t1']=sell_part_t1
+                            dct_FILE['sell_part_t2']=sell_part_t2
+                            dct_FILE['sell_part_t3']=sell_part_t3
+                            dct_FILE['percentage_control_balance']=percentage_control_balance
+                            dct_FILE['percentage_sl_upside']=percentage_sl_upside
+                            dct_FILE['percentage_limit_order_before_tx']=percentage_limit_order_before_tx
+                            dct_FILE['sl_replace_tx']=sl_replace_tx
+                            if -sl_replace_tx_percentage_downside<percentage_sl_upside:
+                                dct_FILE['sl_replace_tx_percentage_downside']=-percentage_sl_upside
+                            else:
+                                dct_FILE['sl_replace_tx_percentage_downside']=sl_replace_tx_percentage_downside
 
-                        dct_FILE['sell_part_t1']=sell_part_t1
-                        dct_FILE['sell_part_t2']=sell_part_t2
-                        dct_FILE['sell_part_t3']=sell_part_t3
-                        dct_FILE['percentage_control_balance']=percentage_control_balance
-                        dct_FILE['percentage_sl_upside']=percentage_sl_upside
-                        dct_FILE['percentage_limit_order_before_tx']=percentage_limit_order_before_tx
-                        dct_FILE['sl_replace_tx']=sl_replace_tx
-                        if -sl_replace_tx_percentage_downside<percentage_sl_upside:
-                            dct_FILE['sl_replace_tx_percentage_downside']=-percentage_sl_upside
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK: deplace le fichier vers: "+dct_FILE['filename'].replace("/trades","/old"),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+                            save_obj(dct_FILE, dct_FILE['filename'])
+                            try:
+                                shutil.move(b_trade_to_order_file, dir_OLD+ntpath.basename(b_trade_to_order_file))
+                            except:
+                                pass
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
                         else:
-                            dct_FILE['sl_replace_tx_percentage_downside']=sl_replace_tx_percentage_downside
-
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK: deplace le fichier vers: "+dct_FILE['filename'].replace("/trades","/old"),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-                        save_obj(dct_FILE, dct_FILE['filename'])
-                        try:
-                            shutil.move(b_trade_to_order_file, dir_OLD+ntpath.basename(b_trade_to_order_file))
-                        except:
-                            pass
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order not OK:\n"+str(b_trade_to_order_file),debugapp_Telegram=1, debugapp_logger=logger)
                     else:
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order not OK:\n"+str(b_trade_to_order_file),debugapp_Telegram=1, debugapp_logger=logger)
+                        try:
+                            shutil.move(dir_BITMEX_SIGNALS+filename, dir_PROBLEMS+ntpath.basename(b_trade_to_order_file))
+                        except: 
+                            pass
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Mise pas assez grande:"+str(dct_FILE['USD'])+":EXIT",debugapp_Telegram=1,debugapp_DebugLevel="ERROR",debugapp_exit=1)
                 else:
                   debugapp(str(sys._getframe().f_code.co_name)+"|"+":prix PAS entre les seuils d achat:"+float8f(dct_FILE['bitmex_price']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
             else:
-                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Inconnu: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
-                    try:
-                        shutil.move(b_trade_to_order_file, dir_PROBLEMS+ntpath.basename(b_trade_to_order_file))
-                    except: 
-                        pass
-                    debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
-        else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Not in whitelist: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Inconnu: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
                 try:
                     shutil.move(b_trade_to_order_file, dir_PROBLEMS+ntpath.basename(b_trade_to_order_file))
                 except: 
                     pass
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
-    else:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"In blacklist: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_Telegram=1,debugapp_DebugLevel="ERROR",debugapp_exit=1)
+        else:
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Not in whitelist: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
             try:
                 shutil.move(b_trade_to_order_file, dir_PROBLEMS+ntpath.basename(b_trade_to_order_file))
             except: 
                 pass
             debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
+    else:
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"In blacklist: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
+        try:
+            shutil.move(b_trade_to_order_file, dir_PROBLEMS+ntpath.basename(b_trade_to_order_file))
+        except: 
+            pass
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def save_obj(obj, name ):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin"+"|"+"Sauve l objet vers: "+name,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     if not ".json" in name and not ".laststate" in name:
-#        with open(name, 'wb') as f:
-#        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
             pass
     else:
         save_obj_out_file = open(name,"w")
@@ -454,139 +402,14 @@ def load_obj(name ):
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
             return dct_load_obj
 
-#def bitmex_price(bitmex_price_symbol):
-#    global bitmex_prices
-#    return float(bitmex_prices.get(bitmex_price_symbol))
-    
-def sell_stats(sell_stats_current_order, sell_stats_current_level, gain_BTC, gain_USD):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    sell_stats_current_order["gain_USD"]=gain_USD
-    sell_stats_current_order["gain_BTC"]=gain_BTC
-    sell_stats_current_order["level"]=sell_stats_current_level
-    sell_stats_current_order["origPrice"]=dct_FILE['order_BUY']['price']
-    sell_stats_current_order["origTransactTime"]=dct_FILE['order_BUY']['transactTime']
-    sell_stats_file=cwd+"/"+"sell_stats.json"
-    sell_stats_date=datetime.datetime.now().strftime("%Y-%m-%d")
-    if not os.path.isfile(sell_stats_file):
-        dct_sell_stats = {}
-        sell_stats_file_obj = open(sell_stats_file,"w")
-        json.dump(dct_sell_stats,sell_stats_file_obj, indent=4, sort_keys=True)                                    
-        sell_stats_file_obj.close()
-    with open(sell_stats_file) as json_data:
-        dct_sell_stats = json.load(json_data)
-        if not findkeys(dct_sell_stats, sell_stats_date): dct_sell_stats[sell_stats_date] = {}
-        dct_sell_stats[sell_stats_date][sell_stats_current_order.get("id")] = sell_stats_current_order
-        json_data.close()
-        sell_stats_file_obj = open(sell_stats_file,"w")
-        json.dump(dct_sell_stats,sell_stats_file_obj, indent=4, sort_keys=True)                                    
-        sell_stats_file_obj.close()
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-
-def which_level_what_do(which_level_what_do_price):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    dct_which_level_what_do = {}
-    dct_which_level_what_do['vente_Qty'] = 'init'
-    dct_which_level_what_do['vente_Qty_SL'] = 'init'
-    dct_which_level_what_do['SL_Price'] = 'init'
-    print float8f(which_level_what_do_price)
-    which_level_what_do_price=percentage_calc(which_level_what_do_price, dct_FILE['percentage_limit_order_before_tx'])
-    print float8f(which_level_what_do_price)
-    
-    #si t3 vend la mise executedQty_creation-executedQty_vendu
-    if dct_FILE['T3'] < which_level_what_do_price:
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']-dct_FILE['executedQty_vendu']
-        dct_which_level_what_do['Current_TX']=dct_FILE['T3']
-    #si t2 mais pas t3 ni t1 vend 75% de la mise et met un SL de 25% de la mise a T1
-    if dct_FILE['T2'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and not findkeys(dct_FILE, "order_T1"):
-        sell_part_t=dct_FILE['sell_part_t1']+dct_FILE['sell_part_t2']
-        sell_part_sl=1-sell_part_t
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation'] * sell_part_t
-        dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation'] * sell_part_sl
-        dct_which_level_what_do['SL_Price']=dct_FILE['T1']
-        dct_which_level_what_do['Current_TX']=dct_FILE['T2']
-    #si t2 mais pas t3 mais t1 vend 25% de la mise et met un SL de 25% de la mise a T1
-    elif dct_FILE['T2'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and findkeys(dct_FILE, "order_T"):
-        sell_part_t=dct_FILE['sell_part_t1']+dct_FILE['sell_part_t2']
-        sell_part_sl=1-sell_part_t
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*dct_FILE['sell_part_t2']
-        dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
-        dct_which_level_what_do['SL_Price']=dct_FILE['T1']
-        dct_which_level_what_do['Current_TX']=dct_FILE['T2']
-    #si t1 mais pas t3 ni t2 vend 50% de la mise et met un SL de ce qu il reste a Achat
-    elif dct_FILE['T1'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and not findkeys(dct_FILE, "order_T2"):
-        sell_part_t=dct_FILE['sell_part_t1']
-        sell_part_sl=1-sell_part_t
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*dct_FILE['sell_part_t1']
-        dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
-        dct_which_level_what_do['SL_Price']=float(dct_FILE['order_BUY_FILLED']['price'])
-        dct_which_level_what_do['Current_TX']=dct_FILE['T1']
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    return dct_which_level_what_do
-
-#def get_stepSize(get_stepSize_coin):
-#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-#    symbols=get_stepSize_request.get("symbols")
-#    coin=filter(lambda symbol: symbol['symbol'] == get_stepSize_coin, symbols)
-#    a_coin=coin[0]
-#    filters=a_coin.get("filters")
-#    LOT_SIZE=filter(lambda filterType: filterType['filterType'] == 'LOT_SIZE', filters)
-#    a_LOT_SIZE=LOT_SIZE[0]
-#    stepSize=a_LOT_SIZE.get("stepSize")
-#    dct_FILE['PRICE_FILTER_tickSize']=float(a_coin['filters'][0]['tickSize'])
-#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-#    return float(stepSize)
-
-#def bitmex_status(bitmex_status_symbol,  **kwargs):
-#    global bitmex
-#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-#    bitmex_status_test=kwargs.get('bitmex_status_test', None)
-#    bitmex_status_id=kwargs.get('id', None)
-#    bitmex_status_id_type=kwargs.get('bitmex_status_id_type', None)
-#    if bitmex_status_test:
-#        debugapp("Envoi d un faux status",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-#        # Open the file for reading
-#        if not bitmex_status_id_type:
-#            in_file = open("NEW_BUY","r")
-#        else:
-#            if bitmex_status_id_type=="NEW_BUY": in_file = open(dir_MODELS+"NEW_BUY","r")
-#            if bitmex_status_id_type=="NEW_SELL": in_file = open(dir_MODELS+"NEW_SELL","r")
-#            if bitmex_status_id_type=="FILLED_BUY": in_file = open(dir_MODELS+"FILLED_BUY","r")
-#            if bitmex_status_id_type=="FILLED_SELL": in_file = open(dir_MODELS+"FILLED_SELL","r")
-#            if bitmex_status_id_type=="CANCELED_BUY": in_file = open(dir_MODELS+"CANCELED_BUY","r")
-#            if bitmex_status_id_type=="CANCELED_SELL": in_file = open(dir_MODELS+"CANCELED_SELL","r")
-#            if bitmex_status_id_type=="CANCELED_SL": in_file = open(dir_MODELS+"CANCELED_SL","r")
-#        # Load the contents from the file, which creates a new dictionary
-#        bitmex_status_dict = json.load(in_file)
-#        # Close the file... we don't need it anymore  
-#        in_file.close()
-#        bitmex_status_dict['id']=bitmex_status_id
-#        debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-#        return bitmex_status_dict
-#    else:
-#        debugapp("Envoi du status de bitmex",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-#        bitmex_status_order=bitmex.orderStatus(bitmex_status_symbol, id=bitmex_status_id)
-#        if bitmex_status_order.get("id") is not None:
-#            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(bitmex_status_order.get("id")),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-#            save_json(dir_TEMP+dct_FILE['symbol']+"_"+str(bitmex_status_order.get("id")), bitmex_status_order)
-#        debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-#        return bitmex_status_order
-
 def ToBeFilled():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     allOrders=exchange.fetch_orders(dct_FILE.get("symbol"))
     if allOrders :
         if isinstance(allOrders, list):
-            save_json(dir_TEMP+dct_FILE['symbol']+"_"+"allOrders", allOrders)
+            save_json(dir_TEMP+dct_FILE['symbol'].replace("/", "")+"_"+"allOrders", allOrders)
             for order_level_dictToBeFilled in dct_FILE['dictToBeFilled']:
-#        allOrders=None
-#        current_allOrders=None
-#        order_filtred=None
                 if dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]==1:
-#            allOrders=bitmex.allOrders(dct_FILE.get("symbol"))
-#                    allOrders=bitmex.allOrders("LOOOMBTC")
-#                    params = {
-#                    #    'stopPx': 6500.0,  # if needed
-#                    }
                     order_filtred=filter(lambda allOrders: allOrders['id'] == dct_FILE[order_level_dictToBeFilled]['id'], allOrders)
                     current_allOrders=order_filtred[0]
                     if current_allOrders['status']=="rejected":
@@ -595,13 +418,9 @@ def ToBeFilled():
                         dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
                         save_obj(dct_FILE, dct_FILE.get("filename"))
                     else:
-    #                    current_allOrders = exchange.fetch_order(dct_FILE[order_level_dictToBeFilled]['id'], dct_FILE['symbol'], params)
                         if float(current_allOrders['filled'])==float(current_allOrders['amount']):
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade "+order_level_dictToBeFilled+" FILLED of order_"+str(current_allOrders.get("id")),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
                             dct_FILE[order_level_dictToBeFilled+"_FILLED"]=current_allOrders
-    #                        get_position = exchange.private_get_position()
-    #                        get_position1=list(filter(lambda d: d['symbol'] in "ADAU18", get_position))
-    #                        currentQty=get_position1[0]['currentQty']
                             dct_FILE['last_order_level']=order_level_dictToBeFilled+"_FILLED"
                             dct_FILE['last_executedQty']=float(current_allOrders['filled'])
                             if dct_FILE['executedQty_creation']==0:
@@ -609,30 +428,9 @@ def ToBeFilled():
                             dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
                             if dct_FILE['last_order_level']<>"order_BUY_FILLED":
                                 dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+float(current_allOrders['filled'])
-#                                prix_de_vente=float(current_allOrders['price'])
-#                                if float(current_allOrders['price'])==0 and order_level_dictToBeFilled=="order_Panicsell":
-#    #                                current_order_status=bitmex_status(dct_FILE.get("symbol"), id=current_allOrders['id'])
-#                                    prix_de_vente=float(dct_FILE['order_Panicsell']['fills'][0]['price'])
-#                                prix_achat=float(dct_FILE['order_BUY_FILLED']['price'])
-#                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Diff BTC: "+str(prix_de_vente-prix_achat))
-#                                gain_BTC=(prix_de_vente-prix_achat)*float(current_allOrders['filled'])
-#                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain BTC: "+str(gain_BTC))
-#                                BTCUSDT=float(bitmex_prices.get("BTCUSDT"))
-#                                gain_USD=gain_BTC*BTCUSDT
-#    #                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vente au level:"+order_level_dictToBeFilled,debugapp_Telegram=1)
-#                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Vendu "+str(current_allOrders['filled'])+" au level:"+order_level_dictToBeFilled+"\nGain $: "+str(gain_USD),debugapp_Telegram=1)
-#                                if order_level_dictToBeFilled=="order_T1_SL" and dct_FILE['dictToBeFilled']['order_T1']==1:
-#                                    debugapp(str(sys._getframe().f_code.co_name)+"|"+order_level_dictToBeFilled+": vendu et T1 pas ATTEIND!",debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-#                                if order_level_dictToBeFilled=="order_T2_SL" and dct_FILE['dictToBeFilled']["order_T2"]==1:
-#                                    debugapp(str(sys._getframe().f_code.co_name)+"|"+order_level_dictToBeFilled+": vendu et T2 pas ATTEIND!",debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-#                                sell_stats(current_allOrders, order_level_dictToBeFilled, gain_BTC, gain_USD)
                             save_obj(dct_FILE, dct_FILE.get("filename"))
                         else:
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['id']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-#                else:
-#                    debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['id'])+":Error:"+str(allOrders['code'])+":"+allOrders['msg'],debugapp_DebugLevel="WARNING")
-#            else:
-#                debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['id'])+":Orders empty:",debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def findkeys(d, findkeys_str):
@@ -644,72 +442,6 @@ def findkeys(d, findkeys_str):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     return 0
     
-#def targetTX(targetTX_level):
-#    global processed_order
-#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-#    #Annule l Order SL
-#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au "+targetTX_level+"_"+float8f(dct_FILE[targetTX_level])+"<"+str(bitmex_prices.get(dct_FILE.get("symbol"))))
-#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l Order SL",debugapp_DebugLevel="DEBUG")
-#    current_order_cancel=bitmex.cancel(dct_FILE.get("symbol"), id=dct_FILE.get("last_SL_id"))
-#    current_order_cancel=bitmex_status(dct_FILE.get("symbol"), id=dct_FILE.get("last_SL_id"), bitmex_status_test=1, bitmex_status_id_type="CANCELED_SL")
-#    if current_order_cancel.get("id") is not None:
-#        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("id")))
-#        save_json(dir_TEMP+dct_FILE['symbol']+"_"+str(current_order_cancel.get("id"))+"_C", current_order_cancel)
-#        dct_FILE["order_SL_CANCELED_ASKED"]=current_order_cancel
-#        count=0
-#        processed_order=1
-#        if targetTX_level=="T3":
-#            next_order_level="order_"+targetTX_level
-#        else:
-#            next_order_level="order_"+targetTX_level+"_SL"
-#        while count < 30 and dct_FILE["last_order_level"]<>next_order_level:
-#            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+"s apres debut Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
-#            #Check si Order bien CANCELED
-#            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Check si Order bien CANCELED")
-#            current_order_status=bitmex_status(dct_FILE.get("symbol"), id=dct_FILE.get("last_SL_id"))
-#            current_order_status=bitmex_status(dct_FILE.get("symbol"), id=dct_FILE.get("last_SL_id"), bitmex_status_test=1, bitmex_status_id_type="CANCELED_SL")
-#            if current_order_status.get("id") is not None:
-#                if current_order_status.get("status")=="CANCELED":
-#                    dct_FILE[dct_FILE.get("last_order_level")+"_CANCELED"]=current_order_status
-#                    #lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs
-#                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs")
-#                    dct_which_level_what_do=which_level_what_do(bitmex_price(dct_FILE.get("symbol")))
-#                    if dct_FILE['percentage_limit_order_before_tx']<>0:
-#                        current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], dct_which_level_what_do['Current_TX'],"SELL", "order_"+targetTX_level)
-#                    else:
-#                        if dct_FILE['sl_replace_tx']=="1":
-#                            current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], bitmex_price(dct_FILE.get("symbol")),"STOP-LIMIT_TX", "order_"+targetTX_level)
-#                        else:
-#                            current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty"], bitmex_price(dct_FILE.get("symbol")),"SELL", "order_"+targetTX_level)
-#                    current_order_SELL=bitmex_status(dct_FILE.get("symbol"), id=43802508, bitmex_status_test=1, bitmex_status_id_type="NEW_SELL")
-#                    if current_order_SELL.get("id") is not None:
-#                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SELL "+targetTX_level+" id:"+str(current_order_SELL.get("id")))
-#                        dct_FILE["order_"+targetTX_level]=current_order_SELL
-#                        dct_FILE["last_order_level"]="order_"+targetTX_level
-#                        save_obj(dct_FILE, dct_FILE.get("filename"))
-#                    if not targetTX_level=="T3":
-#                        #place le SL aussi
-#                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"place le SL aussi")
-#                        current_order_SELL=b_order(dct_FILE.get("symbol"), dct_which_level_what_do["vente_Qty_SL"], dct_which_level_what_do["SL_Price"],"STOP-LIMIT", "order_"+targetTX_level+"_SL")
-#                        if current_order_SELL.get("id") is not None:
-#                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"_SL id:"+str(current_order_SELL.get("id")))
-#                            dct_FILE["order_"+targetTX_level+"_SL"]=current_order_SELL
-#                            dct_FILE["last_order_level"]="order_"+targetTX_level+"_SL"
-#                            save_obj(dct_FILE, dct_FILE.get("filename"))
-#                        else:
-#                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"_SL "+targetTX_level+":id empty:"+str(current_order_SELL),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL")
-#                else:
-#                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Attend Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
-#                    count = count + 1
-#                    time.sleep(1)
-#            else:
-#                debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_id"))+":Status order empty:"+str(current_order_status),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-#        else:
-#            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+ "s exit apres Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
-#    else:
-#        debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE.get("last_SL_id"))+":Cancel order empty:"+str(current_order_cancel),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-#
 def setup_logger(logger_name, log_file):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     log_setup = logging.getLogger(logger_name)
@@ -718,72 +450,6 @@ def setup_logger(logger_name, log_file):
     log_setup.addHandler(fileHandler) 
     log_setup.setLevel(level)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-
-#def panicsell():
-#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l Order",debugapp_DebugLevel="DEBUG")
-#    global processed_order
-#    if dct_FILE.get("last_order_level") =="order_BUY":
-#        order_to_cancel=dct_FILE['order_BUY']['id']
-#    else:
-#        order_to_cancel=dct_FILE.get("last_SL_id")
-#    current_order_cancel=bitmex.cancel(dct_FILE.get("symbol"), id=order_to_cancel)
-##    current_order_cancel=bitmex_status(dct_FILE.get("symbol"), id=order_to_cancel, bitmex_status_test=1, bitmex_status_id_type="CANCELED_SL")
-#    if current_order_cancel.get("id") is not None:
-#        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("id")))
-#        save_json(dir_TEMP+dct_FILE['symbol']+"_"+str(current_order_cancel.get("id"))+"_C", current_order_cancel)
-#        dct_FILE["order_CANCELED_ASKED"]=current_order_cancel
-#        count=0
-#        processed_order=1
-#        while count < 30 and dct_FILE["last_order_level"]<>"order_"+"Panicsell":
-#            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+"s apres debut Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
-#            #Check si Order bien CANCELED
-#            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Check si Order bien CANCELED")
-#            current_order_status=bitmex_status(dct_FILE.get("symbol"), id=current_order_cancel['id'])
-##            current_order_status=bitmex_status(dct_FILE.get("symbol"), id=current_order_cancel['id'], bitmex_status_test=1, bitmex_status_id_type="CANCELED_SL")
-#            if current_order_status.get("id") is not None:
-#                if current_order_status.get("status")=="CANCELED":
-#                    dct_FILE[dct_FILE.get("last_order_level")+"_CANCELED"]=current_order_status
-#                    if dct_FILE["executedQty_creation"] <>0:
-#                        #lance l Order de SELL "+"Panicsell"+" avec les bonnes valeurs
-#                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l Order de SELL "+" avec les bonnes valeurs")
-#                        allQty=float(dct_FILE["executedQty_creation"])-float(dct_FILE["executedQty_vendu"])
-##                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Panic sell",debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
-#                        current_order_SELL=b_order(dct_FILE.get("symbol"), allQty, dct_FILE['bitmex_price'],"SELL", "order_"+"Panicsell")
-##                                current_order_SELL=bitmex_status(dct_FILE.get("symbol"), id=43802508, bitmex_status_test=1, bitmex_status_id_type="NEW_SELL")
-#                        if current_order_SELL.get("id") is not None:
-#                            dct_FILE['panicsell']=0
-#                            debugapp(str(sys._getframe().f_code.co_name)+"|"+" id:"+str(current_order_SELL.get("id")),debugapp_Telegram=1)
-#                            dct_FILE["order_"+"Panicsell"]=current_order_SELL
-#                            dct_FILE["last_order_level"]="order_"+"Panicsell"
-#                            save_obj(dct_FILE, dct_FILE.get("filename"))
-##                            try:
-##                                shutil.move(dct_FILE.get("filename"), dir_OLD+ntpath.basename(dct_FILE.get("filename")))
-##                                shutil.move(dct_FILE.get("filename")+".log", dir_OLD+ntpath.basename(dct_FILE.get("filename")+".log"))
-##                            except: 
-##                                pass
-##                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
-#                        else:
-#                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Attend Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
-#                            count = count + 1
-#                    else:
-#                        dct_FILE['panicsell']=0
-#                        debugapp(str(sys._getframe().f_code.co_name)+"|"+" id:"+str(current_order_status.get("id")),debugapp_Telegram=1)
-#                        dct_FILE["order_"+"Panicsell"]=dct_FILE['last_order_level']
-#                        dct_FILE["last_order_level"]="order_"+"Panicsell"
-#                        save_obj(dct_FILE, dct_FILE.get("filename"))
-##                        try:
-##                            shutil.move(dct_FILE.get("filename"), dir_OLD+ntpath.basename(dct_FILE.get("filename")))
-##                            shutil.move(dct_FILE.get("filename")+".log", dir_OLD+ntpath.basename(dct_FILE.get("filename")+".log"))
-##                        except: 
-##                            pass
-##                        debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
-#            else:
-#                debugapp(str(sys._getframe().f_code.co_name)+"|"+str(current_order_cancel['id'])+":Status order empty:"+str(current_order_status),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-#            time.sleep(1)
-#        else:
-#            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(count)+ "s exit apres Check si Order bien CANCELED",debugapp_DebugLevel="DEBUG")
-#    else:
-#        debugapp(str(sys._getframe().f_code.co_name)+"|"+str(order_to_cancel)+":Cancel order empty:"+str(current_order_cancel),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
 
 def all_sold():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
@@ -842,22 +508,24 @@ def not_all_sold():
 def t1_filled():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 #            def edit_order(self, id, symbol, type, side, amount=None, price=None, params={}):
-    b_order_price=float(floatXf_tickSize(dct_FILE['BUY']))
+    b_order_price=float(exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['BUY']))
     if dct_FILE['order_SL']['side']=="buy":
-        type = 'LimitIfTouched'  # or 'market', or 'Stop' or 'StopLimit'
+        type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit'
         b_order_price_plus_sl_percen=percentage_calc(b_order_price, -dct_FILE['percentage_sl_upside'])
     else:
-        type = 'StopLimit'  # or 'market', or 'Stop' or 'StopLimit'
+        type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit'
         b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['percentage_sl_upside'])
-#    b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['percentage_sl_upside'])
     b_order_Qty=float(dct_FILE['executedQty_creation'])-float(dct_FILE['executedQty_vendu'])
-    order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-    b_order_price_plus_sl_percen=float(floatXf_tickSize(b_order_price_plus_sl_percen))
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @Price "+floatXf_tickSize(b_order_price)+" @stopPrice "+floatXf_tickSize(b_order_price_plus_sl_percen),debugapp_Telegram=1)
+    order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
+    b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),debugapp_Telegram=1)
     params = {
-        'stopPx': b_order_price_plus_sl_percen,  # if needed
+        'stopPx': dct_FILE['order_SL']['price'],  # if needed
+        'text': filename,  # if needed
+        'displayQty': 0,  # if needed
     }
-    current_order_SL_EDIT= exchange.edit_order(dct_FILE['order_SL']['id'], dct_FILE.get("symbol"), type, dct_FILE['order_SL']['side'], order_quantity,  b_order_price,  params)
+#    current_order_SL_EDIT= exchange.edit_order(dct_FILE['order_SL']['id'], dct_FILE.get("symbol"), type, dct_FILE['order_SL']['side'], order_quantity,  None,  params)
+    current_order_SL_EDIT= exchange.edit_order(dct_FILE['order_SL']['id'], dct_FILE.get("symbol"), type, dct_FILE['order_SL']['side'], order_quantity,  None,  params)
     if current_order_SL_EDIT.get("id") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Edit SL order_ "+str(current_order_SL_EDIT.get("id")),debugapp_DebugLevel="DEBUG")
         dct_FILE['order_SL']=current_order_SL_EDIT
@@ -871,22 +539,23 @@ def t1_filled():
 def t2_filled():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 #            def edit_order(self, id, symbol, type, side, amount=None, price=None, params={}):
-    b_order_price=float(floatXf_tickSize(dct_FILE['T1']))
+    b_order_price=float(exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['T1']))
     if dct_FILE['order_SL']['side']=="buy":
-        type = 'LimitIfTouched'  # or 'market', or 'Stop' or 'StopLimit'
+        type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit'
         b_order_price_plus_sl_percen=percentage_calc(b_order_price, -dct_FILE['percentage_sl_upside'])
     else:
-        type = 'StopLimit'  # or 'market', or 'Stop' or 'StopLimit'
+        type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit'
         b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['percentage_sl_upside'])
-#    b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['percentage_sl_upside'])
     b_order_Qty=float(dct_FILE['executedQty_creation'])-float(dct_FILE['executedQty_vendu'])
-    order_quantity=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-    b_order_price_plus_sl_percen=float(floatXf_tickSize(b_order_price_plus_sl_percen))
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @Price "+floatXf_tickSize(b_order_price)+" @stopPrice "+floatXf_tickSize(b_order_price_plus_sl_percen),debugapp_Telegram=1)
+    order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
+    b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),debugapp_Telegram=1)
     params = {
-        'stopPx': b_order_price_plus_sl_percen,  # if needed
+        'stopPx': dct_FILE['order_BUY']['price'],  # if needed
+        'text': filename,  # if needed
+        'displayQty': 0,  # if needed
     }
-    current_order_SL_EDIT= exchange.edit_order(dct_FILE['order_SL']['id'], dct_FILE.get("symbol"), type, dct_FILE['order_SL']['side'], order_quantity,  b_order_price,  params)
+    current_order_SL_EDIT= exchange.edit_order(dct_FILE['order_SL']['id'], dct_FILE.get("symbol"), type, dct_FILE['order_SL']['side'], order_quantity,  None,  params)
     if current_order_SL_EDIT.get("id") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Edit SL order_ "+str(current_order_SL_EDIT.get("id")),debugapp_DebugLevel="DEBUG")
         dct_FILE['order_SL']=current_order_SL_EDIT
@@ -901,7 +570,6 @@ def buy_filled():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     #lance l Order de SL avec les bonnes valeurs
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"last_order_level=order_BUY_FILLED",debugapp_DebugLevel="DEBUG")
-#            current_order_BUY_FILLED=b_order(dct_FILE.get("symbol"), dct_FILE.get('order_BUY_FILLED', {}).get('executedQty'), dct_FILE.get("SL"),"STOP-LIMIT", "order_SL")
     if dct_FILE['order_BUY_FILLED']['side']=="buy":
         side = "sell"
     else:
@@ -1015,21 +683,6 @@ blacklist = ConfigSectionMap("BITMEX_API", load_params)['blacklist']
 ###bitmex
 bitmex_key = ConfigSectionMap("BITMEX_API", load_params)['bitmex_key']
 bitmex_secret = ConfigSectionMap("BITMEX_API", load_params)['bitmex_secret']
-#bitmex.set(bitmex_key, bitmex_secret)
-#bitmex_balances=bitmex.balances()
-#bitmex_prices=bitmex.prices()
-#r_exchangeInfo=requests.get("https://www.bitmex.com/api/v1/exchangeInfo")
-#get_stepSize_request=r_exchangeInfo.json()
-#test_bitmex_prices=None
-#try:
-#    test_bitmex_prices=float(bitmex_prices.get("ETHBTC"))
-#except: 
-#    pass
-#if test_bitmex_prices is None:
-#    bitmex_prices=bitmex.prices()
-#    test_bitmex_prices=float(bitmex_prices.get("NEOBTC"))
-#    if not isinstance(test_bitmex_prices, float):
-#        bitmex_prices=bitmex.prices()
 logger_symbol=None
 
 ###Bitmex
@@ -1043,20 +696,14 @@ if 'test' in exchange.urls:
 bitmex_balance=exchange.fetch_balance()
 bitmex_markets=exchange.fetch_markets()
 
-bitmex_contracts=[]
+bitmex_symbols=[]
 for x in bitmex_markets:
-    bitmex_contracts.append(x['symbol'])
-save_obj(bitmex_contracts, "bitmex_contracts.json")
+    bitmex_symbols.append(x['symbol'])
+save_obj(bitmex_symbols, "bitmex_contracts.json")
 
-#y=""
-#for x in bitmex_markets:
-##    y=y+"|"+x['id']+"("+str(float8f(x['info']['tickSize']))+","+str(x['info']['lotSize'])+")"
-###    if not "1" in str(float8f(x['info']['tickSize'])): print x['id']+"("+str(float8f(x['info']['tickSize']))+","+str(x['info']['lotSize'])+")"
-#    y=y+"'"+x['symbol']+"',"
-#print y
 ###Check pause
 check_pause()
-
+annonce_scriptname=False
 #print bitmex_prices
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////begin script:"+begin_time, debugapp_logger=logger)
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
@@ -1069,88 +716,40 @@ for filename in os.listdir(dir_BITMEX_TRADES):
     if ".json" in filename and not ".log" in filename:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_BITMEX_TRADES+filename,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         dct_FILE=load_obj(dir_BITMEX_TRADES+filename)
-        if not ".json" in dct_FILE['filename']:
-            dct_FILE['filename']=dct_FILE['filename']+".json"
-        if not dir_BITMEX_TRADES in dct_FILE['filename']:
-            dct_FILE['filename']=dir_BITMEX_TRADES+filename
-        bitmex_contract=list(filter(lambda d: d['id'] in dct_FILE['symbol'], bitmex_markets))
-
-        dct_FILE['bitmex_price'] = bitmex_contract[0]['info']['bidPrice']
-#        dct_FILE['LOT_SIZE_stepSize'] = float(get_stepSize(dct_FILE.get("symbol")))
+#        bitmex_actual_market=list(filter(lambda d: d['id'] in dct_FILE['symbol'], bitmex_markets))
+        bitmex_actual_market=None
+        for market in bitmex_markets:
+            if market['id']==dct_FILE['symbol']:
+                dct_FILE['symbol']=market['symbol']
+                bitmex_actual_market=market
+            elif market['symbol']==dct_FILE['symbol']:
+                bitmex_actual_market=market
+        dct_FILE['bitmex_price'] = bitmex_actual_market['info']['bidPrice']
         setup_logger(dct_FILE['symbol'], dir_BITMEX_TRADES+filename+".log")
         logger_symbol= logging.getLogger(dct_FILE['symbol'])
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cours actuel "+str(float8f(dct_FILE['bitmex_price']))+" "+dct_FILE['last_order_level'],debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-#        last_sl_stop=dct_FILE['SL']
-#        if dct_FILE.has_key('order_T2_SL') or dct_FILE.has_key('order_T1_SL'): last_sl_stop=dct_FILE['last_SL_stopPrice']
-#        near_sl=float(dct_FILE['bitmex_price'])/float(last_sl_stop)*100-100
-#        near_sl=format(near_sl, '.1f')
-#        if float(near_sl)<=percentage_near_sl:
-#            dct_FILE['alerts_near_sl']=int(dct_FILE['alerts_near_sl'])+1
-#            if not (math.sqrt(dct_FILE['alerts_near_sl'])-int(math.sqrt(dct_FILE['alerts_near_sl']))) or dct_FILE['alerts_near_sl']<=2:
-#                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Price:"+str(float8f(dct_FILE['bitmex_price']))+" near SL:"+str(float8f(last_sl_stop)), debugapp_logger=logger,debugapp_Telegram=1)
-#        else:
-#            dct_FILE['alerts_near_sl']=0
         save_obj(dct_FILE, dct_FILE.get("filename"))
 
         if dct_FILE['executedQty_creation']=="init": dct_FILE['executedQty_creation']=0
     #############################################################################################################
     #TESTS###############################################################################################
     #############################################################################################################
-#        if "_FILLED_FILLED" in dct_FILE['last_order_level']:
-    #############################################################################################################
-    #TESTS###############################################################################################
-    #############################################################################################################
-#        if dct_FILE.has_key('panicsell'):
-#            if dct_FILE['panicsell']==1:
-#                panicsell()
-
         if dct_FILE['dictToBeFilled'].has_key("order_BUY"):
             ToBeFilled()
-
-#        if (dct_FILE.get("last_order_level")=='order_T3_FILLED' or dct_FILE.get("last_order_level")=='order_SL_FILLED' or float(dct_FILE['executedQty_creation'])<=(float(dct_FILE['executedQty_vendu'])+float(dct_FILE['executedQty_creation'])/100)) and float(dct_FILE['executedQty_creation'])<>0:
-#        if (float(dct_FILE['executedQty_creation'])<=percentage_calc(dct_FILE['executedQty_vendu'], percentage_delta_buyed_sold) and float(dct_FILE['executedQty_creation'])<>0) or findkeys(dct_FILE, "order_BUY_CANCELED"):
-            
         if float(dct_FILE['executedQty_creation'])<float(dct_FILE['executedQty_vendu']):
             not_all_sold()
-
         if (float(dct_FILE['executedQty_creation'])==float(dct_FILE['executedQty_vendu'])) and dct_FILE['executedQty_creation']<>0:
             all_sold()
-#        if findkeys(dct_FILE, "order_SL_FILLED") and not findkeys(dct_FILE, "order_T"):
-#            #    def cancel_order(self, id, symbol=None, params={}):
-#            #    def create_order(self, symbol, type, side, amount, price=None, params={}):
-#            current_order_SL_CANCEL= exchange.cancel_order(dct_FILE['order_T1']['id'])
-#            if current_order_SL_CANCEL.get("id") is not None:
-#                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule T1 order_ "+str(current_order_SL_CANCEL.get("id")),debugapp_DebugLevel="DEBUG")
-#                dct_FILE['order_SL']=current_order_SL_CANCEL
-#                dct_FILE['last_order_level']='order_T1_CANCELED'
-#                dct_FILE['current_SL']='order_T1_CANCELED'
-#                save_obj(dct_FILE, dct_FILE.get("filename"))
-#            else:
-#                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order empty:"+str(current_order_SL_CANCEL),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-
         open_orders=exchange.fetch_open_orders(dct_FILE.get("symbol"))
         if dct_FILE.get("last_order_level")=='order_T1_FILLED':
             t1_filled()
-
         if dct_FILE.get("last_order_level")=='order_T2_FILLED':
             t2_filled()
-
         if dct_FILE.get("last_order_level")=='order_BUY_FILLED':
             buy_filled()
-
-#            current_price=percentage_calc(bitmex_price(dct_FILE.get("symbol")), dct_FILE['percentage_limit_order_before_tx'])
-#            if dct_FILE['T3'] < current_price and not findkeys(dct_FILE, "order_T3"):
-#                #si dct_FILE['sl_replace_tx'] et T3 mais pas SLT2 alors annule SLT2 et ajoute dct_FILE['sell_part_t2'] a dct_FILE['sell_part_t3'] puis lance SLT3 puis envoi une info trade a finir a la main ou en mode auto SL qui suit le prix actuel
-#                targetTX('T3')
-#            elif dct_FILE['T2'] < current_price and not findkeys(dct_FILE, "order_T2") and not findkeys(dct_FILE, "order_T3"):
-#                targetTX('T2')
-#            elif dct_FILE['T1'] < current_price and not findkeys(dct_FILE, "order_T"):
-#                targetTX('T1')
-#        debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
     elif not ".json" in filename and not ".log" in filename:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_BITMEX_TRADES+filename,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         dct_FILE=load_obj(dir_BITMEX_TRADES+filename)
-#        os.rename(dct_FILE.get("filename"), dct_FILE.get("filename").replace("/trades","/old"))
         shutil.move(dct_FILE.get("filename"), dir_OLD+ntpath.basename(dct_FILE.get("filename")))
         dct_FILE['filename']=dir_BITMEX_TRADES+filename+".json"
         save_obj(dct_FILE, dct_FILE.get("filename"))
@@ -1164,6 +763,7 @@ for filename in os.listdir(dir_BITMEX_SIGNALS):
     text_file = open(dir_BITMEX_SIGNALS+filename, "r")
     f_signal=text_file.read()
     text_file.close()
+    bitmex_actual_market=None
     if "[TRADE]" in f_signal:
         b_trade_to_order(dir_BITMEX_SIGNALS+filename)
     else:
