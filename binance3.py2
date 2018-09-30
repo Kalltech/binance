@@ -42,7 +42,7 @@ def create_dict():
     return signal_dict
     
 def debugapp(debugapp_str, **kwargs):
-    global tab
+    global tab,  annonce_scriptname
     if "|begin" in debugapp_str:
         tab=tab+"\t"
     debugapp_str=tab+debugapp_str
@@ -74,7 +74,11 @@ def debugapp(debugapp_str, **kwargs):
     if debugapp_Telegram: 
         try:
             debugapp_str=dct_FILE['symbol']+":"+debugapp_str
-            bot.sendMessage(chat_id=my_telegram_id, text=str(debugapp_str))
+            if annonce_scriptname==False:
+                annonce_scriptname=True
+                bot.sendMessage(chat_id=my_telegram_id, text=str(str(os.path.basename(__file__)).upper()+"\n"+debugapp_str))
+            else:
+                bot.sendMessage(chat_id=my_telegram_id, text=str(debugapp_str))
         except:
             debugapp_logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
             print str("Impossible d envoyer vers Telegram"+str(debugapp_str))
@@ -558,7 +562,7 @@ def ToBeFilled():
                     else:
                         debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         else:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Error:"+str(allOrders['code'])+":"+allOrders['msg'],debugapp_DebugLevel="WARNING")
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"allOrders"+":Error:"+str(allOrders['code'])+":"+allOrders['msg'],debugapp_DebugLevel="WARNING")
     else:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Orders empty:",debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
@@ -804,6 +808,7 @@ if test_binance_prices is None:
 logger_symbol=None
 ###Check pause
 check_pause()
+annonce_scriptname=False
 
 #print binance_prices
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////begin script:"+begin_time, debugapp_logger=logger)
