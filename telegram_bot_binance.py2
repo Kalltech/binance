@@ -421,7 +421,7 @@ def echo(bot, update):
         if reply_markup <> "":
             bot.send_message(my_telegram_id, text='Which kill symbol(s):', reply_markup=reply_markup)
 
-    elif "PeerChannel(channel_id=1229891129)".lower() in text_sent or "bitmex_kall" in text_sent:
+    elif "PeerChannel(channel_id=1229891129)".lower() in text_sent or "PeerChannel(channel_id=1114421815)".lower() in text_sent:
         print "GPS"
         symbol_dict=load_obj("binance_prices.json")
 #        symbol_dict = ['XBTUSD','.XRPXBT','.XRPXBT30M','.EVOL7D','.EOSXBT','.EOSXBT30M','.JPYBON','.JPYBON2H','.JPYBON8H','.BCHXBT','.BCHXBT30M','.KRWBON','.KRWBON2H','.KRWBON8H','.XBTKRWPI','.XBTKRWPI2H','.XBTKRWPI8H','.XBTKRW','.XBTKRW30M','.ADAXBT','.ADAXBT30M','.TRXXBT','.TRXXBT30M','.BADAXBT','.BADAXBT30M','.BBCHXBT','.BBCHXBT30M','.BEOSXBT','.BEOSXBT30M','.BXRPXBT','.BXRPXBT30M','BCHU18','ADAU18','EOSU18','XRPU18','TRXU18','XRPZ18','BCHZ18','ADAZ18','EOSZ18','TRXZ18','BTC/KRW','.XBT','.XBT30M','.XBTBON','.XBTBON8H','.XBTUSDPI','.XBTUSDPI8H','.XBTBON2H','.XBTUSDPI2H','.BXBT','.BXBT30M','.XBTJPY','.XBTJPY30M','.BXBTJPY','.BXBTJPY30M','.XBTJPYPI','.XBTJPYPI2H','.XBTJPYPI8H','.BVOL','.BVOL24H','.BVOL7D','.ETHXBT','.ETHXBT30M','.ETHXBTPI','.ETHXBTPI8H','.ETHBON','.ETHBON2H','.ETHBON8H','.ETHXBTPI2H','.BETH','.BETH30M','.ETHUSDPI','.ETHUSDPI2H','.ETHUSDPI8H','.BETHXBT','.BETHXBT30M','.LTCXBT','.LTCXBT30M','.BLTCXBT','.BLTCXBT30M','.USDBON','.USDBON8H','.USDBON2H','BTC/USD','XBT7D_U105','XBT7D_D95','XBTU18','XBTZ18','XBTH19','BTC/JPY','ETH/BTC','ETH/USD','ETHU18','ETHZ18','LTCU18','LTCZ18']
@@ -453,6 +453,12 @@ def echo(bot, update):
             a={"buy", "buyunder", "buy:"}
             if any(x in line for x in a) and signal_dict['AC']=="init":
                 signal_dict['AC'] = get_price_type(line, a, satoshi=1)
+            if "sell:" in line:
+                a_sell=line.split("sell:")
+                a_sell=a_sell[1].split("-")
+                signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=1)
+                signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=1)
+                signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=1)
             if "shorttermtargets:" in line:
                 a_sell=line.split("shorttermtargets:")
                 a_sell=a_sell[1].split("-")
@@ -519,7 +525,7 @@ def echo(bot, update):
             line=line.replace("#", ":")
             line=line.replace("$", "")
 #            print line
-            if (line.upper() in symbol_dict or 'XBTUSD' in line.upper()) and signal_dict['C']=="init":
+            if (line.upper() in symbol_dict or 'XBTUSD' in line.upper() or 'ETHUSD' in line.upper()) and signal_dict['C']=="init":
                 signal_dict['C'] = line.upper()
             if "position:" in line and signal_dict['POS']=="init":
                 signal_dict['POS'] = line.replace("position:", "")
