@@ -14,7 +14,7 @@ notifier = inotify.adapters.Inotify()
 notifier.add_watch(cwd+"/signals")
 endTime = datetime.datetime.now() + datetime.timedelta(minutes=15)
 
-script_name = "binance3.py2"
+#script_name = "binance3.py2"
 loop_time = datetime.datetime.now()
 
 def ConfigSectionMap(section, Config):
@@ -37,15 +37,18 @@ bar = progressbar.ProgressBar(maxval=int(loop_schedule_binance3), \
 widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
 bar.start()
 bar_update=0
-def find_procs_by_name(name):
+def find_procs_by_name(name, script_name):
     "Return a list of processes matching 'name'."
     for p in psutil.process_iter(attrs=["name", "exe", "cmdline"]):
-        if name == p.info['name'] or \
-                p.info['exe'] and os.path.basename(p.info['exe']) == name or \
-                p.info['cmdline'] and p.info['cmdline'][0] == name:
-            if p.info['cmdline'][1] ==script_name:
-#                print("found:"+script_name)
-                return "found:"
+        if p.info['cmdline'] :
+            if isinstance(p.info['cmdline'], list):
+                if len(p.info['cmdline'])>1:
+                    if name == p.info['name']:
+#                        print p.info['name']
+#                        print str(p.info['cmdline'][1])
+                        if p.info['cmdline'][1] ==script_name:
+                            print("found:"+script_name)
+                            return "found:"
 
 #print find_procs_by_name("python2")
         
@@ -54,7 +57,7 @@ for event in notifier.event_gen():
 #        print event      # uncomment to see all events generated
         if 'IN_CREATE' in event[1]:
             print "file '{0}' created in '{1}'".format(event[3], event[2])
-            if find_procs_by_name("python2") <> "found:":
+            if find_procs_by_name("python2", "binance3.py2") <> "found:":
                 print("launching:" + cwd+"/binance3.py2")
                 os.chdir(cwd+"/")
                 os.system(cwd+"/binance3.py2")
@@ -70,25 +73,27 @@ for event in notifier.event_gen():
 #        print "loop in " + cwd+"/signals"+" for "+str(int(diff_time.total_seconds()))
         if int(diff_time.total_seconds()) > int(loop_schedule_binance3)-1:
             bar.finish()
-            if find_procs_by_name("python2") <> "found:":
-                os.chdir(cwd+"/")
-                last_error=""
+            os.chdir(cwd+"/")
+            last_error=""
+            if find_procs_by_name("python2", "binance3.py2") <> "found:":
                 print("launching:" + cwd+"/binance3.py2")
                 p = subprocess.Popen([cwd+"/binance3.py2", ""], stderr=subprocess.PIPE)
                 p_com=p.communicate()
                 if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
+            if find_procs_by_name("python2", "binance4.py2") <> "found:":
                 print("launching:" + cwd+"/binance4.py2")
                 p = subprocess.Popen([cwd+"/binance4.py2", ""], stderr=subprocess.PIPE)
                 p_com=p.communicate()
                 if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
+            if find_procs_by_name("python2", "bitmex3.py2") <> "found:":
                 print("launching:" + cwd+"/bitmex3.py2")
                 p = subprocess.Popen([cwd+"/bitmex3.py2", ""], stderr=subprocess.PIPE)
                 p_com=p.communicate()
                 if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
-                if last_error<>"":
-                    text_file = open(cwd+"/whatchdog_error.log", "w")
-                    text_file.write(last_error)
-                    text_file.close()
+            if last_error<>"":
+                text_file = open(cwd+"/whatchdog_error.log", "a")
+                text_file.write(last_error)
+                text_file.close()
             loop_time = datetime.datetime.now()
             load_params.read("binance_api.ini")
             loop_schedule_binance3 = ConfigSectionMap("BINANCE_API", load_params)['loop_schedule_binance3']
