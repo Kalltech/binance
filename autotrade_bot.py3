@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import time
-from telethon import TelegramClient, events
+from telethon import TelegramClient, events,  utils
 import configparser
 import sys,  os
 import pickle
@@ -8,7 +8,6 @@ sys.path.append("/usr/local/lib/python2.7/dist-packages")
 import string
 import ast
 import json
-
 from influxdb import InfluxDBClient
 import datetime
 
@@ -76,7 +75,7 @@ influxdb_host= ConfigSectionMap("BINANCE_API", load_params)['influxdb_host']
 influxdb_port= ConfigSectionMap("BINANCE_API", load_params)['influxdb_port']
 influxdb_enabled= ConfigSectionMap("BINANCE_API", load_params)['influxdb_enabled']
 telegram_chat_list = ast.literal_eval(load_params.get('BINANCE_API', 'telegram_chat_list'))
-auto_trade= ConfigSectionMap("BINANCE_API", load_params)['auto_trade']
+#auto_trade= ConfigSectionMap("BINANCE_API", load_params)['auto_trade']
 
 def load_obj(name ):
     with open(name) as json_data:
@@ -108,6 +107,7 @@ def to_db(COIN="XXX",  TX="TX", TX_nb="0"):
         }
     ]
     binance_usd=load_obj("./temp/binance_usd")
+    bitmex_usd=load_obj("./temp/bitmex_usd")
     json_body2 = [
         {
             "measurement": "Binance_Stats",
@@ -117,6 +117,20 @@ def to_db(COIN="XXX",  TX="TX", TX_nb="0"):
             "time": current_time,
             "fields": {
                 "total_usd": binance_usd['total_usd'],
+                "total_btc": binance_usd['total_btc'],
+            }
+        }
+    ]
+    json_body3 = [
+        {
+            "measurement": "Binance_Stats",
+            "tags": {
+                "BINANCE": "BINANCE",
+            },
+            "time": current_time,
+            "fields": {
+                "total_usd_bitmex": bitmex_usd['total_usd'],
+                "total_btc_bitmex": bitmex_usd['total_btc'],
             }
         }
     ]
@@ -138,6 +152,7 @@ def to_db(COIN="XXX",  TX="TX", TX_nb="0"):
     print("Write points: {0}".format(json_body))
     client.write_points(json_body)
     client2.write_points(json_body2)
+    client2.write_points(json_body3)
 
 #    print("Querying data: " + query)
 #    result = client.query(query)
@@ -173,10 +188,14 @@ def main():
     # Create the client and connect
     client = TelegramClient(api_username, api_id, api_hash, update_workers=1, spawn_read_thread=False)
     client.start(api_number)
+#    lonami = client.get_entity('lonami')
+#    print(lonami)
+#    print(type(lonami))
+#    print(utils.get_display_name(lonami))
 
     @client.on(events.NewMessage(incoming=True))
     def _(event):
-        print("\n*********************************************************")
+        print("*********************************************************")
         global T1
         global T2
         global T3
@@ -189,33 +208,48 @@ def main():
 #        a_telegram_chat = telegram_chat.split(",")
         influxdb_collectors= ConfigSectionMap("BINANCE_API", load_params)['influxdb_collectors']
         a_influxdb_collectors = influxdb_collectors.split(",")
-        auto_trade= ConfigSectionMap("BINANCE_API", load_params)['auto_trade']
+#        auto_trade= ConfigSectionMap("BINANCE_API", load_params)['auto_trade']
         telegram_chat_list = ast.literal_eval(load_params.get('BINANCE_API', 'telegram_chat_list'))
-
-#        print(event.message)
-#        print(event.message.from_id)
+        from_id=""
+        to_id=""
+#        print(event)
+        print(str(datetime.datetime.now()))
+        if event.message.from_id is not None:
+            try:
+                entity=client.get_entity(event.message.from_id)
+                from_id=utils.get_display_name(entity)
+                print("From:"+from_id+":"+str(event.message.from_id))
+            except: 
+                pass
+        if event.message.to_id is not None:
+            try:
+                entity=client.get_entity(event.message.to_id)
+                to_id=utils.get_display_name(entity)
+                print("To:"+to_id+":"+str(event.message.to_id))
+            except: 
+                pass
         printable = set(string.printable)
 #        print(event.message.message.lower()[:35])
         if not "PeerChannel(channel_id=1228970642)" in str(event.message.to_id) and not "PeerChannel(channel_id=1244535252)" in str(event.message.to_id) and not "PeerChannel(channel_id=1363803244)" in str(event.message.to_id) :
             text_sent="".join(list(filter(lambda x: x in printable, event.message.message.lower())))
-            print(str(datetime.datetime.now())+":"+str(event.message.to_id))
             print(text_sent[:35])
     #        ch_id=client.get_entity(PeerChannel(event.message.to_id))
     #        print(ch_id)
-            if auto_trade=="1":
-                print("autotrade_enabled")
-                for tgm_ct, u  in telegram_chat_list.items():
-    #                print(tgm_ct+"/"+u)
-                    if tgm_ct in str(event.message.to_id):
-                        if ("entry zone:" in text_sent or "buy:" in text_sent or "buy below:" in text_sent or "buy above or in:" in text_sent or "buy below or in:" in text_sent or "buy below or close to:" in text_sent):
-        #                if ("buy:" in text_sent or "buy below:" in text_sent):
-                            print("Envoi")
-        #                    text_sent="".join(list(filter(lambda x: x in printable, event.message.message)))
-                            print(str(event.message.to_id)+"\n"+text_sent+"\nUSD:"+str(u))
-                            client.send_message(bot_name, str(event.message.to_id)+"\n"+text_sent+"\nUSD:"+str(u))
-                            time.sleep(1)  # pause for 1 second to rate-limit automatic replies
-            else:
-                print("auto_trade disabled\n")
+#            if auto_trade=="1":
+#                print("autotrade_enabled")
+            for tgm_ct, u  in telegram_chat_list.items():
+#                print(tgm_ct+"/"+u)
+                if tgm_ct in str(event.message.to_id) and not from_id=="Kalltech_Api_Bot":
+                    if ("entry zone:" in text_sent or "buy:" in text_sent or "buy :" in text_sent or "buy below:" in text_sent or "buy above or in:" in text_sent or "buy below or in:" in text_sent or "buy below or close to:" in text_sent):
+    #                if ("buy:" in text_sent or "buy below:" in text_sent):
+                        print("Envoi")
+    #                    text_sent="".join(list(filter(lambda x: x in printable, event.message.message)))
+                        print(str(event.message.to_id)+":"+to_id+"\n"+text_sent+"\nUSD:"+str(u))
+                        client.send_message(bot_name, str(event.message.to_id)+":"+to_id+"\n"+text_sent+"\nUSD:"+str(u))
+                        time.sleep(1)  # pause for 1 second to rate-limit automatic replies
+                        client.send_message("Signals_All", str(event.message.to_id)+":"+to_id+"\n"+text_sent)
+#            else:
+#                print("auto_trade disabled\n")
             for collectors in a_influxdb_collectors:
                 if influxdb_enabled == "1" and"target" in text_sent and collectors in str(event.message.to_id):
                     print("influxdb_enabled")
@@ -242,8 +276,8 @@ def main():
                         T3_global = count_T(T3_global, "T3_global", "T3_global")
 
     print(time.asctime(), '-', "Starting autotrade")
-    print(str(api_id)+"/"+api_hash+"/"+bot_name+"/"+telegram_chat)
-    if auto_trade=="1": print("autotrade_enabled")
+#    print(str(api_id)+"/"+api_hash+"/"+bot_name+"/"+telegram_chat)
+#    if auto_trade=="1": print("autotrade_enabled")
     client.idle()
     client.disconnect()
     print(time.asctime(), '-', 'Stopped!')
