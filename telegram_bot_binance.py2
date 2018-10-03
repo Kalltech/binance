@@ -24,7 +24,6 @@ load_params.read("binance_api.ini")
 #load_params_bitmex = ConfigParser.ConfigParser()
 #load_params_bitmex.read("bitmex_api.ini")
 json_stats="sell_stats.json"
-signal_dict = {}
 
 cwd = os.getcwd()
 api_path=cwd+"/"
@@ -36,6 +35,8 @@ hot = u'\U0001F525'             # Code: 904
 clouds = u'\U00002601'          # Code: 802-803-804 clouds general
 croix = u'\U0000274C'          # Code: 802-803-804 clouds general
 interrogation = u'\U00002753'          # Code: 802-803-804 clouds general
+
+signal_dict = {}
 
 def ConfigSectionMap(section, Config):
   dict1 = {}
@@ -262,10 +263,16 @@ def help(bot, update):
 def echo(bot, update):
     """Echo the user message."""
     print "BEGIN response"
+    global signal_dict
     global my_telegram_id
     text_sent=update.message.text.lower()
     printable = set(string.printable)
     text_sent=filter(lambda x: x in printable, text_sent)
+    a_channel=text_sent.split("\n")
+    print a_channel
+    channel=""
+    if "PeerChannel(channel_id=".lower() in a_channel[0] or "PeerUser(user_id=".lower() in a_channel[0]:
+        channel=a_channel[0]
 #    print text_sent
 #    print text_sent[:5]
     if "pause:" in text_sent:
@@ -298,6 +305,7 @@ def echo(bot, update):
         hodl_dict['percentage_max_hodl_sl']=percentage_max_hodl_sl
         hodl_dict['percentage_sl_upside']=percentage_sl_upside
         hodl_dict['percentage_control_balance']=percentage_control_balance
+        hodl_dict['CHNL'] = channel
 
         print("creation hodl file:"+api_path+"hodl/"+hodl_dict['symbol'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json")
         save_obj(hodl_dict, api_path+"hodl/"+hodl_dict['symbol'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json")
@@ -396,9 +404,18 @@ def echo(bot, update):
         for symbols in sorted(status_dict):
             button_list.append(InlineKeyboardButton(hot+symbols, callback_data="panicsell:"+symbols))
         reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
-        bot.send_message(my_telegram_id, text='Which panicsell symbol(s):', reply_markup=reply_markup)
+        bot.send_message(my_telegram_id, text='Which panicsell trades:', reply_markup=reply_markup)
     elif text_sent=="kill":
         print "kill"
+        status_dict = {}
+        button_list = []
+        reply_markup = ""
+        for filename in os.listdir(api_path+"bitmex_signals/"):
+            print(api_path+"bitmex_signals/"+filename)
+            button_list.append(InlineKeyboardButton(filename, callback_data="kill:"+api_path+"bitmex_signals/"+filename))
+            reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
+        if reply_markup <> "":
+            bot.send_message(my_telegram_id, text='Which kill bitmex signals:', reply_markup=reply_markup)
         status_dict = {}
         button_list = []
         reply_markup = ""
@@ -407,7 +424,10 @@ def echo(bot, update):
             button_list.append(InlineKeyboardButton(filename, callback_data="kill:"+api_path+"signals/"+filename))
             reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
         if reply_markup <> "":
-            bot.send_message(my_telegram_id, text='Which kill signal:', reply_markup=reply_markup)
+            bot.send_message(my_telegram_id, text='Which kill binance signals:', reply_markup=reply_markup)
+        status_dict = {}
+        button_list = []
+        reply_markup = ""
         for filename in os.listdir(api_path+"trades/"):
             if ".json" in filename and not ".log" in filename:
                 print(api_path+"trades/"+filename)
@@ -419,13 +439,13 @@ def echo(bot, update):
             button_list.append(InlineKeyboardButton(croix+symbols, callback_data="kill:"+symbols))
         reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
         if reply_markup <> "":
-            bot.send_message(my_telegram_id, text='Which kill symbol(s):', reply_markup=reply_markup)
+            bot.send_message(my_telegram_id, text='Which kill binance trades:', reply_markup=reply_markup)
 
-    elif "PeerChannel(channel_id=1229891129)".lower() in text_sent or "PeerChannel(channel_id=1114421815)".lower() in text_sent:
+    elif "PeerChannel(channel_id=1229891129)".lower() in text_sent or "PeerChannel(channel_id=1114421815)".lower() in text_sent or "Test_sl".lower() in text_sent:
         print "GPS"
         symbol_dict=load_obj("binance_prices.json")
 #        symbol_dict = ['XBTUSD','.XRPXBT','.XRPXBT30M','.EVOL7D','.EOSXBT','.EOSXBT30M','.JPYBON','.JPYBON2H','.JPYBON8H','.BCHXBT','.BCHXBT30M','.KRWBON','.KRWBON2H','.KRWBON8H','.XBTKRWPI','.XBTKRWPI2H','.XBTKRWPI8H','.XBTKRW','.XBTKRW30M','.ADAXBT','.ADAXBT30M','.TRXXBT','.TRXXBT30M','.BADAXBT','.BADAXBT30M','.BBCHXBT','.BBCHXBT30M','.BEOSXBT','.BEOSXBT30M','.BXRPXBT','.BXRPXBT30M','BCHU18','ADAU18','EOSU18','XRPU18','TRXU18','XRPZ18','BCHZ18','ADAZ18','EOSZ18','TRXZ18','BTC/KRW','.XBT','.XBT30M','.XBTBON','.XBTBON8H','.XBTUSDPI','.XBTUSDPI8H','.XBTBON2H','.XBTUSDPI2H','.BXBT','.BXBT30M','.XBTJPY','.XBTJPY30M','.BXBTJPY','.BXBTJPY30M','.XBTJPYPI','.XBTJPYPI2H','.XBTJPYPI8H','.BVOL','.BVOL24H','.BVOL7D','.ETHXBT','.ETHXBT30M','.ETHXBTPI','.ETHXBTPI8H','.ETHBON','.ETHBON2H','.ETHBON8H','.ETHXBTPI2H','.BETH','.BETH30M','.ETHUSDPI','.ETHUSDPI2H','.ETHUSDPI8H','.BETHXBT','.BETHXBT30M','.LTCXBT','.LTCXBT30M','.BLTCXBT','.BLTCXBT30M','.USDBON','.USDBON8H','.USDBON2H','BTC/USD','XBT7D_U105','XBT7D_D95','XBTU18','XBTZ18','XBTH19','BTC/JPY','ETH/BTC','ETH/USD','ETHU18','ETHZ18','LTCU18','LTCZ18']
-        global signal_dict
+#        global signal_dict
         signal_dict = {}
         signal_dict['C'] = 'init'
         signal_dict['AC'] = 'init'
@@ -434,6 +454,8 @@ def echo(bot, update):
         signal_dict['T3'] = 'init'
         signal_dict['SL'] = 'init'
         signal_dict['USD'] = 'init'
+        signal_dict['CHNL'] = channel
+        
 #        signal_dict['BAD'] = 'init'
         lines=text_sent
         lines=lines.splitlines()
@@ -506,7 +528,6 @@ def echo(bot, update):
         symbol_dict=load_obj("bitmex_contracts.json")
 
 #        symbol_dict = ['XBTUSD','.XRPXBT','.XRPXBT30M','.EVOL7D','.EOSXBT','.EOSXBT30M','.JPYBON','.JPYBON2H','.JPYBON8H','.BCHXBT','.BCHXBT30M','.KRWBON','.KRWBON2H','.KRWBON8H','.XBTKRWPI','.XBTKRWPI2H','.XBTKRWPI8H','.XBTKRW','.XBTKRW30M','.ADAXBT','.ADAXBT30M','.TRXXBT','.TRXXBT30M','.BADAXBT','.BADAXBT30M','.BBCHXBT','.BBCHXBT30M','.BEOSXBT','.BEOSXBT30M','.BXRPXBT','.BXRPXBT30M','BCHU18','ADAU18','EOSU18','XRPU18','TRXU18','XRPZ18','BCHZ18','ADAZ18','EOSZ18','TRXZ18','BTC/KRW','.XBT','.XBT30M','.XBTBON','.XBTBON8H','.XBTUSDPI','.XBTUSDPI8H','.XBTBON2H','.XBTUSDPI2H','.BXBT','.BXBT30M','.XBTJPY','.XBTJPY30M','.BXBTJPY','.BXBTJPY30M','.XBTJPYPI','.XBTJPYPI2H','.XBTJPYPI8H','.BVOL','.BVOL24H','.BVOL7D','.ETHXBT','.ETHXBT30M','.ETHXBTPI','.ETHXBTPI8H','.ETHBON','.ETHBON2H','.ETHBON8H','.ETHXBTPI2H','.BETH','.BETH30M','.ETHUSDPI','.ETHUSDPI2H','.ETHUSDPI8H','.BETHXBT','.BETHXBT30M','.LTCXBT','.LTCXBT30M','.BLTCXBT','.BLTCXBT30M','.USDBON','.USDBON8H','.USDBON2H','BTC/USD','XBT7D_U105','XBT7D_D95','XBTU18','XBTZ18','XBTH19','BTC/JPY','ETH/BTC','ETH/USD','ETHU18','ETHZ18','LTCU18','LTCZ18']
-        global signal_dict
         signal_dict = {}
         signal_dict['C'] = 'init'
         signal_dict['POS'] = 'init'
@@ -516,6 +537,7 @@ def echo(bot, update):
         signal_dict['T3'] = 'init'
         signal_dict['SL'] = 'init'
         signal_dict['USD'] = 'init'
+        signal_dict['CHNL'] = channel
 #        signal_dict['BAD'] = 'init'
         lines=text_sent
         lines=lines.splitlines()
@@ -584,6 +606,7 @@ def echo(bot, update):
         signal_dict['T3'] = 'init'
         signal_dict['SL'] = 'init'
         signal_dict['USD'] = 'init'
+        signal_dict['CHNL'] = channel
 #        signal_dict['BAD'] = 'init'
         lines=text_sent
         lines=lines.splitlines()
