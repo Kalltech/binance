@@ -75,7 +75,7 @@ def debugapp(debugapp_str, **kwargs):
         if not debugapp_NoPrintConsole: print str(debugapp_str)
     if debugapp_Telegram: 
         try:
-            debugapp_str=dct_FILE['symbol']+":"+debugapp_str
+            if 'dct_FILE' in globals(): dct_FILE['symbol']+":"+debugapp_str
             if annonce_scriptname==False:
                 annonce_scriptname=True
                 bot.sendMessage(chat_id=my_telegram_id, text=str(str(os.path.basename(__file__)).upper()+"\n"+debugapp_str))
@@ -212,6 +212,7 @@ def load_trade(load_trade_file):
     dct_FILE['T3'] = float(ConfigSectionMap("TRADE", parse_Trade)['t3'])
     dct_FILE['T3'] = percentage_calc(dct_FILE['T3'], dct_FILE['percentage_under_tx'])
     dct_FILE['SL'] = float(ConfigSectionMap("TRADE", parse_Trade)['sl'])
+    dct_FILE['CHNL'] = ConfigSectionMap("TRADE", parse_Trade)['chnl']
     if dct_FILE['percentage_max_sl'] <> 0:
         if percentage_calc(dct_FILE['BUY'], dct_FILE['percentage_max_sl']) > dct_FILE['SL']:
             dct_FILE['SL'] = percentage_calc(dct_FILE['BUY'], dct_FILE['percentage_max_sl'])
@@ -618,6 +619,7 @@ cwd = os.getcwd()
 ###load params
 load_params = ConfigParser.ConfigParser()
 load_params.read(cwd+"/bitmex_api.ini")
+auto_trade= ConfigSectionMap("BITMEX_API", load_params)['auto_trade']
 ###Percentages
 percentage_delta_buy_bitmex = float(ConfigSectionMap("BITMEX_API", load_params)['percentage_delta_buy_bitmex'])
 percentage_control_balance = float(ConfigSectionMap("BITMEX_API", load_params)['percentage_control_balance'])
@@ -632,7 +634,6 @@ percentage_max_sl = float(ConfigSectionMap("BITMEX_API", load_params)['percentag
 percentage_near_sl = float(ConfigSectionMap("BITMEX_API", load_params)['percentage_near_sl'])
 sl_replace_tx = ConfigSectionMap("BITMEX_API", load_params)['sl_replace_tx']
 sl_replace_tx_percentage_downside = float(ConfigSectionMap("BITMEX_API", load_params)['sl_replace_tx_percentage_downside'])
-
 percentage_delta_buyed_sold = ConfigSectionMap("BITMEX_API", load_params)['percentage_delta_buyed_sold']
 signal_lifetime_hours = int(ConfigSectionMap("BITMEX_API", load_params)['signal_lifetime_hours'])
 ###Directories
@@ -681,8 +682,13 @@ processed_order=0
 whitelist = ConfigSectionMap("BITMEX_API", load_params)['whitelist']
 blacklist = ConfigSectionMap("BITMEX_API", load_params)['blacklist']
 ###bitmex
-bitmex_key = ConfigSectionMap("BITMEX_API", load_params)['bitmex_key']
-bitmex_secret = ConfigSectionMap("BITMEX_API", load_params)['bitmex_secret']
+bitmex_test = ConfigSectionMap("BITMEX_API", load_params)['bitmex_test']
+if bitmex_test=="1":
+    bitmex_key = ConfigSectionMap("BITMEX_API", load_params)['bitmex_key_test']
+    bitmex_secret = ConfigSectionMap("BITMEX_API", load_params)['bitmex_secret_test']
+else:
+    bitmex_key = ConfigSectionMap("BITMEX_API", load_params)['bitmex_key']
+    bitmex_secret = ConfigSectionMap("BITMEX_API", load_params)['bitmex_secret']
 logger_symbol=None
 
 ###Bitmex
@@ -691,7 +697,7 @@ exchange = ccxt.bitmex({
     'secret': bitmex_secret,
     'enableRateLimit': True,
 })
-if 'test' in exchange.urls:
+if 'test' in exchange.urls and bitmex_test=="1":
     exchange.urls['api'] = exchange.urls['test']
 bitmex_balance=exchange.fetch_balance()
 bitmex_markets=exchange.fetch_markets()
@@ -709,6 +715,10 @@ debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////begin script:"+begin_
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Bitmex:"+"Balance BTC:"+ str(bitmex_balance['BTC']['total']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 debugapp(str(sys._getframe().f_code.co_name)+"|"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), debugapp_logger=logger)
+bitmex_usd={}
+bitmex_usd["total_usd"]=exchange.markets_by_id['XBTUSD']['info']['bidPrice']*bitmex_balance['BTC']['total']
+bitmex_usd["total_btc"]=bitmex_balance['BTC']['total']
+save_json(dir_TEMP+"bitmex_usd", bitmex_usd)
 
 #parse le dossier pour les fichiers
 for filename in os.listdir(dir_BITMEX_TRADES):
@@ -764,8 +774,11 @@ for filename in os.listdir(dir_BITMEX_SIGNALS):
     f_signal=text_file.read()
     text_file.close()
     bitmex_actual_market=None
-    if "[TRADE]" in f_signal:
+    if "[TRADE]" in f_signal and auto_trade=="1":
         b_trade_to_order(dir_BITMEX_SIGNALS+filename)
+    elif auto_trade=="0":
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Autotrade off, move to old:"+dir_BITMEX_SIGNALS+filename,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+        shutil.move(dir_BITMEX_SIGNALS+filename, dir_OLD+filename)
     else:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Signal false:"+dir_BITMEX_SIGNALS+filename,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
         shutil.move(dir_BITMEX_SIGNALS+filename, dir_OLD+filename)
