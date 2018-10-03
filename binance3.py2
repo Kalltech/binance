@@ -73,7 +73,7 @@ def debugapp(debugapp_str, **kwargs):
         if not debugapp_NoPrintConsole: print str(debugapp_str)
     if debugapp_Telegram: 
         try:
-            debugapp_str=dct_FILE['symbol']+":"+debugapp_str
+            if 'dct_FILE' in globals(): dct_FILE['symbol']+":"+debugapp_str
             if annonce_scriptname==False:
                 annonce_scriptname=True
                 bot.sendMessage(chat_id=my_telegram_id, text=str(str(os.path.basename(__file__)).upper()+"\n"+debugapp_str))
@@ -231,6 +231,7 @@ def load_trade(load_trade_file):
     dct_FILE['T3'] = float(ConfigSectionMap("TRADE", parse_Trade)['t3'])
     dct_FILE['T3'] = percentage_calc(dct_FILE['T3'], dct_FILE['percentage_under_tx'])
     dct_FILE['SL'] = float(ConfigSectionMap("TRADE", parse_Trade)['sl'])
+    dct_FILE['CHNL'] = ConfigSectionMap("TRADE", parse_Trade)['chnl']
     if dct_FILE['percentage_max_sl'] <> 0:
         if percentage_calc(dct_FILE['BUY'], dct_FILE['percentage_max_sl']) > dct_FILE['SL']:
             dct_FILE['SL'] = percentage_calc(dct_FILE['BUY'], dct_FILE['percentage_max_sl'])
@@ -407,6 +408,7 @@ def sell_stats(sell_stats_current_order, sell_stats_current_level, gain_BTC, gai
     sell_stats_current_order["gain_USD"]=gain_USD
     sell_stats_current_order["gain_BTC"]=gain_BTC
     sell_stats_current_order["level"]=sell_stats_current_level
+    if dct_FILE.has_key("CHNL"): sell_stats_current_order["CHNL"]=dct_FILE['CHNL']
     sell_stats_current_order["origPrice"]=dct_FILE['order_BUY']['price']
     sell_stats_current_order["origTransactTime"]=dct_FILE['order_BUY']['transactTime']
     sell_stats_file=cwd+"/"+"sell_stats.json"
@@ -516,7 +518,12 @@ def binance_status(binance_status_symbol,  **kwargs):
 
 def ToBeFilled():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    allOrders=binance.allOrders(dct_FILE.get("symbol"))
+    try:
+        allOrders=binance.allOrders(dct_FILE.get("symbol"))
+    except:
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"allOrders"+":Error",debugapp_DebugLevel="WARNING")
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Times:"+str(binance.get_server_time()) +"/"+ str(time.time()),debugapp_DebugLevel="WARNING")
+        return 0
     if allOrders :
         if isinstance(allOrders, list):
             save_json(dir_TEMP+dct_FILE['symbol']+"_"+"allOrders", allOrders)
@@ -529,7 +536,7 @@ def ToBeFilled():
                     order_filtred=filter(lambda allOrders: allOrders['orderId'] == dct_FILE[order_level_dictToBeFilled]['orderId'], allOrders)
                     current_allOrders=order_filtred[0]
                     if current_allOrders['status']=="FILLED":
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade FILLED of order_"+str(current_allOrders.get("orderId")),debugapp_DebugLevel="DEBUG")
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade FILLED of order_"+str(current_allOrders.get("orderId")),debugapp_DebugLevel="WARNING",debugapp_Telegram=1)
                         dct_FILE[order_level_dictToBeFilled+"_FILLED"]=current_allOrders
                         dct_FILE['last_order_level']=order_level_dictToBeFilled+"_FILLED"
                         dct_FILE['last_executedQty']=float(current_allOrders.get("executedQty"))
@@ -558,11 +565,13 @@ def ToBeFilled():
                         save_obj(dct_FILE, dct_FILE.get("filename"))
                     elif current_allOrders['status']=="CANCELED":
                         dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled])+":CANCELED",debugapp_DebugLevel="WARNING")
                         save_obj(dct_FILE, dct_FILE.get("filename"))
                     else:
                         debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['orderId']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         else:
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"allOrders"+":Error:"+str(allOrders['code'])+":"+allOrders['msg'],debugapp_DebugLevel="WARNING")
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Times:"+str(binance.get_server_time()) +"/"+ str(time.time()),debugapp_DebugLevel="WARNING")
     else:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+str(dct_FILE[order_level_dictToBeFilled]['orderId'])+":Orders empty:",debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
@@ -583,6 +592,7 @@ def targetTX(targetTX_level):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Prix actuel superieur au "+targetTX_level+"_"+float8f(dct_FILE[targetTX_level])+"<"+str(binance_prices.get(dct_FILE.get("symbol"))))
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule l Order SL",debugapp_DebugLevel="DEBUG")
     current_order_cancel=binance.cancel(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"))
+    original_order_to_cancel=dct_FILE["last_order_level"]
 #    current_order_cancel=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
     if current_order_cancel.get("orderId") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cancel:"+str(current_order_cancel.get("orderId")))
@@ -602,6 +612,7 @@ def targetTX(targetTX_level):
 #            current_order_status=binance_status(dct_FILE.get("symbol"), orderId=dct_FILE.get("last_SL_orderId"), binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
             if current_order_status.get("orderId") is not None:
                 if current_order_status.get("status")=="CANCELED":
+                    dct_FILE['dictToBeFilled'][original_order_to_cancel]=0
                     dct_FILE[dct_FILE.get("last_order_level")+"_CANCELED"]=current_order_status
                     #lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+"lance l Order de SELL "+targetTX_level+" avec les bonnes valeurs")
@@ -658,6 +669,7 @@ def panicsell():
         order_to_cancel=dct_FILE['order_BUY']['orderId']
     else:
         order_to_cancel=dct_FILE.get("last_SL_orderId")
+    original_order_to_cancel=dct_FILE["last_order_level"]
     current_order_cancel=binance.cancel(dct_FILE.get("symbol"), orderId=order_to_cancel)
 #    current_order_cancel=binance_status(dct_FILE.get("symbol"), orderId=order_to_cancel, binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
     if current_order_cancel.get("orderId") is not None:
@@ -674,6 +686,7 @@ def panicsell():
 #            current_order_status=binance_status(dct_FILE.get("symbol"), orderId=current_order_cancel['orderId'], binance_status_test=1, binance_status_orderId_type="CANCELED_SL")
             if current_order_status.get("orderId") is not None:
                 if current_order_status.get("status")=="CANCELED":
+                    dct_FILE['dictToBeFilled'][original_order_to_cancel]=0
                     dct_FILE[dct_FILE.get("last_order_level")+"_CANCELED"]=current_order_status
                     if dct_FILE["executedQty_creation"] <>0:
                         #lance l Order de SELL "+"Panicsell"+" avec les bonnes valeurs
@@ -726,6 +739,7 @@ cwd = os.getcwd()
 ###load params
 load_params = ConfigParser.ConfigParser()
 load_params.read(cwd+"/binance_api.ini")
+auto_trade= ConfigSectionMap("BINANCE_API", load_params)['auto_trade']
 ###Percentages
 percentage_delta_buy = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_delta_buy'])
 percentage_control_balance = float(ConfigSectionMap("BINANCE_API", load_params)['percentage_control_balance'])
@@ -912,8 +926,11 @@ for filename in os.listdir(dir_SIGNALS):
     text_file = open(dir_SIGNALS+filename, "r")
     f_signal=text_file.read()
     text_file.close()
-    if "[TRADE]" in f_signal:
+    if "[TRADE]" in f_signal and auto_trade=="1":
         b_trade_to_order(dir_SIGNALS+filename)
+    elif auto_trade=="0":
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Autotrade off, move to old:"+dir_SIGNALS+filename,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+        shutil.move(dir_SIGNALS+filename, dir_OLD+filename)
     else:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Signal false:"+dir_SIGNALS+filename,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
         shutil.move(dir_SIGNALS+filename, dir_OLD+filename)
