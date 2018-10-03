@@ -23,6 +23,7 @@ STOP_LOSS_LIMIT = "STOP_LOSS_LIMIT"
 
 GTC = "GTC"
 IOC = "IOC"
+log_error = False
 
 options = {}
 
@@ -59,7 +60,7 @@ def get_exchange_info():
 def prices():
     """Get latest prices for all symbols."""
     data = request("GET", "/api/v3/ticker/price", {})
-    return {d["symbol"]: d["price"] for d in data}
+    return {d["symbol"]: float(d["price"]) for d in data}
 
 
 def tickers():
@@ -130,6 +131,16 @@ def balances():
     return {d["asset"]: {
         "free": d["free"],
         "locked": d["locked"],
+    } for d in data.get("balances", [])}
+    
+def balances_total():
+    """Get current balances for all symbols."""
+    data = signedRequest("GET", "/api/v3/account", {})
+    if 'msg' in data:
+        raise ValueError("Error from exchange: {}".format(data['msg']))
+
+    return {d["asset"]: {
+        "total": float(d["locked"])+float(d["free"]),
     } for d in data.get("balances", [])}
 
 
@@ -263,7 +274,7 @@ def myTrades(symbol, **kwargs):
 def request(method, path, params=None):
     resp = requests.request(method, ENDPOINT + path, params=params)
     data = resp.json()
-    if "msg" in data:
+    if "msg" in data and log_error:
         logging.error(data['msg'])
     return data
 
@@ -282,7 +293,7 @@ def signedRequest(method, path, params):
                             ENDPOINT + path + "?" + query,
                             headers={"X-MBX-APIKEY": options["apiKey"]})
     data = resp.json()
-    if "msg" in data:
+    if "msg" in data and log_error:
         logging.error(data['msg'])
     return data
 
