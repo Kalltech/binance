@@ -21,8 +21,9 @@ import glob
 
 load_params = ConfigParser.ConfigParser()
 load_params.read("binance_api.ini")
-#load_params_bitmex = ConfigParser.ConfigParser()
-#load_params_bitmex.read("bitmex_api.ini")
+
+load_params_bitmex = ConfigParser.ConfigParser()
+load_params_bitmex.read("bitmex_api.ini")
 json_stats="sell_stats.json"
 
 cwd = os.getcwd()
@@ -148,7 +149,7 @@ def Detail_Status(bot, update):
 def menu(bot):
     """Send a message when the command /menu is issued."""
 #    update.message.reply_text('menu activating!')
-    menu_keyboard = [['Status', 'Stats'], ['StartAutotrade', 'StopAutotrade'], ['Kill', 'Panicsell'], ['/help']]
+    menu_keyboard = [['Status', 'Stats'], ['StartAutotrade', 'StopAutotrade'], ['StartAutotrade_bitmex', 'StopAutotrade_bitmex'], ['Kill', 'Panicsell'], ['/help']]
     menu_markup = ReplyKeyboardMarkup(menu_keyboard, one_time_keyboard=False, resize_keyboard=True)
     global my_telegram_id
     try:
@@ -322,6 +323,20 @@ def echo(bot, update):
             load_params.set('BINANCE_API','auto_trade',1)
             cfgfile = open("binance_api.ini",'w')
             load_params.write(cfgfile)
+            cfgfile.close()
+            update.message.reply_text("OK")
+    elif text_sent=="stopautotrade_bitmex":
+            load_params_bitmex.read("bitmex_api.ini")
+            load_params_bitmex.set('BITMEX_API','auto_trade',0)
+            cfgfile = open("bitmex_api.ini",'w')
+            load_params_bitmex.write(cfgfile)
+            cfgfile.close()
+            update.message.reply_text("OK")
+    elif text_sent=="startautotrade_bitmex":
+            load_params_bitmex.read("bitmex_api.ini")
+            load_params_bitmex.set('BITMEX_API','auto_trade',1)
+            cfgfile = open("bitmex_api.ini",'w')
+            load_params_bitmex.write(cfgfile)
             cfgfile.close()
             update.message.reply_text("OK")
     elif text_sent=="status":
@@ -523,7 +538,6 @@ def echo(bot, update):
             update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
     elif "PeerChannel(channel_id=1321818269)".lower() in text_sent:
         print "bitmex"
-        load_params_bitmex = ConfigParser.ConfigParser()
         load_params_bitmex.read("bitmex_api.ini")
         symbol_dict=load_obj("bitmex_contracts.json")
 
