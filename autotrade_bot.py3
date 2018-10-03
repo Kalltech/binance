@@ -47,6 +47,7 @@ if os.path.exists("T2_global")==True:
 if os.path.exists("T3_global")==True:
     with open("T3_global", 'rb') as f:
         T_global=pickle.load(f)
+        
 def ConfigSectionMap(section, Config):
   dict1 = {}
   options = Config.options(section)
@@ -82,6 +83,11 @@ def load_obj(name ):
         dct_load_obj = json.load(json_data)
         json_data.close()
         return dct_load_obj
+
+def save_obj(obj, name ):
+    save_obj_out_file = open(name,"w")
+    json.dump(obj,save_obj_out_file, indent=4, sort_keys=True)                                    
+    save_obj_out_file.close()
 
 def to_db(COIN="XXX",  TX="TX", TX_nb="0"):
     """Instantiate a connection to the InfluxDB."""
@@ -212,13 +218,17 @@ def main():
         telegram_chat_list = ast.literal_eval(load_params.get('BINANCE_API', 'telegram_chat_list'))
         from_id=""
         to_id=""
-#        print(event)
+        print(event)
+        id_vs_displayname = {}
+        if os.path.exists("id_vs_displayname.json")==True:
+            id_vs_displayname=load_obj("./id_vs_displayname.json")
         print(str(datetime.datetime.now()))
         if event.message.from_id is not None:
             try:
                 entity=client.get_entity(event.message.from_id)
                 from_id=utils.get_display_name(entity)
                 print("From:"+from_id+":"+str(event.message.from_id))
+                id_vs_displayname[str(event.message.from_id)] = from_id
             except: 
                 pass
         if event.message.to_id is not None:
@@ -226,8 +236,10 @@ def main():
                 entity=client.get_entity(event.message.to_id)
                 to_id=utils.get_display_name(entity)
                 print("To:"+to_id+":"+str(event.message.to_id))
+                id_vs_displayname[str(event.message.to_id)] = to_id
             except: 
                 pass
+        save_obj(id_vs_displayname, "./id_vs_displayname.json")
         printable = set(string.printable)
 #        print(event.message.message.lower()[:35])
         if not "PeerChannel(channel_id=1228970642)" in str(event.message.to_id) and not "PeerChannel(channel_id=1244535252)" in str(event.message.to_id) and not "PeerChannel(channel_id=1363803244)" in str(event.message.to_id) :
