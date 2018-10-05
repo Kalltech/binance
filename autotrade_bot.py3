@@ -218,7 +218,7 @@ def main():
         telegram_chat_list = ast.literal_eval(load_params.get('BINANCE_API', 'telegram_chat_list'))
         from_id=""
         to_id=""
-        print(event)
+#        print(event)
         id_vs_displayname = {}
         if os.path.exists("id_vs_displayname.json")==True:
             id_vs_displayname=load_obj("./id_vs_displayname.json")
@@ -251,8 +251,8 @@ def main():
 #                print("autotrade_enabled")
             for tgm_ct, u  in telegram_chat_list.items():
 #                print(tgm_ct+"/"+u)
-                if tgm_ct in str(event.message.to_id) and not from_id=="Kalltech_Api_Bot":
-                    if ("entry zone:" in text_sent or "buy:" in text_sent or "buy :" in text_sent or "buy below:" in text_sent or "buy above or in:" in text_sent or "buy below or in:" in text_sent or "buy below or close to:" in text_sent):
+                if tgm_ct in str(event.message.to_id) and not from_id==bot_name:
+                    if ("entry zone:" in text_sent or "tca " in text_sent or "open at" in text_sent or "accumulate between" in text_sent or "buy:" in text_sent or "buy :" in text_sent or "buy below:" in text_sent or "buy above or in:" in text_sent or "buy below or in:" in text_sent or "buy below or close to:" in text_sent):
     #                if ("buy:" in text_sent or "buy below:" in text_sent):
                         print("Envoi")
     #                    text_sent="".join(list(filter(lambda x: x in printable, event.message.message)))
