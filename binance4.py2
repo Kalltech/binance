@@ -16,6 +16,7 @@ import telegram
 import json
 import shutil
 import ntpath
+import ccxt
 now = datetime.datetime.now()
 print "After import second:%d" % now.second
 #############################################################################################################
@@ -73,7 +74,7 @@ def debugapp(debugapp_str, **kwargs):
         if not debugapp_NoPrintConsole: print str(debugapp_str)
     if debugapp_Telegram: 
         try:
-            debugapp_str=dct_FILE['symbol']+":"+debugapp_str
+            if 'dct_FILE' in globals(): debugapp_str=dct_FILE['symbol']+":"+debugapp_str
             if annonce_scriptname==False:
                 annonce_scriptname=True
                 bot.sendMessage(chat_id=my_telegram_id, text=str(str(os.path.basename(__file__)).upper()+"\n"+debugapp_str))
@@ -118,6 +119,8 @@ def save_json(save_json_path, save_json_data):
 def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
     global processed_order
+#    order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
+#    b_order_price=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price))
     b_order_price=float(floatXf(b_order_price))
     binance_balances=binance.balances()
     save_json(dir_TEMP+"binance_balances", binance_balances)
@@ -644,6 +647,18 @@ blacklist = ConfigSectionMap("BINANCE_API", load_params)['blacklist']
 binance_key = ConfigSectionMap("BINANCE_API", load_params)['binance_key']
 binance_secret = ConfigSectionMap("BINANCE_API", load_params)['binance_secret']
 binance.set(binance_key, binance_secret)
+
+###Binance
+exchange = ccxt.binance({
+    'apiKey': binance_key,
+    'secret': binance_secret,
+    'enableRateLimit': True,
+})
+
+binance_balance=exchange.fetch_balance()
+binance_markets=exchange.fetch_markets()
+
+
 #binance_balances=binance.balances()
 binance_prices=binance.prices()
 #y=""
