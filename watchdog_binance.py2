@@ -3,12 +3,14 @@ import inotify.adapters
 import os
 import datetime
 import psutil
-import ConfigParser
+#import ConfigParser
 import progressbar
 import subprocess
-load_params = ConfigParser.ConfigParser()
+import json
+#load_params = ConfigParser.ConfigParser()
 
 cwd = os.getcwd()
+json_ini="api4.json"
 
 notifier = inotify.adapters.Inotify()
 notifier.add_watch(cwd+"/signals")
@@ -16,6 +18,14 @@ endTime = datetime.datetime.now() + datetime.timedelta(minutes=15)
 
 #script_name = "binance3.py2"
 loop_time = datetime.datetime.now()
+
+def load_obj(name ):
+    with open(name) as json_data:
+        dct_load_obj = json.load(json_data)
+        json_data.close()
+        return dct_load_obj
+
+dct_INI_JSON=load_obj(json_ini)
 
 def ConfigSectionMap(section, Config):
   dict1 = {}
@@ -30,10 +40,11 @@ def ConfigSectionMap(section, Config):
       dict1[option] = None
   return dict1
 
-load_params.read("binance_api.ini")
-loop_schedule_binance3 = ConfigSectionMap("BINANCE_API", load_params)['loop_schedule_binance3']
+dct_INI_JSON=load_obj(json_ini)
+#load_params.read("binance_api.ini")
+#dct_INI_JSON['int_loop_schedule'] = ConfigSectionMap("BINANCE_API", load_params)['dct_INI_JSON['int_loop_schedule']']
 
-bar = progressbar.ProgressBar(maxval=int(loop_schedule_binance3), \
+bar = progressbar.ProgressBar(maxval=int(dct_INI_JSON['int_loop_schedule']), \
 widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
 bar.start()
 bar_update=0
@@ -64,30 +75,30 @@ for event in notifier.event_gen():
     else:
 #        for i in xrange(20):
         bar_update = bar_update+1
-        if bar_update > int(loop_schedule_binance3): bar_update=int(loop_schedule_binance3)
+        if bar_update > int(dct_INI_JSON['int_loop_schedule']): bar_update=int(dct_INI_JSON['int_loop_schedule'])
 #        print bar_update
         bar.update(bar_update)
 #            sleep(0.1)
 
         diff_time=datetime.datetime.now()-loop_time
 #        print "loop in " + cwd+"/signals"+" for "+str(int(diff_time.total_seconds()))
-        if int(diff_time.total_seconds()) > int(loop_schedule_binance3)-1:
+        if int(diff_time.total_seconds()) > int(dct_INI_JSON['int_loop_schedule'])-1:
             bar.finish()
             os.chdir(cwd+"/")
             last_error=""
             if find_procs_by_name("python2", "binance3.py2") <> "found:":
-                print("launching:" + cwd+"/binance3.py2")
+                print("#LAUNCHING:" + cwd+"/binance3.py2")
                 p = subprocess.Popen([cwd+"/binance3.py2", ""], stderr=subprocess.PIPE)
                 p_com=p.communicate()
                 if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
             if find_procs_by_name("python2", "binance4.py2") <> "found:":
-                print("launching:" + cwd+"/binance4.py2")
+                print("#LAUNCHING:" + cwd+"/binance4.py2")
                 p = subprocess.Popen([cwd+"/binance4.py2", ""], stderr=subprocess.PIPE)
                 p_com=p.communicate()
                 if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
-            if find_procs_by_name("python2", "bitmex3.py2") <> "found:":
-                print("launching:" + cwd+"/bitmex3.py2")
-                p = subprocess.Popen([cwd+"/bitmex3.py2", ""], stderr=subprocess.PIPE)
+            if find_procs_by_name("python2", "bitmex4.py2") <> "found:":
+                print("#LAUNCHING:" + cwd+"/bitmex4.py2")
+                p = subprocess.Popen([cwd+"/bitmex4.py2", ""], stderr=subprocess.PIPE)
                 p_com=p.communicate()
                 if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
             if last_error<>"":
@@ -95,9 +106,10 @@ for event in notifier.event_gen():
                 text_file.write(last_error)
                 text_file.close()
             loop_time = datetime.datetime.now()
-            load_params.read("binance_api.ini")
-            loop_schedule_binance3 = ConfigSectionMap("BINANCE_API", load_params)['loop_schedule_binance3']
-            bar = progressbar.ProgressBar(maxval=int(loop_schedule_binance3), \
+            dct_INI_JSON=load_obj(json_ini)
+#            load_params.read("binance_api.ini")
+#            dct_INI_JSON['int_loop_schedule'] = ConfigSectionMap("BINANCE_API", load_params)['dct_INI_JSON['int_loop_schedule']']
+            bar = progressbar.ProgressBar(maxval=int(dct_INI_JSON['int_loop_schedule']), \
             widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
             bar.start()
             bar.update(0)
