@@ -18,6 +18,8 @@ import shutil
 import ntpath
 import ccxt  # noqa: E402
 
+json_ini="api4.json"
+
 now = datetime.datetime.now()
 print "After import second:%d" % now.second
 #############################################################################################################
@@ -649,7 +651,7 @@ begin_time=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
 cwd = os.getcwd()
 logger=None
 ###load params
-dct_INI_JSON=load_obj("bitmex_api4.json")
+dct_INI_JSON=load_obj(json_ini)
 ###Directories
 if not os.path.exists(cwd+"/bitmex_signals"):
     os.makedirs(cwd+"/bitmex_signals")
@@ -692,12 +694,12 @@ bot = telegram.Bot(token=dct_INI_JSON['str_my_telegram_bot_token'])
 processed_order=0
 ###bitmex
 #bitmex_test = dct_INI_JSON['bitmex_test']
-if dct_INI_JSON['bool_test_exchange']:
-    bitmex_key = dct_INI_JSON['str_key_test_exchange']
-    bitmex_secret = dct_INI_JSON['str_secret_test_exchange']
+if dct_INI_JSON['bool_test_bitmex']:
+    bitmex_key = dct_INI_JSON['str_key_test_bitmex']
+    bitmex_secret = dct_INI_JSON['str_secret_test_bitmex']
 else:
-    bitmex_key = dct_INI_JSON['str_key_exchange']
-    bitmex_secret = dct_INI_JSON['str_secret_exchange']
+    bitmex_key = dct_INI_JSON['str_key_bitmex']
+    bitmex_secret = dct_INI_JSON['str_secret_bitmex']
 
 ###Bitmex
 exchange = ccxt.bitmex({
@@ -705,7 +707,7 @@ exchange = ccxt.bitmex({
     'secret': bitmex_secret,
     'enableRateLimit': True,
 })
-if 'test' in exchange.urls and dct_INI_JSON['bool_test_exchange']:
+if 'test' in exchange.urls and dct_INI_JSON['bool_test_bitmex']:
     exchange.urls['api'] = exchange.urls['test']
 bitmex_balance=exchange.fetch_balance()
 bitmex_markets=exchange.fetch_markets()
@@ -714,7 +716,7 @@ bitmex_symbols=[]
 for x in bitmex_markets:
     bitmex_symbols.append(x['symbol'])
 save_obj(bitmex_symbols, "bitmex_contracts.json")
-#save_obj(dct_INI_JSON, "bitmex_api4.json")
+#save_obj(dct_INI_JSON, json_ini)
 
 ###Check pause
 check_pause()
