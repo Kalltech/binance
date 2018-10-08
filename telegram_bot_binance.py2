@@ -13,18 +13,12 @@ import logging
 import os
 import datetime
 import time
-#import pickle
 import string,  re
-#import ConfigParser
 import json
 import glob
 
-#load_params = ConfigParser.ConfigParser()
-#load_params.read("binance_api.ini")
-#
-#load_params_bitmex = ConfigParser.ConfigParser()
-#load_params_bitmex.read("bitmex_api.ini")
 json_stats="sell_stats.json"
+json_ini="api4.json"
 
 cwd = os.getcwd()
 api_path=cwd+"/"
@@ -50,7 +44,7 @@ def save_obj(obj, name ):
     json.dump(obj,save_obj_out_file, indent=4, sort_keys=True)                                    
     save_obj_out_file.close()
 
-dct_INI_JSON=load_obj("bitmex_api4.json")
+dct_INI_JSON=load_obj(json_ini)
 
 def extract_numbers(extract_numbers_str, **kwargs):
     extract_numbers_array=re.findall(r'\d+',extract_numbers_str)
@@ -135,10 +129,10 @@ def Detail_Status(bot, update):
 
 def menu(bot):
     """Send a message when the command /menu is issued."""
-    menu_keyboard = [['Status', 'Stats'], ['StartAutotrade', 'StopAutotrade'], ['StartAutotrade_bitmex', 'StopAutotrade_bitmex'], ['Kill', 'Panicsell'], ['/help']]
+    menu_keyboard = [['Status', 'Stats'], ['StartAutotrade_binance', 'StopAutotrade_binance'], ['StartAutotrade_bitmex', 'StopAutotrade_bitmex'], ['Kill', 'Panicsell'], ['/help']]
     menu_markup = ReplyKeyboardMarkup(menu_keyboard, one_time_keyboard=False, resize_keyboard=True)
     try:
-        bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='Select button:', reply_markup=menu_markup)
+        bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='Select button:', reply_markup=menu_markup)
     except:
         print "Timeout telegram"
 
@@ -250,11 +244,12 @@ def echo(bot, update):
     print "BEGIN response"
     global signal_dict
     global dct_INI_JSON
+#    print str(update.message)
     text_sent=update.message.text.lower()
     printable = set(string.printable)
     text_sent=filter(lambda x: x in printable, text_sent)
     a_channel=text_sent.split("\n")
-    print a_channel
+#    print a_channel
     channel=""
     if "PeerChannel(channel_id=".lower() in a_channel[0] or "PeerUser(user_id=".lower() in a_channel[0]:
         channel=a_channel[0]
@@ -295,25 +290,25 @@ def echo(bot, update):
         print("creation hodl file:"+api_path+"hodl/"+hodl_dict['symbol'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json")
         save_obj(hodl_dict, api_path+"hodl/"+hodl_dict['symbol'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json")
 
-    elif text_sent=="stopautotrade":
-            dct_INI_JSON=load_obj("bitmex_api4.json")
+    elif text_sent=="stopautotrade_binance":
+            dct_INI_JSON=load_obj(json_ini)
             dct_INI_JSON['bool_auto_trade_binance']=False
-            save_obj(dct_INI_JSON, "bitmex_api4.json")
+            save_obj(dct_INI_JSON, json_ini)
             update.message.reply_text("OK")
-    elif text_sent=="startautotrade":
-            dct_INI_JSON=load_obj("bitmex_api4.json")
+    elif text_sent=="startautotrade_binance":
+            dct_INI_JSON=load_obj(json_ini)
             dct_INI_JSON['bool_auto_trade_binance']=True
-            save_obj(dct_INI_JSON, "bitmex_api4.json")
+            save_obj(dct_INI_JSON, json_ini)
             update.message.reply_text("OK")
     elif text_sent=="stopautotrade_bitmex":
-            dct_INI_JSON=load_obj("bitmex_api4.json")
+            dct_INI_JSON=load_obj(json_ini)
             dct_INI_JSON['bool_auto_trade_bitmex']=False
-            save_obj(dct_INI_JSON, "bitmex_api4.json")
+            save_obj(dct_INI_JSON, json_ini)
             update.message.reply_text("OK")
     elif text_sent=="startautotrade_bitmex":
-            dct_INI_JSON=load_obj("bitmex_api4.json")
+            dct_INI_JSON=load_obj(json_ini)
             dct_INI_JSON['bool_auto_trade_bitmex']=True
-            save_obj(dct_INI_JSON, "bitmex_api4.json")
+            save_obj(dct_INI_JSON, json_ini)
             update.message.reply_text("OK")
     elif text_sent=="status":
 #        print "status"
@@ -324,7 +319,7 @@ def echo(bot, update):
             button_list.append(InlineKeyboardButton(filename, callback_data=api_path+"signals/"+filename))
             reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
         if reply_markup <> "":
-            bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='All signals:', reply_markup=reply_markup)
+            bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='All signals:', reply_markup=reply_markup)
         status_dict = {}
         button_list = []
         reply_markup=""
@@ -345,9 +340,9 @@ def echo(bot, update):
             reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
         list_of_files = glob.glob(api_path+"logs/*")
         latest_file = max(list_of_files, key=os.path.getctime)
-        dct_INI_JSON=load_obj("bitmex_api4.json")
+        dct_INI_JSON=load_obj(json_ini)
         if reply_markup <> "":
-            bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='All trades:', reply_markup=reply_markup)
+            bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='All trades:', reply_markup=reply_markup)
         status_dict = {}
         button_list = []
         reply_markup=""
@@ -368,9 +363,9 @@ def echo(bot, update):
             reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
         list_of_files = glob.glob(api_path+"logs/*")
         latest_file = max(list_of_files, key=os.path.getctime)
-        dct_INI_JSON=load_obj("bitmex_api4.json")
+        dct_INI_JSON=load_obj(json_ini)
         if reply_markup <> "":
-            bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='All bitmex_trades:', reply_markup=reply_markup)
+            bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='All bitmex_trades:', reply_markup=reply_markup)
         update.message.reply_text("Dernier log:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file)))\
         +"\n"+"Derniere erreur:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime("whatchdog_error.log")))\
         +"\nAutotrade binance:"+str(dct_INI_JSON['bool_auto_trade_binance'])\
@@ -387,7 +382,7 @@ def echo(bot, update):
         for symbols in sorted(status_dict):
             button_list.append(InlineKeyboardButton(hot+symbols, callback_data="panicsell:"+symbols))
         reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
-        bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='Which panicsell trades:', reply_markup=reply_markup)
+        bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='Which panicsell trades:', reply_markup=reply_markup)
     elif text_sent=="kill":
         print "kill"
         status_dict = {}
@@ -398,7 +393,7 @@ def echo(bot, update):
             button_list.append(InlineKeyboardButton(filename, callback_data="kill:"+api_path+"bitmex_signals/"+filename))
             reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
         if reply_markup <> "":
-            bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='Which kill bitmex signals:', reply_markup=reply_markup)
+            bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='Which kill bitmex signals:', reply_markup=reply_markup)
         status_dict = {}
         button_list = []
         reply_markup = ""
@@ -407,7 +402,7 @@ def echo(bot, update):
             button_list.append(InlineKeyboardButton(filename, callback_data="kill:"+api_path+"signals/"+filename))
             reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
         if reply_markup <> "":
-            bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='Which kill binance signals:', reply_markup=reply_markup)
+            bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='Which kill binance signals:', reply_markup=reply_markup)
         status_dict = {}
         button_list = []
         reply_markup = ""
@@ -422,11 +417,12 @@ def echo(bot, update):
             button_list.append(InlineKeyboardButton(croix+symbols, callback_data="kill:"+symbols))
         reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
         if reply_markup <> "":
-            bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='Which kill binance trades:', reply_markup=reply_markup)
+            bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='Which kill binance trades:', reply_markup=reply_markup)
 
-    elif "PeerChannel(channel_id=1229891129)".lower() in text_sent or "PeerChannel(channel_id=1114421815)".lower() in text_sent or "Test_sl".lower() in text_sent:
+    elif "PeerChannel(channel_id=1229891129)".lower() in text_sent or "PeerChannel(channel_id=1114421815)".lower() in text_sent or "PeerUser(user_id=677414303)".lower() in text_sent:
         print "GPS"
-        symbol_dict=load_obj("binance_prices.json")
+        symbol_dict_binance=load_obj("binance_prices.json")
+        symbol_dict_bitmex=load_obj("bitmex_contracts.json")
         signal_dict = {}
         signal_dict['C'] = 'init'
         signal_dict['AC'] = 'init'
@@ -436,6 +432,7 @@ def echo(bot, update):
         signal_dict['SL'] = 'init'
         signal_dict['USD'] = 'init'
         signal_dict['CHNL'] = channel
+        signal_dict['POS'] = 'init'
         
         lines=text_sent
         lines=lines.splitlines()
@@ -447,55 +444,81 @@ def echo(bot, update):
             line=line.replace("~", ":")
             print line
 #            print line.upper()+"BTC"
-            if line.upper()+"BTC" in symbol_dict and signal_dict['C']=="init":
+            satoshi_signal=1
+            if line.upper()+"BTC" in symbol_dict_binance and signal_dict['C']=="init":
                 signal_dict['C'] = line.upper()+"BTC"
             if "coin:" in line and signal_dict['C']=="init":
                 a_coin=line.split("coin:")
-                signal_dict['C'] = a_coin[1].upper()+"BTC"
-            a={"buy", "buyunder", "buy:"}
+                if a_coin[1].upper()+"USD" in symbol_dict_bitmex or a_coin[1].upper()=='XBT' or a_coin[1].upper()=='ETH':
+                    signal_dict['C'] = a_coin[1].upper()+"USD"
+                elif a_coin[1].upper()+"Z18" in symbol_dict_bitmex:
+                    signal_dict['C'] = a_coin[1].upper()+"Z18"
+                else:
+                    signal_dict['C'] = a_coin[1].upper()+"BTC"
+            if "USD" in signal_dict['C'] or signal_dict['C']=="XBTZ18":
+                satoshi_signal=0
+            if "tcalongsignal" in line and signal_dict['POS']=="init":
+                signal_dict['POS'] = "long"
+            if "tcashortsignal" in line and signal_dict['POS']=="init":
+                signal_dict['POS'] = "short"
+            a={"buy", "buyunder", "buy:", "openat"}
             if any(x in line for x in a) and signal_dict['AC']=="init":
-                signal_dict['AC'] = get_price_type(line, a, satoshi=1)
+                signal_dict['AC'] = get_price_type(line, a, satoshi=satoshi_signal)
             if "sell:" in line:
                 a_sell=line.split("sell:")
                 a_sell=a_sell[1].split("-")
-                signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=1)
-                signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=1)
-                signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=1)
+                signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=satoshi_signal)
+                signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=satoshi_signal)
+                signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=satoshi_signal)
+            elif "sell" in line:
+                a_sell=line.split("sell")
+                a_sell=a_sell[1].split("-")
+                signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=satoshi_signal)
+                signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=satoshi_signal)
+                signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=satoshi_signal)
             if "shorttermtargets:" in line:
                 a_sell=line.split("shorttermtargets:")
                 a_sell=a_sell[1].split("-")
-                signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=1)
-                signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=1)
-                signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=1)
+                signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=satoshi_signal)
+                signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=satoshi_signal)
+                signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=satoshi_signal)
             a={"target1:", "t1:"}
             if any(x in line for x in a) and signal_dict['T1']=="init":
-                signal_dict['T1'] = get_price_type(line, a, satoshi=1)
+                signal_dict['T1'] = get_price_type(line, a, satoshi=satoshi_signal)
             a={"target2:", "t2:"}
             if any(x in line for x in a) and signal_dict['T2']=="init":
-                signal_dict['T2'] = get_price_type(line, a, satoshi=1)
+                signal_dict['T2'] = get_price_type(line, a, satoshi=satoshi_signal)
             a={"target3:", "t3:"}
             if any(x in line for x in a) and signal_dict['T3']=="init":
-                signal_dict['T3'] = get_price_type(line, a, satoshi=1)
+                signal_dict['T3'] = get_price_type(line, a, satoshi=satoshi_signal)
             a={"stop:", "stoploss", "stoplimit:", "stop-loss:"}
             if any(x in line for x in a) and signal_dict['SL']=="init":
-                signal_dict['SL'] = get_price_type(line, a, satoshi=1)
+                signal_dict['SL'] = get_price_type(line, a, satoshi=satoshi_signal)
 
         print signal_dict
         key_not_find=0
         str_file="[TRADE]\n"
-        if signal_dict['USD']=="init": signal_dict['USD'] = dct_INI_JSON['int_usd_to_bet_binance']
+        if signal_dict['POS']<>"init":
+            if signal_dict['USD']=="init": signal_dict['USD'] = dct_INI_JSON['int_usd_to_bet_bitmex']
+        else:
+            if signal_dict['USD']=="init": signal_dict['USD'] = dct_INI_JSON['int_usd_to_bet_binance']
         for key, value in sorted(signal_dict.items()):
             if value == 'init' or value == 'vide':
                 update.message.reply_text("Valeur non trouvee:"+key)
                 key_not_find=1
             else:
-                str_file=str_file+key.upper()+":"+value.strip()+"\n"
+                str_file=str_file+key.upper()+":"+str(value).strip()+"\n"
 
         if key_not_find<>1:
-            if not float(signal_dict['SL'])<=float(signal_dict['AC'])<=float(signal_dict['T1'])<=float(signal_dict['T2'])<=float(signal_dict['T3']):
+            if signal_dict['POS'] == "long" and not float(signal_dict['SL'])<=float(signal_dict['AC'])<=float(signal_dict['T1'])<=float(signal_dict['T2'])<=float(signal_dict['T3']):
+                update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
+            elif signal_dict['POS'] == "short" and not float(signal_dict['SL'])>=float(signal_dict['AC'])>=float(signal_dict['T1'])>=float(signal_dict['T2'])>=float(signal_dict['T3']):
                 update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
             else:
-                text_file = open(api_path+"/signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
+                if signal_dict['POS']<>"init":
+                    text_file = open(api_path+"/bitmex_signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
+                else:
+                    text_file = open(api_path+"/signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
                 text_file.write(str_file)
                 text_file.close()
                 update.message.reply_text("Signal resolu:\n"+str_file)
@@ -503,7 +526,7 @@ def echo(bot, update):
             update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
     elif "PeerChannel(channel_id=1321818269)".lower() in text_sent:
         print "bitmex"
-        dct_INI_JSON=load_obj("bitmex_api4.json")
+        dct_INI_JSON=load_obj(json_ini)
         symbol_dict=load_obj("bitmex_contracts.json")
 
 #        symbol_dict = ['XBTUSD','.XRPXBT','.XRPXBT30M','.EVOL7D','.EOSXBT','.EOSXBT30M','.JPYBON','.JPYBON2H','.JPYBON8H','.BCHXBT','.BCHXBT30M','.KRWBON','.KRWBON2H','.KRWBON8H','.XBTKRWPI','.XBTKRWPI2H','.XBTKRWPI8H','.XBTKRW','.XBTKRW30M','.ADAXBT','.ADAXBT30M','.TRXXBT','.TRXXBT30M','.BADAXBT','.BADAXBT30M','.BBCHXBT','.BBCHXBT30M','.BEOSXBT','.BEOSXBT30M','.BXRPXBT','.BXRPXBT30M','BCHU18','ADAU18','EOSU18','XRPU18','TRXU18','XRPZ18','BCHZ18','ADAZ18','EOSZ18','TRXZ18','BTC/KRW','.XBT','.XBT30M','.XBTBON','.XBTBON8H','.XBTUSDPI','.XBTUSDPI8H','.XBTBON2H','.XBTUSDPI2H','.BXBT','.BXBT30M','.XBTJPY','.XBTJPY30M','.BXBTJPY','.BXBTJPY30M','.XBTJPYPI','.XBTJPYPI2H','.XBTJPYPI8H','.BVOL','.BVOL24H','.BVOL7D','.ETHXBT','.ETHXBT30M','.ETHXBTPI','.ETHXBTPI8H','.ETHBON','.ETHBON2H','.ETHBON8H','.ETHXBTPI2H','.BETH','.BETH30M','.ETHUSDPI','.ETHUSDPI2H','.ETHUSDPI8H','.BETHXBT','.BETHXBT30M','.LTCXBT','.LTCXBT30M','.BLTCXBT','.BLTCXBT30M','.USDBON','.USDBON8H','.USDBON2H','BTC/USD','XBT7D_U105','XBT7D_D95','XBTU18','XBTZ18','XBTH19','BTC/JPY','ETH/BTC','ETH/USD','ETHU18','ETHZ18','LTCU18','LTCZ18']
@@ -565,7 +588,7 @@ def echo(bot, update):
         if key_not_find<>1:
             if signal_dict['POS'] == "long" and not float(signal_dict['SL'])<=float(signal_dict['AC'])<=float(signal_dict['T1'])<=float(signal_dict['T2'])<=float(signal_dict['T3']):
                 update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
-            if signal_dict['POS'] == "short" and not float(signal_dict['SL'])>=float(signal_dict['AC'])>=float(signal_dict['T1'])>=float(signal_dict['T2'])>=float(signal_dict['T3']):
+            elif signal_dict['POS'] == "short" and not float(signal_dict['SL'])>=float(signal_dict['AC'])>=float(signal_dict['T1'])>=float(signal_dict['T2'])>=float(signal_dict['T3']):
                 update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
             else:
                 text_file = open(api_path+"/bitmex_signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
@@ -690,12 +713,9 @@ def main():
     global updater
     updater = Updater(dct_INI_JSON['str_my_telegram_bot_token'])
     bot = telegram.Bot(dct_INI_JSON['str_my_telegram_bot_token'])
-
     menu(bot)
-
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
-
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("menu", menu))
