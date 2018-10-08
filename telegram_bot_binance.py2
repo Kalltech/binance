@@ -1,313 +1,721 @@
 #!/usr/bin/env python
-#
-# A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2018
-# Leandro Toledo de Souza <devs@python-telegram-bot.org>
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser Public License for more details.
-#
-# You should have received a copy of the GNU Lesser Public License
-# along with this program.  If not, see [http://www.gnu.org/licenses/].
-"""This module contains methods to make POST and GET requests."""
-import os
-import socket
-import sys
+# -*- coding: utf-8 -*-
+
+"""
+Press Ctrl-C on the command line or send a signal to the process to stop the
+bot.
+"""
+
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
+import telegram
+from telegram import ReplyKeyboardMarkup,  InlineKeyboardMarkup,  InlineKeyboardButton
 import logging
-import warnings
+import os
+import datetime
+import time
+#import pickle
+import string,  re
+#import ConfigParser
+import json
+import glob
 
-try:
-    import ujson as json
-except ImportError:
-    import json
+#load_params = ConfigParser.ConfigParser()
+#load_params.read("binance_api.ini")
+#
+#load_params_bitmex = ConfigParser.ConfigParser()
+#load_params_bitmex.read("bitmex_api.ini")
+json_stats="sell_stats.json"
 
-import certifi
+cwd = os.getcwd()
+api_path=cwd+"/"
+# Enable logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+level=logging.INFO)
 
-try:
-    import telegram.vendor.ptb_urllib3.urllib3 as urllib3
-    import telegram.vendor.ptb_urllib3.urllib3.contrib.appengine as appengine
-    from telegram.vendor.ptb_urllib3.urllib3.connection import HTTPConnection
-    from telegram.vendor.ptb_urllib3.urllib3.util.timeout import Timeout
-except ImportError:  # pragma: no cover
-    warnings.warn("python-telegram-bot wasn't properly installed. Please refer to README.rst on "
-                  "how to properly install.")
-    raise
+hot = u'\U0001F525'             # Code: 904
+clouds = u'\U00002601'          # Code: 802-803-804 clouds general
+croix = u'\U0000274C'          # Code: 802-803-804 clouds general
+interrogation = u'\U00002753'          # Code: 802-803-804 clouds general
 
-from telegram import (InputFile, TelegramError)
-from telegram.error import (Unauthorized, NetworkError, TimedOut, BadRequest, ChatMigrated,
-                            RetryAfter, InvalidToken)
+signal_dict = {}
 
-logging.getLogger('urllib3').setLevel(logging.WARNING)
+def load_obj(name ):
+    with open(name) as json_data:
+        dct_load_obj = json.load(json_data)
+        json_data.close()
+        return dct_load_obj
 
+def save_obj(obj, name ):
+    save_obj_out_file = open(name,"w")
+    json.dump(obj,save_obj_out_file, indent=4, sort_keys=True)                                    
+    save_obj_out_file.close()
 
-class Request(object):
-    """
-    Helper class for python-telegram-bot which provides methods to perform POST & GET towards
-    telegram servers.
+dct_INI_JSON=load_obj("bitmex_api4.json")
 
-    Args:
-        con_pool_size (int): Number of connections to keep in the connection pool.
-        proxy_url (str): The URL to the proxy server. For example: `http://127.0.0.1:3128`.
-        urllib3_proxy_kwargs (dict): Arbitrary arguments passed as-is to `urllib3.ProxyManager`.
-            This value will be ignored if proxy_url is not set.
-        connect_timeout (int|float): The maximum amount of time (in seconds) to wait for a
-            connection attempt to a server to succeed. None will set an infinite timeout for
-            connection attempts. (default: 5.)
-        read_timeout (int|float): The maximum amount of time (in seconds) to wait between
-            consecutive read operations for a response from the server. None will set an infinite
-            timeout. This value is usually overridden by the various ``telegram.Bot`` methods.
-            (default: 5.)
+def extract_numbers(extract_numbers_str, **kwargs):
+    extract_numbers_array=re.findall(r'\d+',extract_numbers_str)
+#    print extract_numbers_array
+    global signal_dict
+#    print signal_dict
+    if extract_numbers_array:
+        if extract_numbers_array[0]=="0":
+            return float8f(str(extract_numbers_array[0]+"."+extract_numbers_array[1]))
+        elif "USD" in signal_dict['C']:
+            return str(extract_numbers_array[0])
+        elif kwargs.get("satoshi_extract_numbers")==1:
+            temp=8-len(str(extract_numbers_array[0]))
+            temp2=""
+            for x in range(1, temp):
+                temp2=temp2+"0"
+            return "0."+temp2+str(extract_numbers_array[0])
+        else:
+            return "vide"
+    else:
+        return "vide"
 
-    """
+def get_price_type(get_price_type_str, get_price_type_valeurs, **kwargs):
+    for valeur in get_price_type_valeurs:
+        if valeur in get_price_type_str:
+            return extract_numbers(get_price_type_str.replace(valeur, ""), satoshi_extract_numbers=kwargs.get("satoshi"))
+    return "vide"
 
-    def __init__(self,
-                 con_pool_size=1,
-                 proxy_url=None,
-                 urllib3_proxy_kwargs=None,
-                 connect_timeout=5.,
-                 read_timeout=5.):
-        if urllib3_proxy_kwargs is None:
-            urllib3_proxy_kwargs = dict()
+def findkeys(d, findkeys_str):
+    for key in d.keys():
+        if findkeys_str in key:
+            return 1
+    return 0
+    
+def float0f(float0f_value):
+    return format(float(float0f_value), '.0f')
 
-        self._connect_timeout = connect_timeout
+def stats():
+    sell_stats_file=cwd+"/"+json_stats
+    stats_str=""
+    with open(sell_stats_file) as json_data:
+        dct_sell_stats = json.load(json_data)
+        json_data.close()
+        sum_GainUSD_today=0
+        today=datetime.datetime.now().strftime("%Y-%m-%d")
+        if findkeys(dct_sell_stats, today):
+            dct_today=dct_sell_stats.get(today)
+            for key in dct_today.keys():
+                sum_GainUSD_today=sum_GainUSD_today+float(dct_today[key]["gain_USD"])
+        stats_str= "Gain today $:"+float0f(sum_GainUSD_today)
+        sum_GainUSD_week=0
+        for x in range(0, 8):
+            day=datetime.datetime.now()-datetime.timedelta(days=int(x))
+            day=str(day.strftime("%Y-%m-%d"))
+            if findkeys(dct_sell_stats, day):
+                dct_day=dct_sell_stats.get(day)
+                for key in dct_day.keys():
+                    sum_GainUSD_week=sum_GainUSD_week+float(dct_day[key]["gain_USD"])
+        stats_str= stats_str+"\nGain last 7 days $:"+float0f(sum_GainUSD_week)
+        sum_GainUSD_month=0
+        for x in range(0, 32):
+            day=datetime.datetime.now()-datetime.timedelta(days=int(x))
+            day=str(day.strftime("%Y-%m-%d"))
+            if findkeys(dct_sell_stats, day):
+                dct_day=dct_sell_stats.get(day)
+                for key in dct_day.keys():
+                    sum_GainUSD_month=sum_GainUSD_month+float(dct_day[key]["gain_USD"])
+        stats_str= stats_str+"\nGain last 31 days $:"+float0f(sum_GainUSD_month)
+    return stats_str
+logger = logging.getLogger(__name__)
 
-        sockopts = HTTPConnection.default_socket_options + [
-            (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)]
+def float8f(float8f_value):
+    return format(float(float8f_value), '.8f')
 
-        # TODO: Support other platforms like mac and windows.
-        if 'linux' in sys.platform:
-            sockopts.append((socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 120))
-            sockopts.append((socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 30))
-            sockopts.append((socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 8))
+def start(bot, update):
+    """Send a message when the command /start is issued."""
+    update.message.reply_text('Hi!')
 
-        self._con_pool_size = con_pool_size
+def Detail_Status(bot, update):
+    """Send a message when the command /start is issued."""
+    update.message.reply_text('Hi!')
 
-        kwargs = dict(
-            maxsize=con_pool_size,
-            cert_reqs='CERT_REQUIRED',
-            ca_certs=certifi.where(),
-            socket_options=sockopts,
-            timeout=urllib3.Timeout(
-                connect=self._connect_timeout, read=read_timeout, total=None))
+def menu(bot):
+    """Send a message when the command /menu is issued."""
+    menu_keyboard = [['Status', 'Stats'], ['StartAutotrade', 'StopAutotrade'], ['StartAutotrade_bitmex', 'StopAutotrade_bitmex'], ['Kill', 'Panicsell'], ['/help']]
+    menu_markup = ReplyKeyboardMarkup(menu_keyboard, one_time_keyboard=False, resize_keyboard=True)
+    try:
+        bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='Select button:', reply_markup=menu_markup)
+    except:
+        print "Timeout telegram"
 
-        # Set a proxy according to the following order:
-        # * proxy defined in proxy_url (+ urllib3_proxy_kwargs)
-        # * proxy set in `HTTPS_PROXY` env. var.
-        # * proxy set in `https_proxy` env. var.
-        # * None (if no proxy is configured)
+def build_menu(buttons,
+               n_cols,
+               header_buttons=None,
+               footer_buttons=None):
+    menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
+    if header_buttons:
+        menu.insert(0, header_buttons)
+    if footer_buttons:
+        menu.append(footer_buttons)
+    return menu
 
-        if not proxy_url:
-            proxy_url = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
+def button(bot, update):
+    query = update.callback_query
+    print query.data
+    str_msg=""
+    if "panicsell:" in query.data:
+        for filename in os.listdir(api_path+"trades/"):
+            if ".json" in filename and not ".log" in filename and query.data.replace("panicsell:","") in filename:
+                print(api_path+"trades/"+filename)
+                dct_FILE=load_obj(api_path+"trades/"+filename)
+                dct_FILE['panicsell']=1
+                save_obj(dct_FILE, dct_FILE.get("filename"))
+                str_msg=str_msg+"\n"+"Panic sell sent:"+query.data.replace("panicsell:","")
+        if str_msg<>"":
+            bot.editMessageText(text=str_msg,
+                                chat_id=query.message.chat_id,
+                                message_id=query.message.message_id)
+    elif "kill:" in query.data:
+        for filename in os.listdir(api_path+"trades/"):
+            if ".json" in filename and query.data.replace("kill:","") in filename:
+                print(api_path+"trades/"+filename)
+                os.rename(api_path+"trades/"+filename, api_path+"old/"+filename)
+                str_msg=str_msg+"\n"+"Kill ok:"+filename
+        if "signals/" in query.data.replace("kill:",""):
+            filepath=query.data.replace("kill:","")
+            print(filepath)
+            os.rename(filepath, filepath.replace("signals/","old/"))
+            str_msg=str_msg+"\n"+"Kill ok: "+filepath.replace(api_path+"signals/","")
+        if str_msg<>"":
+            bot.editMessageText(text=str_msg,
+                                    chat_id=query.message.chat_id,
+                                    message_id=query.message.message_id)
+    elif "signals/" in query.data:
+        for filename in os.listdir(api_path+"signals/"):
+            if query.data in api_path+"signals/"+filename:
+                print(api_path+"signals/"+filename)
+                text_file = open(api_path+"signals/"+filename, "r")
+                str_msg=text_file.read()
+                text_file.close()
+    elif ".bitmex_trades" in query.data:
+        print(api_path+"bitmex_trades/")
+        for filename in os.listdir(api_path+"bitmex_trades/"):
+            if ".json" in filename and not ".log" in filename and query.data.replace(".bitmex_trades", "") in filename:
+                print(api_path+"bitmex_trades/"+filename)
+                dct_FILE=load_obj(api_path+"bitmex_trades/"+filename)
+                if dct_FILE.has_key('order_BUY_FILLED'):
+                    percentage_gain_lost=float(dct_FILE['bitmex_price'])/float(dct_FILE['order_BUY_FILLED']['price'])*100-100
+                    if dct_FILE['POS']=="short":percentage_gain_lost=-percentage_gain_lost
+                    percentage_gain_lost=format(percentage_gain_lost, '.2f')
+                    last_sl_stop=dct_FILE['SL']
+                    if dct_FILE.has_key('order_T2_SL') or dct_FILE.has_key('order_T1_SL'): last_sl_stop=dct_FILE['last_SL_stopPrice']
+                    status_dict="Buy price:   "+str(float8f(dct_FILE['order_BUY_FILLED']['price']))\
+                        +"\n"+"Last price:  "+str(float8f(dct_FILE['bitmex_price']))\
+                        +"\n"+"Last SL :     "+str(float8f(last_sl_stop))\
+                        +"\n"+"Gain/Lost: "+str(percentage_gain_lost)+"%"\
+                        +"\n"+"POS: "+str(dct_FILE['POS'])\
+                        +"\n"+"T1: "+str(float8f(dct_FILE['T1']))\
+                        +"\n"+"T2: "+str(float8f(dct_FILE['T2']))\
+                        +"\n"+"T3: "+str(float8f(dct_FILE['T3']))\
+                        +"\nLevel: "+dct_FILE['last_order_level']
+                    str_msg=str_msg+"\n"+filename+"\n"+str(status_dict)
+                else:
+                    str_msg=str_msg+"\n"+filename+"\n"+"Order not filled"
+    else:
+        for filename in os.listdir(api_path+"trades/"):
+            if ".json" in filename and not ".log" in filename and query.data in filename:
+                print(api_path+"trades/"+filename)
+                dct_FILE=load_obj(api_path+"trades/"+filename)
+                if dct_FILE.has_key('order_BUY_FILLED'):
+                    percentage_gain_lost=float(dct_FILE['binance_price'])/float(dct_FILE['order_BUY_FILLED']['price'])*100-100
+                    percentage_gain_lost=format(percentage_gain_lost, '.2f')
+                    last_sl_stop=dct_FILE['SL']
+                    if dct_FILE.has_key('order_T2_SL') or dct_FILE.has_key('order_T1_SL'): last_sl_stop=dct_FILE['last_SL_stopPrice']
+                    status_dict="Buy price:   "+str(float8f(dct_FILE['order_BUY_FILLED']['price']))\
+                        +"\n"+"Last price:  "+str(float8f(dct_FILE['binance_price']))\
+                        +"\n"+"Last SL :     "+str(float8f(last_sl_stop))\
+                        +"\n"+"Gain/Lost: "+str(percentage_gain_lost)+"%"\
+                        +"\n"+"T1: "+str(float8f(dct_FILE['T1']))\
+                        +"\n"+"T2: "+str(float8f(dct_FILE['T2']))\
+                        +"\n"+"T3: "+str(float8f(dct_FILE['T3']))\
+                        +"\nLevel: "+dct_FILE['last_order_level']
+                    str_msg=str_msg+"\n"+filename+"\n"+str(status_dict)
+                else:
+                    str_msg=str_msg+"\n"+filename+"\n"+"Order not filled"
+    if str_msg<>"":
+        bot.editMessageText(text=str_msg,
+                            chat_id=query.message.chat_id,
+                            message_id=query.message.message_id)
 
-        if not proxy_url:
-            if appengine.is_appengine_sandbox():
-                # Use URLFetch service if running in App Engine
-                mgr = appengine.AppEngineManager()
+def help(bot, update):
+    """Send a message when the command /help is issued."""
+    update.message.reply_text('Help!\nPause:5 Met en pause pour 5min\nStatus Donne le status de chaque trade\nstopautotrade or startautotrade: Disable or enable auto_trade in INI\nStats Donne les stats de vente\nKill:XLMBTC Stop la surveillance de la paire\nSignal... Met en fil d attente la position selon les valeurs\n')
+
+def echo(bot, update):
+    """Echo the user message."""
+    print "BEGIN response"
+    global signal_dict
+    global dct_INI_JSON
+    text_sent=update.message.text.lower()
+    printable = set(string.printable)
+    text_sent=filter(lambda x: x in printable, text_sent)
+    a_channel=text_sent.split("\n")
+    print a_channel
+    channel=""
+    if "PeerChannel(channel_id=".lower() in a_channel[0] or "PeerUser(user_id=".lower() in a_channel[0]:
+        channel=a_channel[0]
+#    print text_sent
+#    print text_sent[:5]
+    if "pause:" in text_sent:
+        print "Create pause.txt"
+        a_pause=text_sent.split("pause:")
+        print a_pause[1]
+        text_file = open("pause.txt", "w")
+        f_time=datetime.datetime.now().replace(microsecond=0)+datetime.timedelta(minutes=int(a_pause[1]))
+        text_file.write(str(f_time))
+        text_file.close()
+        update.message.reply_text("Pause until: "+str(f_time))
+    elif text_sent=="stats":
+        sell_stats_file=cwd+"/"+json_stats
+        if not os.path.isfile(sell_stats_file):
+            update.message.reply_text("Stats empty")
+        else:
+            update.message.reply_text(stats())
+    elif text_sent[:5]=="hodl:":
+        hodl_dict = {}
+        hodl_dict['symbol'] = text_sent.replace("hodl:", "")
+        hodl_dict['symbol'] = hodl_dict['symbol'].upper()
+        hodl_dict['SL'] = 'init'
+        hodl_dict['last_orderId'] = 'init'
+        hodl_dict['max_price'] = 'init'
+        hodl_dict['last_order_level'] = 'init'
+        hodl_dict['executedQty_creation'] = 0
+        hodl_dict['executedQty_vendu'] = 0
+        hodl_dict['filename'] = 'init'
+        hodl_dict['dictToBeFilled'] = {}
+        hodl_dict['float_percentage_max_hodl_sl']=dct_INI_JSON['float_percentage_max_hodl_sl']
+        hodl_dict['float_percentage_sl_upside']=dct_INI_JSON['float_percentage_sl_upside']
+        hodl_dict['float_percentage_control_balance']=dct_INI_JSON['float_percentage_control_balance']
+        hodl_dict['CHNL'] = channel
+
+        print("creation hodl file:"+api_path+"hodl/"+hodl_dict['symbol'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json")
+        save_obj(hodl_dict, api_path+"hodl/"+hodl_dict['symbol'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json")
+
+    elif text_sent=="stopautotrade":
+            dct_INI_JSON=load_obj("bitmex_api4.json")
+            dct_INI_JSON['bool_auto_trade_binance']=False
+            save_obj(dct_INI_JSON, "bitmex_api4.json")
+            update.message.reply_text("OK")
+    elif text_sent=="startautotrade":
+            dct_INI_JSON=load_obj("bitmex_api4.json")
+            dct_INI_JSON['bool_auto_trade_binance']=True
+            save_obj(dct_INI_JSON, "bitmex_api4.json")
+            update.message.reply_text("OK")
+    elif text_sent=="stopautotrade_bitmex":
+            dct_INI_JSON=load_obj("bitmex_api4.json")
+            dct_INI_JSON['bool_auto_trade_bitmex']=False
+            save_obj(dct_INI_JSON, "bitmex_api4.json")
+            update.message.reply_text("OK")
+    elif text_sent=="startautotrade_bitmex":
+            dct_INI_JSON=load_obj("bitmex_api4.json")
+            dct_INI_JSON['bool_auto_trade_bitmex']=True
+            save_obj(dct_INI_JSON, "bitmex_api4.json")
+            update.message.reply_text("OK")
+    elif text_sent=="status":
+#        print "status"
+        button_list = []
+        reply_markup=""
+        for filename in os.listdir(api_path+"signals/"):
+            print(api_path+"signals/"+filename)
+            button_list.append(InlineKeyboardButton(filename, callback_data=api_path+"signals/"+filename))
+            reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
+        if reply_markup <> "":
+            bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='All signals:', reply_markup=reply_markup)
+        status_dict = {}
+        button_list = []
+        reply_markup=""
+        for filename in os.listdir(api_path+"trades/"):
+            if ".json" in filename and not ".log" in filename:
+                print(api_path+"trades/"+filename)
+                dct_FILE=load_obj(api_path+"trades/"+filename)
+                executedDate_creation= dct_FILE['executedDate_creation']
+                f_time=datetime.datetime.strptime(executedDate_creation.replace("_", " "), '%Y-%m-%d %H.%M.%S')
+                diff_time=datetime.datetime.now().replace(microsecond=0)-f_time
+                status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level']
+                status_dict[dct_FILE.get("symbol")+"Days"]=str(diff_time.days)
+                status_dict[dct_FILE.get("symbol")+"LL"]=dct_FILE['last_order_level'].replace("order_", "")
+        if status_dict<>{}:
+            for symbols in sorted(status_dict):
+                if not "Days" in symbols and not "LL" in symbols:
+                    button_list.append(InlineKeyboardButton(symbols.replace("BTC", "")+":"+str(status_dict[symbols+"LL"])+":"+str(status_dict[symbols+"Days"])+"d", callback_data=symbols))
+            reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+        list_of_files = glob.glob(api_path+"logs/*")
+        latest_file = max(list_of_files, key=os.path.getctime)
+        dct_INI_JSON=load_obj("bitmex_api4.json")
+        if reply_markup <> "":
+            bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='All trades:', reply_markup=reply_markup)
+        status_dict = {}
+        button_list = []
+        reply_markup=""
+        for filename in os.listdir(api_path+"bitmex_trades/"):
+            if ".json" in filename and not ".log" in filename:
+                print(api_path+"bitmex_trades/"+filename)
+                dct_FILE=load_obj(api_path+"bitmex_trades/"+filename)
+                executedDate_creation= dct_FILE['executedDate_creation']
+                f_time=datetime.datetime.strptime(executedDate_creation.replace("_", " "), '%Y-%m-%d %H.%M.%S')
+                diff_time=datetime.datetime.now().replace(microsecond=0)-f_time
+                status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['bitmex_price']))+"\n"+dct_FILE['last_order_level']
+                status_dict[dct_FILE.get("symbol")+"Days"]=str(diff_time.days)
+                status_dict[dct_FILE.get("symbol")+"LL"]=dct_FILE['last_order_level'].replace("order_", "")
+        if status_dict<>{}:
+            for symbols in sorted(status_dict):
+                if not "Days" in symbols and not "LL" in symbols:
+                    button_list.append(InlineKeyboardButton(symbols+":"+str(status_dict[symbols+"LL"])+":"+str(status_dict[symbols+"Days"])+"d", callback_data=symbols+".bitmex_trades"))
+            reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+        list_of_files = glob.glob(api_path+"logs/*")
+        latest_file = max(list_of_files, key=os.path.getctime)
+        dct_INI_JSON=load_obj("bitmex_api4.json")
+        if reply_markup <> "":
+            bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='All bitmex_trades:', reply_markup=reply_markup)
+        update.message.reply_text("Dernier log:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file)))\
+        +"\n"+"Derniere erreur:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime("whatchdog_error.log")))\
+        +"\nAutotrade binance:"+str(dct_INI_JSON['bool_auto_trade_binance'])\
+        +"\nAutotrade bitmex:"+str(dct_INI_JSON['bool_auto_trade_bitmex']))
+    elif text_sent=="panicsell":
+        print "panicsell"
+        status_dict = {}
+        for filename in os.listdir(api_path+"trades/"):
+            if ".json" in filename and not ".log" in filename:
+                print(api_path+"trades/"+filename)
+                dct_FILE=load_obj(api_path+"trades/"+filename)
+                status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level']
+        button_list = []
+        for symbols in sorted(status_dict):
+            button_list.append(InlineKeyboardButton(hot+symbols, callback_data="panicsell:"+symbols))
+        reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+        bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='Which panicsell trades:', reply_markup=reply_markup)
+    elif text_sent=="kill":
+        print "kill"
+        status_dict = {}
+        button_list = []
+        reply_markup = ""
+        for filename in os.listdir(api_path+"bitmex_signals/"):
+            print(api_path+"bitmex_signals/"+filename)
+            button_list.append(InlineKeyboardButton(filename, callback_data="kill:"+api_path+"bitmex_signals/"+filename))
+            reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
+        if reply_markup <> "":
+            bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='Which kill bitmex signals:', reply_markup=reply_markup)
+        status_dict = {}
+        button_list = []
+        reply_markup = ""
+        for filename in os.listdir(api_path+"signals/"):
+            print(api_path+"signals/"+filename)
+            button_list.append(InlineKeyboardButton(filename, callback_data="kill:"+api_path+"signals/"+filename))
+            reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
+        if reply_markup <> "":
+            bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='Which kill binance signals:', reply_markup=reply_markup)
+        status_dict = {}
+        button_list = []
+        reply_markup = ""
+        for filename in os.listdir(api_path+"trades/"):
+            if ".json" in filename and not ".log" in filename:
+                print(api_path+"trades/"+filename)
+                dct_FILE=load_obj(api_path+"trades/"+filename)
+                status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['binance_price']))+"\n"+dct_FILE['last_order_level']
+        button_list = []
+        reply_markup = ""
+        for symbols in sorted(status_dict):
+            button_list.append(InlineKeyboardButton(croix+symbols, callback_data="kill:"+symbols))
+        reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+        if reply_markup <> "":
+            bot.send_message(dct_INI_JSON['str_my_telegram_app_api_id'], text='Which kill binance trades:', reply_markup=reply_markup)
+
+    elif "PeerChannel(channel_id=1229891129)".lower() in text_sent or "PeerChannel(channel_id=1114421815)".lower() in text_sent or "Test_sl".lower() in text_sent:
+        print "GPS"
+        symbol_dict=load_obj("binance_prices.json")
+        signal_dict = {}
+        signal_dict['C'] = 'init'
+        signal_dict['AC'] = 'init'
+        signal_dict['T1'] = 'init'
+        signal_dict['T2'] = 'init'
+        signal_dict['T3'] = 'init'
+        signal_dict['SL'] = 'init'
+        signal_dict['USD'] = 'init'
+        signal_dict['CHNL'] = channel
+        
+        lines=text_sent
+        lines=lines.splitlines()
+        for line in lines:
+            line=line.replace(" ", "")
+            line=line.replace("/", "")
+            line=line.replace("#", ":")
+            line=line.replace("$", "")
+            line=line.replace("~", ":")
+            print line
+#            print line.upper()+"BTC"
+            if line.upper()+"BTC" in symbol_dict and signal_dict['C']=="init":
+                signal_dict['C'] = line.upper()+"BTC"
+            if "coin:" in line and signal_dict['C']=="init":
+                a_coin=line.split("coin:")
+                signal_dict['C'] = a_coin[1].upper()+"BTC"
+            a={"buy", "buyunder", "buy:"}
+            if any(x in line for x in a) and signal_dict['AC']=="init":
+                signal_dict['AC'] = get_price_type(line, a, satoshi=1)
+            if "sell:" in line:
+                a_sell=line.split("sell:")
+                a_sell=a_sell[1].split("-")
+                signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=1)
+                signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=1)
+                signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=1)
+            if "shorttermtargets:" in line:
+                a_sell=line.split("shorttermtargets:")
+                a_sell=a_sell[1].split("-")
+                signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=1)
+                signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=1)
+                signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=1)
+            a={"target1:", "t1:"}
+            if any(x in line for x in a) and signal_dict['T1']=="init":
+                signal_dict['T1'] = get_price_type(line, a, satoshi=1)
+            a={"target2:", "t2:"}
+            if any(x in line for x in a) and signal_dict['T2']=="init":
+                signal_dict['T2'] = get_price_type(line, a, satoshi=1)
+            a={"target3:", "t3:"}
+            if any(x in line for x in a) and signal_dict['T3']=="init":
+                signal_dict['T3'] = get_price_type(line, a, satoshi=1)
+            a={"stop:", "stoploss", "stoplimit:", "stop-loss:"}
+            if any(x in line for x in a) and signal_dict['SL']=="init":
+                signal_dict['SL'] = get_price_type(line, a, satoshi=1)
+
+        print signal_dict
+        key_not_find=0
+        str_file="[TRADE]\n"
+        if signal_dict['USD']=="init": signal_dict['USD'] = dct_INI_JSON['int_usd_to_bet_binance']
+        for key, value in sorted(signal_dict.items()):
+            if value == 'init' or value == 'vide':
+                update.message.reply_text("Valeur non trouvee:"+key)
+                key_not_find=1
             else:
-                mgr = urllib3.PoolManager(**kwargs)
-        else:
-            kwargs.update(urllib3_proxy_kwargs)
-            if proxy_url.startswith('socks'):
-                try:
-                    from telegram.vendor.ptb_urllib3.urllib3.contrib.socks import SOCKSProxyManager
-                except ImportError:
-                    raise RuntimeError('PySocks is missing')
-                mgr = SOCKSProxyManager(proxy_url, **kwargs)
+                str_file=str_file+key.upper()+":"+value.strip()+"\n"
+
+        if key_not_find<>1:
+            if not float(signal_dict['SL'])<=float(signal_dict['AC'])<=float(signal_dict['T1'])<=float(signal_dict['T2'])<=float(signal_dict['T3']):
+                update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
             else:
-                mgr = urllib3.proxy_from_url(proxy_url, **kwargs)
-                if mgr.proxy.auth:
-                    # TODO: what about other auth types?
-                    auth_hdrs = urllib3.make_headers(proxy_basic_auth=mgr.proxy.auth)
-                    mgr.proxy_headers.update(auth_hdrs)
-
-        self._con_pool = mgr
-
-    @property
-    def con_pool_size(self):
-        """The size of the connection pool used."""
-        return self._con_pool_size
-
-    def stop(self):
-        self._con_pool.clear()
-
-    @staticmethod
-    def _parse(json_data):
-        """Try and parse the JSON returned from Telegram.
-
-        Returns:
-            dict: A JSON parsed as Python dict with results - on error this dict will be empty.
-
-        """
-
-        try:
-            decoded_s = json_data.decode('utf-8')
-            data = json.loads(decoded_s)
-        except UnicodeDecodeError:
-            logging.getLogger(__name__).debug(
-                'Logging raw invalid UTF-8 response:\n%r', json_data)
-            raise TelegramError('Server response could not be decoded using UTF-8')
-        except ValueError:
-            raise TelegramError('Invalid server response')
-
-        if not data.get('ok'):  # pragma: no cover
-            description = data.get('description')
-            parameters = data.get('parameters')
-            if parameters:
-                migrate_to_chat_id = parameters.get('migrate_to_chat_id')
-                if migrate_to_chat_id:
-                    raise ChatMigrated(migrate_to_chat_id)
-                retry_after = parameters.get('retry_after')
-                if retry_after:
-                    raise RetryAfter(retry_after)
-            if description:
-                return description
-
-        return data['result']
-
-    def _request_wrapper(self, *args, **kwargs):
-        """Wraps urllib3 request for handling known exceptions.
-
-        Args:
-            args: unnamed arguments, passed to urllib3 request.
-            kwargs: keyword arguments, passed tp urllib3 request.
-
-        Returns:
-            str: A non-parsed JSON text.
-
-        Raises:
-            TelegramError
-
-        """
-        # Make sure to hint Telegram servers that we reuse connections by sending
-        # "Connection: keep-alive" in the HTTP headers.
-        if 'headers' not in kwargs:
-            kwargs['headers'] = {}
-        kwargs['headers']['connection'] = 'keep-alive'
-
-        try:
-            resp = self._con_pool.request(*args, **kwargs)
-        except urllib3.exceptions.TimeoutError:
-            raise TimedOut()
-        except urllib3.exceptions.HTTPError as error:
-            # HTTPError must come last as its the base urllib3 exception class
-            # TODO: do something smart here; for now just raise NetworkError
-            raise NetworkError('urllib3 HTTPError {0}'.format(error))
-
-        if 200 <= resp.status <= 299:
-            # 200-299 range are HTTP success statuses
-            return resp.data
-
-        try:
-            message = self._parse(resp.data)
-        except ValueError:
-            message = 'Unknown HTTPError'
-
-        if resp.status in (401, 403):
-            raise Unauthorized(message)
-        elif resp.status == 400:
-            raise BadRequest(message)
-        elif resp.status == 404:
-            raise InvalidToken()
-        elif resp.status == 413:
-            raise NetworkError('File too large. Check telegram api limits '
-                               'https://core.telegram.org/bots/api#senddocument')
-
-        elif resp.status == 502:
-            raise NetworkError('Bad Gateway')
+                text_file = open(api_path+"/signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
+                text_file.write(str_file)
+                text_file.close()
+                update.message.reply_text("Signal resolu:\n"+str_file)
         else:
-            raise NetworkError('{0} ({1})'.format(message, resp.status))
+            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
+    elif "PeerChannel(channel_id=1321818269)".lower() in text_sent:
+        print "bitmex"
+        dct_INI_JSON=load_obj("bitmex_api4.json")
+        symbol_dict=load_obj("bitmex_contracts.json")
 
-    def get(self, url, timeout=None):
-        """Request an URL.
+#        symbol_dict = ['XBTUSD','.XRPXBT','.XRPXBT30M','.EVOL7D','.EOSXBT','.EOSXBT30M','.JPYBON','.JPYBON2H','.JPYBON8H','.BCHXBT','.BCHXBT30M','.KRWBON','.KRWBON2H','.KRWBON8H','.XBTKRWPI','.XBTKRWPI2H','.XBTKRWPI8H','.XBTKRW','.XBTKRW30M','.ADAXBT','.ADAXBT30M','.TRXXBT','.TRXXBT30M','.BADAXBT','.BADAXBT30M','.BBCHXBT','.BBCHXBT30M','.BEOSXBT','.BEOSXBT30M','.BXRPXBT','.BXRPXBT30M','BCHU18','ADAU18','EOSU18','XRPU18','TRXU18','XRPZ18','BCHZ18','ADAZ18','EOSZ18','TRXZ18','BTC/KRW','.XBT','.XBT30M','.XBTBON','.XBTBON8H','.XBTUSDPI','.XBTUSDPI8H','.XBTBON2H','.XBTUSDPI2H','.BXBT','.BXBT30M','.XBTJPY','.XBTJPY30M','.BXBTJPY','.BXBTJPY30M','.XBTJPYPI','.XBTJPYPI2H','.XBTJPYPI8H','.BVOL','.BVOL24H','.BVOL7D','.ETHXBT','.ETHXBT30M','.ETHXBTPI','.ETHXBTPI8H','.ETHBON','.ETHBON2H','.ETHBON8H','.ETHXBTPI2H','.BETH','.BETH30M','.ETHUSDPI','.ETHUSDPI2H','.ETHUSDPI8H','.BETHXBT','.BETHXBT30M','.LTCXBT','.LTCXBT30M','.BLTCXBT','.BLTCXBT30M','.USDBON','.USDBON8H','.USDBON2H','BTC/USD','XBT7D_U105','XBT7D_D95','XBTU18','XBTZ18','XBTH19','BTC/JPY','ETH/BTC','ETH/USD','ETHU18','ETHZ18','LTCU18','LTCZ18']
+        signal_dict = {}
+        signal_dict['C'] = 'init'
+        signal_dict['POS'] = 'init'
+        signal_dict['AC'] = 'init'
+        signal_dict['T1'] = 'init'
+        signal_dict['T2'] = 'init'
+        signal_dict['T3'] = 'init'
+        signal_dict['SL'] = 'init'
+        signal_dict['USD'] = 'init'
+        signal_dict['CHNL'] = channel
+        lines=text_sent
+        lines=lines.splitlines()
+        for line in lines:
+            line=line.replace(" ", "")
+            line=line.replace("/", "")
+            line=line.replace("#", ":")
+            line=line.replace("$", "")
+#            print line
+            if (line.upper() in symbol_dict or 'XBTUSD' in line.upper() or 'ETHUSD' in line.upper()) and signal_dict['C']=="init":
+                signal_dict['C'] = line.upper()
+            if "position:" in line and signal_dict['POS']=="init":
+                signal_dict['POS'] = line.replace("position:", "")
+            a={"buyaboveorin:", "buybeloworin:"}
+            if any(x in line for x in a) and signal_dict['AC']=="init":
+                signal_dict['AC'] = get_price_type(line, a)
+            a={"target1:", "t1:"}
+            if any(x in line for x in a) and signal_dict['T1']=="init":
+                signal_dict['T1'] = get_price_type(line, a)
+            a={"target2:", "t2:"}
+            if any(x in line for x in a) and signal_dict['T2']=="init":
+                signal_dict['T2'] = get_price_type(line, a)
+            a={"target3:", "t3:"}
+            if any(x in line for x in a) and signal_dict['T3']=="init":
+                signal_dict['T3'] = get_price_type(line, a)
+            a={"stop:", "stoploss:", "stoplimit:", "stop-loss:"}
+            if any(x in line for x in a) and signal_dict['SL']=="init":
+                signal_dict['SL'] = get_price_type(line, a)
+            a={"usd:", "usdt:"}
+            if any(x in line for x in a) and signal_dict['USD']=="init":
+                for x in a:
+                    if x in line:
+                        a_usd=line.split(x)
+                        signal_dict['USD'] = a_usd[1]
 
-        Args:
-            url (:obj:`str`): The web location we want to retrieve.
-            timeout (:obj:`int` | :obj:`float`): If this value is specified, use it as the read
-                timeout from the server (instead of the one specified during creation of the
-                connection pool).
+        print signal_dict
+        key_not_find=0
+        str_file="[TRADE]\n"
+        if signal_dict['USD']=="init": signal_dict['USD'] = dct_INI_JSON['int_usd_to_bet_bitmex']
+        for key, value in sorted(signal_dict.items()):
+            if value == 'init' or value == 'vide':
+                update.message.reply_text("Valeur non trouvee:"+key)
+                key_not_find=1
+            else:
+                str_file=str_file+key.upper()+":"+value.strip()+"\n"
 
-        Returns:
-          A JSON object.
-
-        """
-        urlopen_kwargs = {}
-
-        if timeout is not None:
-            urlopen_kwargs['timeout'] = Timeout(read=timeout, connect=self._connect_timeout)
-
-        result = self._request_wrapper('GET', url, **urlopen_kwargs)
-        return self._parse(result)
-
-    def post(self, url, data, timeout=None):
-        """Request an URL.
-
-        Args:
-            url (:obj:`str`): The web location we want to retrieve.
-            data (dict[str, str|int]): A dict of key/value pairs. Note: On py2.7 value is unicode.
-            timeout (:obj:`int` | :obj:`float`): If this value is specified, use it as the read
-                timeout from the server (instead of the one specified during creation of the
-                connection pool).
-
-        Returns:
-          A JSON object.
-
-        """
-        urlopen_kwargs = {}
-
-        if timeout is not None:
-            urlopen_kwargs['timeout'] = Timeout(read=timeout, connect=self._connect_timeout)
-
-        if InputFile.is_inputfile(data):
-            data = InputFile(data)
-            result = self._request_wrapper(
-                'POST', url, body=data.to_form(), headers=data.headers, **urlopen_kwargs)
+        if key_not_find<>1:
+            if signal_dict['POS'] == "long" and not float(signal_dict['SL'])<=float(signal_dict['AC'])<=float(signal_dict['T1'])<=float(signal_dict['T2'])<=float(signal_dict['T3']):
+                update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
+            if signal_dict['POS'] == "short" and not float(signal_dict['SL'])>=float(signal_dict['AC'])>=float(signal_dict['T1'])>=float(signal_dict['T2'])>=float(signal_dict['T3']):
+                update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
+            else:
+                text_file = open(api_path+"/bitmex_signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
+                text_file.write(str_file)
+                text_file.close()
+                update.message.reply_text("Signal resolu:\n"+str_file)
         else:
-            data = json.dumps(data)
-            result = self._request_wrapper(
-                'POST',
-                url,
-                body=data.encode(),
-                headers={'Content-Type': 'application/json'},
-                **urlopen_kwargs)
+            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
+    elif "btc" in text_sent or "coin:" in text_sent:
+        print "signal"
+        signal_dict = {}
+        signal_dict['C'] = 'init'
+        signal_dict['AC'] = 'init'
+        signal_dict['T1'] = 'init'
+        signal_dict['T2'] = 'init'
+        signal_dict['T3'] = 'init'
+        signal_dict['SL'] = 'init'
+        signal_dict['USD'] = 'init'
+        signal_dict['CHNL'] = channel
+#        signal_dict['BAD'] = 'init'
+        lines=text_sent
+        lines=lines.splitlines()
+        for line in lines:
+            line=line.replace(" ", "")
+            line=line.replace("/", "")
+            line=line.replace("#", ":")
+            line=line.replace("$", "")
+#            line=line.replace("coin:", "")
+#            print(line)
+#Crypto Signalist Pro
+            if "btc" in line and signal_dict['C']=="init":
+                signal_dict['C'] = line.upper()
+                if signal_dict['C'].find("("):
+                    a_symbol=signal_dict['C']
+                    a_symbol=a_symbol.split('(', 1)[0]
+                    signal_dict['C'] = a_symbol
+                if signal_dict['C'].find("-"):
+                    a_symbol=signal_dict['C']
+                    a_symbol=a_symbol.split('-', 1)[0]
+                    signal_dict['C'] = a_symbol
+            if "coin:" in line and signal_dict['C']=="init":
+                a_usd=line.split("coin:")
+                signal_dict['C'] = a_usd[1].upper()+"BTC"
+            if "usd" in line:
+                a_usd=line.split("usd:")
+                signal_dict['USD'] = a_usd[1]
+            if "sell:" in line:
+                a_sell=line.split("sell:")
+                a_sell=a_sell[1].split("-")
+                signal_dict['T1'] = float8f(float(a_sell[0]))
+                signal_dict['T2'] = float8f(float(a_sell[1]))
+                signal_dict['T3'] = float8f(float(a_sell[2]))
+            if "t1:" in line and "t2:" in line and "t3:" in line :
+                a_t1t2t3=line.replace("t1","")
+                a_t1t2t3=a_t1t2t3.replace("t2","")
+                a_t1t2t3=a_t1t2t3.replace("t3","")
+                a_t1t2t3=a_t1t2t3.split(":")
+                signal_dict['T1'] = float8f(float(a_t1t2t3[1]))
+                signal_dict['T2'] = float8f(float(a_t1t2t3[2]))
+                signal_dict['T3'] = float8f(float(a_t1t2t3[3]))
+#Signal Profits
+            else:
+                a={"target1:", "t1:"}
+                if any(x in line for x in a):
+                    if signal_dict['T1']=="init":
+                        signal_dict['T1'] = get_price_type(line, a)
+                    else:
+                        signal_dict['T3'] = get_price_type(line, a)
+                a={"target2:", "t2:"}
+                if any(x in line for x in a) and signal_dict['T2']=="init":
+                    signal_dict['T2'] = get_price_type(line, a)
+                a={"target3:", "t3:"}
+                if any(x in line for x in a):
+                    signal_dict['T3'] = get_price_type(line, a)
+            a={"buy:", "buyzone:", "buybelow:", "buybeloworcloseto:", "entryzone:"}
+            if any(x in line for x in a) and signal_dict['AC']=="init":
+                signal_dict['AC'] = get_price_type(line, a)
+            a={"stop:", "stoploss:", "stoplimit:", "stop-loss:"}
+            if any(x in line for x in a) and signal_dict['SL']=="init":
+                signal_dict['SL'] = get_price_type(line, a)
+            a={"usd:", "usdt:"}
+            if any(x in line for x in a) and signal_dict['USD']=="init":
+                for x in a:
+                    if x in line:
+                        a_usd=line.split(x)
+                        signal_dict['USD'] = a_usd[1]
+                
+        print signal_dict
+        key_not_find=0
+        str_file="[TRADE]\n"
+        if signal_dict['USD']=="init": signal_dict['USD'] = dct_INI_JSON['int_usd_to_bet_binance']
+        for key, value in sorted(signal_dict.items()):
+            if value == 'init' or value == 'vide':
+                update.message.reply_text("Valeur non trouvee:"+key)
+                key_not_find=1
+            else:
+                str_file=str_file+key.upper()+":"+value.strip()+"\n"
 
-        return self._parse(result)
+        if key_not_find<>1:
+            if not float(signal_dict['SL'])<=float(signal_dict['AC'])<=float(signal_dict['T1'])<=float(signal_dict['T2'])<=float(signal_dict['T3']):
+                update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
+            else:
+                text_file = open(api_path+"/signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
+                text_file.write(str_file)
+                text_file.close()
+                update.message.reply_text("Signal resolu:\n"+str_file)
+        else:
+            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
+#            print str_file
+    else:
+        update.message.reply_text("I dont understand")
+#    menu(bot)
+    print "END response"
+    
+def error(bot, update, error):
+    """Log Errors caused by Updates."""
+    logger.warning('Update "%s" caused error "%s"', update, error)
 
-    def retrieve(self, url, timeout=None):
-        """Retrieve the contents of a file by its URL.
+def main():
+    """Start the bot."""
+    # Create the EventHandler and pass it your bot's token.
+    global updater
+    updater = Updater(dct_INI_JSON['str_my_telegram_bot_token'])
+    bot = telegram.Bot(dct_INI_JSON['str_my_telegram_bot_token'])
 
-        Args:
-            url (:obj:`str`): The web location we want to retrieve.
-            timeout (:obj:`int` | :obj:`float`): If this value is specified, use it as the read
-                timeout from the server (instead of the one specified during creation of the
-                connection pool).
+    menu(bot)
 
-        """
-        urlopen_kwargs = {}
-        if timeout is not None:
-            urlopen_kwargs['timeout'] = Timeout(read=timeout, connect=self._connect_timeout)
+    # Get the dispatcher to register handlers
+    dp = updater.dispatcher
 
-        return self._request_wrapper('GET', url, **urlopen_kwargs)
+    # on different commands - answer in Telegram
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("menu", menu))
+    dp.add_handler(CommandHandler("help", help))
 
-    def download(self, url, filename, timeout=None):
-        """Download a file by its URL.
+    # on noncommand i.e message - echo the message on Telegram
+    dp.add_handler(MessageHandler(Filters.text, echo))
+    dp.add_handler(CallbackQueryHandler(button))
 
-        Args:
-            url (str): The web location we want to retrieve.
-            timeout (:obj:`int` | :obj:`float`): If this value is specified, use it as the read
-                timeout from the server (instead of the one specified during creation of the
-                connection pool).
+    # log all errors
+    dp.add_error_handler(error)
 
-          filename:
-            The filename within the path to download the file.
+    # Start the Bot
+    updater.start_polling()
+    
+    # Run the bot until you press Ctrl-C or the process receives SIGINT,
+    # SIGTERM or SIGABRT. This should be used most of the time, since
+    # start_polling() is non-blocking and will stop the bot gracefully.
+    updater.idle()
 
-        """
-        buf = self.retrieve(url, timeout=timeout)
-        with open(filename, 'wb') as fobj:
-            fobj.write(buf)
+print "Starting Bot"
+if __name__ == '__main__':
+    main()
