@@ -16,7 +16,6 @@ notifier = inotify.adapters.Inotify()
 notifier.add_watch(cwd+"/signals")
 endTime = datetime.datetime.now() + datetime.timedelta(minutes=15)
 
-#script_name = "binance3.py2"
 loop_time = datetime.datetime.now()
 
 def load_obj(name ):
@@ -68,10 +67,10 @@ for event in notifier.event_gen():
 #        print event      # uncomment to see all events generated
         if 'IN_CREATE' in event[1]:
             print "file '{0}' created in '{1}'".format(event[3], event[2])
-            if find_procs_by_name("python2", "binance3.py2") <> "found:":
-                print("launching:" + cwd+"/binance3.py2")
+            if find_procs_by_name("python2", "binance5.py2") <> "found:":
+                print("launching:" + cwd+"/binance5.py2")
                 os.chdir(cwd+"/")
-                os.system(cwd+"/binance3.py2")
+                os.system(cwd+"/binance5.py2")
     else:
 #        for i in xrange(20):
         bar_update = bar_update+1
@@ -86,9 +85,9 @@ for event in notifier.event_gen():
             bar.finish()
             os.chdir(cwd+"/")
             last_error=""
-            if find_procs_by_name("python2", "binance3.py2") <> "found:":
-                print("#LAUNCHING:" + cwd+"/binance3.py2")
-                p = subprocess.Popen([cwd+"/binance3.py2", ""], stderr=subprocess.PIPE)
+            if find_procs_by_name("python2", "binance5.py2") <> "found:":
+                print("#LAUNCHING:" + cwd+"/binance5.py2")
+                p = subprocess.Popen([cwd+"/binance5.py2", ""], stderr=subprocess.PIPE)
                 p_com=p.communicate()
                 if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
             if find_procs_by_name("python2", "binance4.py2") <> "found:":
