@@ -170,10 +170,14 @@ def main():
             text_sent="".join(list(filter(lambda x: x in printable, event.message.message.lower())))
             print(text_sent[:35])
             if str(event.message.to_id).lower() in str(dct_INI_JSON['list_whitelist_signals_all']).lower():
-                if ("entry zone:" in text_sent or "tca " in text_sent or "open at" in text_sent or "accumulate between" in text_sent or "buy:" in text_sent or "buy :" in text_sent or "buy below:" in text_sent or "buy above or in:" in text_sent or "buy below or in:" in text_sent or "buy below or close to:" in text_sent):
+                if ("entry zone:" in text_sent or "buy under " in text_sent or "buy zone " in text_sent\
+                or "tca " in text_sent or "open at" in text_sent or "accumulate between" in text_sent\
+                or "buy:" in text_sent or "buy :" in text_sent or "buy below:" in text_sent\
+                or "buy above or in:" in text_sent or "buy below or in:" in text_sent or "target 1 " in text_sent\
+                or "buy below or close to:" in text_sent):
                     print("Envoi")
                     print("CHNL:"+str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
-#                    client.send_message(dct_INI_JSON['str_my_telegram_bot_name'], str(event.message.to_id)+":"+to_id+"\n"+text_sent)
+                    client.send_message(dct_INI_JSON['str_my_telegram_bot_name'], str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
                     time.sleep(1)  # pause for 1 second to rate-limit automatic replies
                     client.send_message("Signals_All", "CHNL:"+str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
             else:
