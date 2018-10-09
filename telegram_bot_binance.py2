@@ -57,11 +57,11 @@ def extract_numbers(extract_numbers_str, **kwargs):
         elif "USD" in signal_dict['C']:
             return str(extract_numbers_array[0])
         elif kwargs.get("satoshi_extract_numbers")==1:
-            temp=8-len(str(extract_numbers_array[0]))
-            temp2=""
-            for x in range(1, temp):
-                temp2=temp2+"0"
-            return "0."+temp2+str(extract_numbers_array[0])
+            len_satoshi=9-len(str(extract_numbers_array[0]))
+            xbt_value=""
+            for x in range(1, len_satoshi):
+                xbt_value=xbt_value+"0"
+            return "0."+xbt_value+str(extract_numbers_array[0])
         else:
             return "vide"
     else:
@@ -244,6 +244,7 @@ def echo(bot, update):
     print "BEGIN response"
     global signal_dict
     global dct_INI_JSON
+    dct_INI_JSON=load_obj(json_ini)
 #    print str(update.message)
     text_sent=update.message.text.lower()
     printable = set(string.printable)
@@ -419,7 +420,9 @@ def echo(bot, update):
         if reply_markup <> "":
             bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='Which kill binance trades:', reply_markup=reply_markup)
 
-    elif "PeerChannel(channel_id=1229891129)".lower() in text_sent or "PeerChannel(channel_id=1114421815)".lower() in text_sent or "PeerUser(user_id=677414303)".lower() in text_sent:
+    elif "PeerChannel(channel_id=1229891129)".lower() in text_sent\
+    or "PeerChannel(channel_id=1114421815)".lower() in text_sent or "Test_kall".lower() in text_sent\
+    or "PeerUser(user_id=677414303)".lower() in text_sent:
         print "GPS"
         symbol_dict_binance=load_obj("binance_prices.json")
         symbol_dict_bitmex=load_obj("bitmex_contracts.json")
@@ -440,6 +443,7 @@ def echo(bot, update):
             line=line.replace(" ", "")
             line=line.replace("/", "")
             line=line.replace("#", ":")
+            line=line.replace("@", ":")
             line=line.replace("$", "")
             line=line.replace("~", ":")
             print line
@@ -502,8 +506,9 @@ def echo(bot, update):
             if signal_dict['USD']=="init": signal_dict['USD'] = dct_INI_JSON['int_usd_to_bet_bitmex']
         else:
             if signal_dict['USD']=="init": signal_dict['USD'] = dct_INI_JSON['int_usd_to_bet_binance']
+        if signal_dict['POS']=="init": signal_dict['POS'] = "binance"
         for key, value in sorted(signal_dict.items()):
-            if value == 'init' or value == 'vide':
+            if (value == 'init' or value == 'vide'):
                 update.message.reply_text("Valeur non trouvee:"+key)
                 key_not_find=1
             else:
@@ -515,7 +520,7 @@ def echo(bot, update):
             elif signal_dict['POS'] == "short" and not float(signal_dict['SL'])>=float(signal_dict['AC'])>=float(signal_dict['T1'])>=float(signal_dict['T2'])>=float(signal_dict['T3']):
                 update.message.reply_text("Signal false:\n"+"Check numbers\n"+str(signal_dict))
             else:
-                if signal_dict['POS']<>"init":
+                if signal_dict['POS']<>"init" and signal_dict['POS']<>"binance":
                     text_file = open(api_path+"/bitmex_signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
                 else:
                     text_file = open(api_path+"/signals/"+signal_dict['C'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), "w")
