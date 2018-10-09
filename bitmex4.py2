@@ -79,9 +79,9 @@ def debugapp(debugapp_str, **kwargs):
             if 'dct_FILE' in globals(): debugapp_str=dct_FILE['symbol']+":"+debugapp_str
             if annonce_scriptname==False:
                 annonce_scriptname=True
-                bot.sendMessage(chat_id=dct_INI_JSON['str_my_telegram_id'], text=str(str(os.path.basename(__file__)).upper()+"\n"+debugapp_str))
+                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(str(os.path.basename(__file__)).upper()+"\n"+debugapp_str))
             else:
-                bot.sendMessage(chat_id=dct_INI_JSON['str_my_telegram_id'], text=str(debugapp_str))
+                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(debugapp_str))
         except:
             debugapp_logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
             print str("Impossible d envoyer vers Telegram"+str(debugapp_str))
@@ -787,9 +787,9 @@ for filename in os.listdir(dir_BITMEX_SIGNALS):
     f_signal=text_file.read()
     text_file.close()
     bitmex_actual_market=None
-    if "[TRADE]" in f_signal and dct_INI_JSON['bool_auto_trade']:
+    if "[TRADE]" in f_signal and dct_INI_JSON['bool_auto_trade_bitmex']:
         b_trade_to_order(dir_BITMEX_SIGNALS+filename)
-    elif not dct_INI_JSON['bool_auto_trade']:
+    elif not dct_INI_JSON['bool_auto_trade_bitmex']:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Autotrade off, move to old:"+dir_BITMEX_SIGNALS+filename,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
         shutil.move(dir_BITMEX_SIGNALS+filename, dir_OLD+filename)
     else:
@@ -799,7 +799,7 @@ for filename in os.listdir(dir_BITMEX_SIGNALS):
 
 if processed_order==0:
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Aucun traitement",debugapp_DebugLevel="DEBUG")
-#    bot.sendMessage(chat_id=dct_INI_JSON['str_my_telegram_id'], text="Aucun traitement")
+#    bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text="Aucun traitement")
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////end script:"+begin_time+"\n",debugapp_DebugLevel="DEBUG")
 sys.exit()
 #############################################################################################################
