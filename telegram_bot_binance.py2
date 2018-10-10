@@ -599,7 +599,7 @@ def echo(bot, update):
                 update.message.reply_text("Valeur non trouvee:"+key)
                 key_not_find=1
             else:
-                str_file=str_file+key.upper()+":"+value.strip()+"\n"
+                str_file=str_file+key.upper()+":"+str(value).strip()+"\n"
 
         if key_not_find<>1:
             if signal_dict['POS'] == "long" and not float(signal_dict['SL'])<=float(signal_dict['AC'])<=float(signal_dict['T1'])<=float(signal_dict['T2'])<=float(signal_dict['T3']):
