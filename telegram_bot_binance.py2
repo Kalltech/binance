@@ -362,13 +362,16 @@ def echo(bot, update):
                 if not "Days" in symbols and not "LL" in symbols:
                     button_list.append(InlineKeyboardButton(symbols+":"+str(status_dict[symbols+"LL"])+":"+str(status_dict[symbols+"Days"])+"d", callback_data=symbols+".bitmex_trades"))
             reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+        list_of_files_bitmex = glob.glob(api_path+"bitmex_logs/*")
+        latest_file_bitmex = max(list_of_files_bitmex, key=os.path.getctime)
         list_of_files = glob.glob(api_path+"logs/*")
         latest_file = max(list_of_files, key=os.path.getctime)
         dct_INI_JSON=load_obj(json_ini)
         if reply_markup <> "":
             bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='All bitmex_trades:', reply_markup=reply_markup)
-        update.message.reply_text("Dernier log:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file)))\
-        +"\n"+"Derniere erreur:"+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime("whatchdog_error.log")))\
+        update.message.reply_text("Last log binance:"+time.strftime('%y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file)))\
+        +"\n"+"Last log bitmex:"+time.strftime('%y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file_bitmex)))\
+        +"\n"+"Last error:"+time.strftime('%y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime("whatchdog_error.log")))\
         +"\nAutotrade binance:"+str(dct_INI_JSON['bool_auto_trade_binance'])\
         +"\nAutotrade bitmex:"+str(dct_INI_JSON['bool_auto_trade_bitmex']))
     elif text_sent=="panicsell":
@@ -690,7 +693,7 @@ def echo(bot, update):
                 update.message.reply_text("Valeur non trouvee:"+key)
                 key_not_find=1
             else:
-                str_file=str_file+key.upper()+":"+value.strip()+"\n"
+                str_file=str_file+key.upper()+":"+str(value).strip()+"\n"
 
         if key_not_find<>1:
             if not float(signal_dict['SL'])<=float(signal_dict['AC'])<=float(signal_dict['T1'])<=float(signal_dict['T2'])<=float(signal_dict['T3']):
