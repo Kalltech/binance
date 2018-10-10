@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-print "Starting"
+#print "Starting"
 import datetime
 now = datetime.datetime.now()
-print "Before import:%d" % now.second
+begin_now = now
+#print "Before import:%d" % now.second
 #import time
 import sys
 import ConfigParser
@@ -21,7 +22,7 @@ import ccxt  # noqa: E402
 json_ini="api4.json"
 
 now = datetime.datetime.now()
-print "After import second:%d" % now.second
+#print "After import second:%d" % now.second
 #############################################################################################################
 #FUNCTIONS###############################################################################################
 #############################################################################################################
@@ -308,7 +309,7 @@ def b_trade_to_order(b_trade_to_order_file):
     dct_FILE['int_leverage_bitmex']=dct_INI_JSON['int_leverage_bitmex']
     for chat in dct_INI_JSON:
         if "array_telegram_chat_list" in chat:
-            channel=dct_FILE['CHNL'].split(":")
+            channel=dct_FILE['CHNL'].replace("chnl:", "").split(":")
             if channel[0].lower() in dct_INI_JSON[chat]['str_channel'].lower():
                 if not dct_INI_JSON[chat]['bool_auto_trade_bitmex']:
                     try:
@@ -349,7 +350,9 @@ def b_trade_to_order(b_trade_to_order_file):
                         side="buy"
                     elif dct_FILE['POS']=="short":
                         side="sell"
-                    if not "BTC"==bitmex_actual_market['base']:
+                    if bitmex_actual_market['symbol'][-3:]=="USD":
+                        Qty_signal=dct_FILE['USD']
+                    elif not "BTC"==bitmex_actual_market['base']:
                         Qty_signal=dct_FILE['USD']/(bitmex_market_xbt[0]['info']['lastPrice']*dct_FILE['float_bitmex_price'])
                     else:
                         Qty_signal=dct_FILE['USD']
@@ -360,7 +363,7 @@ def b_trade_to_order(b_trade_to_order_file):
                     if Qty_signal_min<>0:
                         b_TRADE=b_order(dct_FILE['symbol'], Qty_signal, dct_FILE['BUY'],side.lower(), "order_BUY")
                         if b_TRADE.get("id") is not None:
-                            exchange.private_post_position_leverage({"symbol": dct_FILE['symbol'], "leverage": str(dct_FILE['int_leverage_bitmex'])})
+                            exchange.private_post_position_leverage({"symbol": bitmex_actual_market['id'], "leverage": str(dct_FILE['int_leverage_bitmex'])})
                             dct_FILE['last_id']=b_TRADE.get("id")
                             dct_FILE['order_BUY']=b_TRADE
                             dct_FILE['executedDate_creation']=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
@@ -687,6 +690,8 @@ logger.addHandler(hdlr)
 logger.setLevel(level)
 logger_symbol=None
 tab=""
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////begin script:"+begin_time, debugapp_logger=logger)
 ###Telegram
 bot = telegram.Bot(token=dct_INI_JSON['str_my_telegram_bot_token'])
 #debugapp(str(sys._getframe().f_code.co_name)+"|"+str(bot.get_me()),debugapp_DebugLevel="DEBUG")
@@ -722,10 +727,7 @@ save_obj(bitmex_symbols, "bitmex_contracts.json")
 check_pause()
 annonce_scriptname=False
 #print bitmex_prices
-debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////begin script:"+begin_time, debugapp_logger=logger)
-debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Bitmex:"+"Balance BTC:"+ str(bitmex_balance['BTC']['total']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-debugapp(str(sys._getframe().f_code.co_name)+"|"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), debugapp_logger=logger)
 bitmex_usd={}
 bitmex_usd["total_usd"]=exchange.markets_by_id['XBTUSD']['info']['bidPrice']*bitmex_balance['BTC']['total']
 bitmex_usd["total_btc"]=bitmex_balance['BTC']['total']
@@ -800,7 +802,9 @@ for filename in os.listdir(dir_BITMEX_SIGNALS):
 if processed_order==0:
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Aucun traitement",debugapp_DebugLevel="DEBUG")
 #    bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text="Aucun traitement")
-debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////end script:"+begin_time+"\n",debugapp_DebugLevel="DEBUG")
+diff_time=datetime.datetime.now()-begin_now
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////end script:"+begin_time+" en "+str(int(diff_time.seconds))+"s",debugapp_DebugLevel="DEBUG")
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
 sys.exit()
 #############################################################################################################
 #END SCRIPT##################################################################################################
