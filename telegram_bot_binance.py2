@@ -47,27 +47,29 @@ def save_obj(obj, name ):
 dct_INI_JSON=load_obj(json_ini)
 
 def extract_numbers(extract_numbers_str, **kwargs):
-#    if "-" in extract_numbers_str:
-    extract_numbers_array=re.findall(r'\d+',extract_numbers_str)
-    print extract_numbers_array
+    if "-" in extract_numbers_str:
+        extract_numbers_str_array=extract_numbers_str.split("-")
+        if len(extract_numbers_str_array)==2:
+            extract_numbers_str_array_cell=extract_numbers_str_array[1]
+        if len(extract_numbers_str_array)==1:
+            extract_numbers_str_array_cell=extract_numbers_str_array[0]
+    else:
+        extract_numbers_str_array_cell=extract_numbers_str
+    extract_numbers_array=re.findall(r'\d+',extract_numbers_str_array_cell)
     global signal_dict
-#    print signal_dict
-    if len(extract_numbers_array)==2:
-        extract_numbers_array_cell=extract_numbers_array[1]
-    if len(extract_numbers_array)==1:
-        extract_numbers_array_cell=extract_numbers_array[0]
-        if extract_numbers_array_cell=="0":
-            return float8f(str(extract_numbers_array_cell+"."+extract_numbers_array[1]))
-        elif extract_numbers_array_cell=="0":
-            return float8f(str(extract_numbers_array_cell+"."+extract_numbers_array[1]))
+    if extract_numbers_array:
+        if extract_numbers_array[0]=="0":
+            return float8f(str(extract_numbers_array[0]+"."+extract_numbers_array[1]))
+        elif extract_numbers_array[0]=="0":
+            return float8f(str(extract_numbers_array[0]+"."+extract_numbers_array[1]))
         elif "USD" in signal_dict['C']:
-            return str(extract_numbers_array_cell)
+            return str(extract_numbers_array[0])
         elif kwargs.get("satoshi_extract_numbers")==1:
-            len_satoshi=9-len(str(extract_numbers_array_cell))
+            len_satoshi=9-len(str(extract_numbers_array[0]))
             xbt_value=""
             for x in range(1, len_satoshi):
                 xbt_value=xbt_value+"0"
-            return "0."+xbt_value+str(extract_numbers_array_cell)
+            return "0."+xbt_value+str(extract_numbers_array[0])
         else:
             return "vide"
     else:
