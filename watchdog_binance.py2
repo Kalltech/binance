@@ -9,11 +9,11 @@ import subprocess
 import json
 #load_params = ConfigParser.ConfigParser()
 
-cwd = os.getcwd()
+cwd = os.getcwd()+"/"
 json_ini="api4.json"
 
 notifier = inotify.adapters.Inotify()
-notifier.add_watch(cwd+"/signals")
+notifier.add_watch(cwd+"signals")
 endTime = datetime.datetime.now() + datetime.timedelta(minutes=15)
 
 loop_time = datetime.datetime.now()
@@ -61,16 +61,22 @@ def find_procs_by_name(name, script_name):
                             return "found:"
 
 #print find_procs_by_name("python2")
-        
+
+def make_executable(path):
+    mode = os.stat(path).st_mode
+    mode |= (mode & 0o444) >> 2    # copy R bits to X
+    os.chmod(path, mode)
+
 for event in notifier.event_gen():
     if event is not None:
 #        print event      # uncomment to see all events generated
         if 'IN_CREATE' in event[1]:
             print "file '{0}' created in '{1}'".format(event[3], event[2])
-            if find_procs_by_name("python2", "binance5.py2") <> "found:":
-                print("launching:" + cwd+"/binance5.py2")
-                os.chdir(cwd+"/")
-                os.system(cwd+"/binance5.py2")
+            py_file="binance5.py2"
+            if find_procs_by_name("python2", py_file) <> "found:":
+                print("launching:" + cwd+py_file)
+                os.chdir(cwd)
+                os.system(cwd+py_file)
     else:
 #        for i in xrange(20):
         bar_update = bar_update+1
@@ -80,34 +86,38 @@ for event in notifier.event_gen():
 #            sleep(0.1)
 
         diff_time=datetime.datetime.now()-loop_time
-#        print "loop in " + cwd+"/signals"+" for "+str(int(diff_time.total_seconds()))
+#        print "loop in " + cwd+"signals"+" for "+str(int(diff_time.total_seconds()))
         if int(diff_time.total_seconds()) > int(dct_INI_JSON['int_loop_schedule'])-1:
             bar.finish()
-            os.chdir(cwd+"/")
+            os.chdir(cwd)
             last_error=""
-            if find_procs_by_name("python2", "binance5.py2") <> "found:":
-                print("#LAUNCHING:" + cwd+"/binance5.py2")
-                p = subprocess.Popen([cwd+"/binance5.py2", ""], stderr=subprocess.PIPE)
+            py_file="binance5.py2"
+            if find_procs_by_name("python2", py_file) <> "found:":
+                print("#LAUNCHING:" + cwd+py_file)
+                make_executable(cwd+py_file)
+                p = subprocess.Popen([cwd+py_file, ""], stderr=subprocess.PIPE)
                 p_com=p.communicate()
                 if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
-            if find_procs_by_name("python2", "binance4.py2") <> "found:":
-                print("#LAUNCHING:" + cwd+"/binance4.py2")
-                p = subprocess.Popen([cwd+"/binance4.py2", ""], stderr=subprocess.PIPE)
+            py_file="binance4.py2"
+            if find_procs_by_name("python2", py_file) <> "found:":
+                print("#LAUNCHING:" + cwd+py_file)
+                make_executable(cwd+py_file)
+                p = subprocess.Popen([cwd+py_file, ""], stderr=subprocess.PIPE)
                 p_com=p.communicate()
                 if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
-            if find_procs_by_name("python2", "bitmex4.py2") <> "found:":
-                print("#LAUNCHING:" + cwd+"/bitmex4.py2")
-                p = subprocess.Popen([cwd+"/bitmex4.py2", ""], stderr=subprocess.PIPE)
+            py_file="bitmex4.py2"
+            if find_procs_by_name("python2", py_file) <> "found:":
+                print("#LAUNCHING:" + cwd+py_file)
+                make_executable(cwd+py_file)
+                p = subprocess.Popen([cwd+py_file, ""], stderr=subprocess.PIPE)
                 p_com=p.communicate()
                 if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
             if last_error<>"":
-                text_file = open(cwd+"/whatchdog_error.log", "a")
+                text_file = open(cwd+"whatchdog_error.log", "a")
                 text_file.write(last_error)
                 text_file.close()
             loop_time = datetime.datetime.now()
             dct_INI_JSON=load_obj(json_ini)
-#            load_params.read("binance_api.ini")
-#            dct_INI_JSON['int_loop_schedule'] = ConfigSectionMap("BINANCE_API", load_params)['dct_INI_JSON['int_loop_schedule']']
             bar = progressbar.ProgressBar(maxval=int(dct_INI_JSON['int_loop_schedule']), \
             widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
             bar.start()
