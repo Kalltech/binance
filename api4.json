@@ -44,7 +44,7 @@
     }, 
     "bool_auto_trade_binance": false, 
     "bool_auto_trade_bitmex": true, 
-    "bool_influxdb_enabled": true, 
+    "bool_influxdb_enabled": false, 
     "bool_panicsell_market": true, 
     "bool_sl_replace_tx": false, 
     "bool_test_bitmex": false, 
