@@ -714,7 +714,10 @@ exchange = ccxt.bitmex({
 })
 if 'test' in exchange.urls and dct_INI_JSON['bool_test_bitmex']:
     exchange.urls['api'] = exchange.urls['test']
-bitmex_balance=exchange.fetch_balance()
+try:
+    bitmex_balance=exchange.fetch_balance()
+except: 
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Problem bitmex GET",debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_exit=1)
 bitmex_markets=exchange.fetch_markets()
 
 bitmex_symbols=[]
