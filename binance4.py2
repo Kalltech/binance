@@ -623,6 +623,7 @@ if test_binance_prices is None:
     test_binance_prices=float(binance_prices.get("NEOBTC"))
     if not isinstance(test_binance_prices, float):
         binance_prices=binance.prices()
+save_obj(binance_prices, "binance_prices.json")
 logger_symbol=None
 ###Check pause
 check_pause()
@@ -646,7 +647,6 @@ for filename in os.listdir(dir_HODL):
         dct_FILE['LOT_SIZE_stepSize'] = float(get_stepSize(dct_FILE.get("symbol")))
         setup_logger(dct_FILE['symbol'], dir_HODL+filename+".log")
         logger_symbol= logging.getLogger(dct_FILE['symbol'])
-        save_obj(binance_prices, "binance_prices.json")
         save_obj(dct_FILE, dct_FILE.get("filename"))
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cours actuel "+str(float8f(dct_FILE['binance_price']))+" "+dct_FILE['last_order_level'],debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         if dct_FILE['dictToBeFilled'].has_key("hodl_SL"):
