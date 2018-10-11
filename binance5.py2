@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-print "Starting"
+#print "Starting"
 import datetime
 now = datetime.datetime.now()
-print "Before import:%d" % now.second
+begin_now = now
+#print "Before import:%d" % now.second
 import time
 import sys
 import ConfigParser
@@ -20,7 +21,7 @@ import ccxt
 json_ini="api4.json"
 
 now = datetime.datetime.now()
-print "After import second:%d" % now.second
+#print "After import second:%d" % now.second
 #############################################################################################################
 #FUNCTIONS###############################################################################################
 #############################################################################################################
@@ -121,8 +122,17 @@ def save_json(save_json_path, save_json_data):
 def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
     global processed_order
-    b_order_Qty=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
-    b_order_price=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price))
+    b_order_Qty=float(b_order_Qty)
+    if b_order_symbol[-3:]=="BTC":
+        b_order_symbol_ccxt=b_order_symbol.replace("BTC", "")+"/BTC"
+    elif b_order_symbol[-3:]=="BNB":
+        b_order_symbol_ccxt=b_order_symbol.replace("BNB", "")+"/BNB"
+    elif b_order_symbol[-3:]=="ETH":
+        b_order_symbol_ccxt=b_order_symbol.replace("ETH", "")+"/ETH"
+    elif b_order_symbol[-4:]=="USDT":
+        b_order_symbol_ccxt=b_order_symbol.replace("USDT", "")+"/USDT"
+    b_order_Qty=exchange.amount_to_precision(b_order_symbol_ccxt,b_order_Qty)
+    b_order_price=float(exchange.price_to_precision(b_order_symbol_ccxt,b_order_price))
 #    b_order_price=float(floatXf(b_order_price))
     binance_balances=binance.balances()
     save_json(dir_TEMP+"binance_balances", binance_balances)
@@ -145,7 +155,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         if b_order_Qty_down <= float(dct_FILE['current_balance']['free']) <= b_order_Qty_up:
             b_order_Qty=float(dct_FILE['current_balance']['free'])
 #        b_order_Qty=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        b_order_Qty=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
+        b_order_Qty=exchange.amount_to_precision(b_order_symbol_ccxt,b_order_Qty)
         
         if "Panicsell" in b_order_level: 
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente MARKET de "+str(b_order_Qty)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
@@ -163,7 +173,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         if b_order_Qty_down <= float(dct_FILE['current_balance']['free']) <= b_order_Qty_up:
             b_order_Qty=float(dct_FILE['current_balance']['free'])
 #        b_order_Qty=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        b_order_Qty=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
+        b_order_Qty=exchange.amount_to_precision(b_order_symbol_ccxt,b_order_Qty)
 #        b_order_price=float(floatXf(b_order_price))
         b_order_price_plus_sl_percen=float(floatXf(b_order_price_plus_sl_percen))
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(b_order_Qty)+" "+" @Price "+floatXf(b_order_price)+" @stopPrice "+floatXf(b_order_price_plus_sl_percen),debugapp_Telegram=1)
@@ -179,17 +189,17 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         if b_order_Qty_down <= float(dct_FILE['current_balance']['free']) <= b_order_Qty_up:
             b_order_Qty=float(dct_FILE['current_balance']['free'])
 #        b_order_Qty=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        b_order_Qty=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
+        b_order_Qty=exchange.amount_to_precision(b_order_symbol_ccxt,b_order_Qty)
         
 #        b_order_price=float(floatXf(b_order_price))
-        b_order_price=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price))
+        b_order_price=float(exchange.price_to_precision(b_order_symbol_ccxt,b_order_price))
         b_order_price_plus_sl_percen=float(floatXf(b_order_price_plus_sl_percen))
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande de vente STOP-LIMIT_TX de "+str(b_order_Qty)+" "+" @Price "+floatXf(b_order_price)+" @stopPrice "+floatXf(b_order_price_plus_sl_percen),debugapp_Telegram=1)
         order=binance.order(b_order_symbol, binance.SELL, b_order_Qty, floatXf(b_order_price), orderType=binance.STOP_LOSS_LIMIT, test=False, stopPrice=floatXf(b_order_price_plus_sl_percen))
 
     if order.get("orderId") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK:"+str(order.get("orderId")),debugapp_DebugLevel="DEBUG")
-        save_json(dir_TEMP+dct_FILE['symbol']+"_"+b_order_level+"_"+str(order.get("orderId")), order)
+        save_json(dir_TEMP+b_order_symbol+"_"+b_order_level+"_"+str(order.get("orderId")), order)
         processed_order=1
         if b_order_side=="STOP-LIMIT":
             dct_FILE['last_SL_orderId']=order.get("orderId")
@@ -784,6 +794,8 @@ hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
 logger.setLevel(level)
 tab=""
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////begin script:"+begin_time, debugapp_logger=logger)
 ###Telegram
 bot = telegram.Bot(token=dct_INI_JSON['str_my_telegram_bot_token'])
 #debugapp(str(sys._getframe().f_code.co_name)+"|"+str(bot.get_me()),debugapp_DebugLevel="DEBUG")
@@ -820,10 +832,7 @@ check_pause()
 annonce_scriptname=False
 
 #print binance_prices
-debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////begin script:"+begin_time, debugapp_logger=logger)
-debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Price:"+"BTCUSDT:"+ str(binance_prices.get("BTCUSDT")),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-debugapp(str(sys._getframe().f_code.co_name)+"|"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"), debugapp_logger=logger)
 
 #parse le dossier pour les fichiers
 for filename in os.listdir(dir_TRADES):
@@ -934,7 +943,9 @@ for filename in os.listdir(dir_SIGNALS):
 if processed_order==0:
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Aucun traitement",debugapp_DebugLevel="DEBUG")
 #    bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text="Aucun traitement")
-debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////end script:"+begin_time+"\n",debugapp_DebugLevel="DEBUG")
+diff_time=datetime.datetime.now()-begin_now
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////end script:"+begin_time+" en "+str(int(diff_time.seconds))+"s",debugapp_DebugLevel="DEBUG")
+debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
 sys.exit()
 #############################################################################################################
 #END SCRIPT##################################################################################################
