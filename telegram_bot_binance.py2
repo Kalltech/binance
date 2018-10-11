@@ -184,6 +184,11 @@ def button(bot, update):
                 print(api_path+binance_trades_path+filename)
                 os.rename(api_path+binance_trades_path+filename, api_path+old_path+filename)
                 str_msg=str_msg+"\n"+"Kill ok:"+filename
+        for filename in os.listdir(api_path+bitmex_trades_path):
+            if ".json" in filename and query.data.replace("kill:","").replace("/", "") in filename:
+                print(api_path+bitmex_trades_path+filename)
+                os.rename(api_path+bitmex_trades_path+filename, api_path+old_path+filename)
+                str_msg=str_msg+"\n"+"Kill ok:"+filename
         if "/signals/" in query.data.replace("kill:",""):
             filepath=query.data.replace("kill:","")
             print(filepath)
@@ -205,6 +210,15 @@ def button(bot, update):
                 text_file = open(api_path+binance_signals_path+filename, "r")
                 str_msg=text_file.read()
                 text_file.close()
+
+    elif bitmex_signals_path in query.data:
+        for filename in os.listdir(api_path+bitmex_signals_path):
+            if query.data in api_path+bitmex_signals_path+filename:
+                print(api_path+bitmex_signals_path+filename)
+                text_file = open(api_path+bitmex_signals_path+filename, "r")
+                str_msg=text_file.read()
+                text_file.close()
+
     elif ".bitmex_trades" in query.data:
         print(api_path+bitmex_trades_path)
         for filename in os.listdir(api_path+bitmex_trades_path):
@@ -294,6 +308,7 @@ def echo(bot, update):
         else:
             update.message.reply_text(stats())
     elif text_sent[:5]=="hodl:":
+        print "hodl"
         hodl_dict = {}
         hodl_dict['symbol'] = text_sent.replace("hodl:", "")
         hodl_dict['symbol'] = hodl_dict['symbol'].upper()
@@ -312,6 +327,7 @@ def echo(bot, update):
 
         print("creation hodl file:"+api_path+hodl_path+hodl_dict['symbol'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json")
         save_obj(hodl_dict, api_path+hodl_path+hodl_dict['symbol'].upper()+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json")
+        update.message.reply_text("Hodl launched: "+hodl_dict['symbol'])
 
     elif text_sent=="stopautotrade_binance":
             dct_INI_JSON=load_obj(json_ini)
@@ -426,6 +442,7 @@ def echo(bot, update):
         status_dict = {}
         button_list = []
         reply_markup = ""
+#        print(api_path+bitmex_signals_path.replace("/", ""))
         for filename in os.listdir(api_path+bitmex_signals_path):
             print(api_path+bitmex_signals_path+filename)
             button_list.append(InlineKeyboardButton(filename, callback_data="kill:"+api_path+bitmex_signals_path+filename))
@@ -453,9 +470,25 @@ def echo(bot, update):
         reply_markup = ""
         for symbols in sorted(status_dict):
             button_list.append(InlineKeyboardButton(croix+symbols, callback_data="kill:"+symbols))
-        reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+            reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
         if reply_markup <> "":
             bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='Which kill binance trades:', reply_markup=reply_markup)
+
+        status_dict = {}
+        button_list = []
+        reply_markup = ""
+        for filename in os.listdir(api_path+bitmex_trades_path):
+            if ".json" in filename and not ".log" in filename:
+                print(api_path+bitmex_trades_path+filename)
+                dct_FILE=load_obj(api_path+bitmex_trades_path+filename)
+                status_dict[dct_FILE.get("symbol")]=":Last price:"+str(float8f(dct_FILE['float_bitmex_price']))+"\n"+dct_FILE['last_order_level']
+        button_list = []
+        reply_markup = ""
+        for symbols in sorted(status_dict):
+            button_list.append(InlineKeyboardButton(croix+symbols, callback_data="kill:"+symbols))
+            reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+        if reply_markup <> "":
+            bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='Which kill bitmex trades:', reply_markup=reply_markup)
 
     elif "PeerChannel(channel_id=1229891129)".lower() in text_sent\
     or "PeerChannel(channel_id=1132337691)".lower() in text_sent\
