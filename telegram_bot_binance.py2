@@ -470,6 +470,8 @@ def echo(bot, update):
                     signal_dict['C'] = a_coin[1].upper()+"Z18"
                 else:
                     signal_dict['C'] = a_coin[1].upper()+"BTC"
+            if line.replace(":", "").upper()+"BTC" in symbol_dict_binance  and signal_dict['C']=="init":
+                signal_dict['C'] = line.replace(":", "").upper()+"BTC"
             if "USD" in signal_dict['C'] or signal_dict['C']=="XBTZ18":
                 satoshi_signal=0
             if "tcalongsignal" in line and signal_dict['POS']=="init":
@@ -497,13 +499,13 @@ def echo(bot, update):
                 signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=satoshi_signal)
                 signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=satoshi_signal)
                 signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=satoshi_signal)
-            a={"target1:", "t1:"}
+            a={"target1:", "t1:", "target1-"}
             if any(x in line for x in a) and signal_dict['T1']=="init":
                 signal_dict['T1'] = get_price_type(line, a, satoshi=satoshi_signal)
-            a={"target2:", "t2:"}
+            a={"target2:", "t2:", "target2-"}
             if any(x in line for x in a) and signal_dict['T2']=="init":
                 signal_dict['T2'] = get_price_type(line, a, satoshi=satoshi_signal)
-            a={"target3:", "t3:"}
+            a={"target3:", "t3:", "target3-"}
             if any(x in line for x in a) and signal_dict['T3']=="init":
                 signal_dict['T3'] = get_price_type(line, a, satoshi=satoshi_signal)
             a={"stop:", "stoploss", "stoplimit:", "stop-loss:"}
