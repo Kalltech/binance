@@ -177,9 +177,13 @@ def main():
                 or "buy below or close to:" in text_sent):
                     print("Envoi")
                     print("CHNL:"+str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
-                    client.send_message(dct_INI_JSON['str_my_telegram_bot_name'], str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
-                    time.sleep(1)  # pause for 1 second to rate-limit automatic replies
-                    client.send_message("Signals_All", "CHNL:"+str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
+                    if not str(event.message.to_id).lower()==str("PeerChannel(channel_id=1322719136)").lower():
+                        client.send_message(dct_INI_JSON['str_my_telegram_bot_name'], str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
+                        time.sleep(1)  # pause for 1 second to rate-limit automatic replies
+                        client.send_message("Signals_All", "CHNL:"+str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
+                    else:
+                        client.send_message(text_sent)
+                        time.sleep(1)  # pause for 1 second to rate-limit automatic replies
             else:
                 print("Not on whitelist")
             for collectors in dct_INI_JSON['list_influxdb_collectors'].split(","):
