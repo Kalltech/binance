@@ -544,23 +544,23 @@ def not_all_sold():
 def t1_filled():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 #            def edit_order(self, id, symbol, type, side, amount=None, price=None, params={}):
-    b_order_price=float(exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['BUY']))
+#    b_order_price=float(exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['BUY']))
     if dct_FILE['order_SL']['side']=="buy":
         type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit'
-        b_order_price_plus_sl_percen=percentage_calc(b_order_price, -dct_FILE['float_percentage_sl_upside'])
+#        b_order_price_plus_sl_percen=percentage_calc(b_order_price, -dct_FILE['float_percentage_sl_upside'])
     else:
         type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit'
-        b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['float_percentage_sl_upside'])
+#        b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['float_percentage_sl_upside'])
     b_order_Qty=float(dct_FILE['executedQty_creation'])-float(dct_FILE['executedQty_vendu'])
     order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
-    b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
+#    b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
 #    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),debugapp_Telegram=1)
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+dct_FILE['order_SL']['price'],debugapp_Telegram=1)
     params = {
-        'stopPx': dct_FILE['order_SL']['price'],  # if needed
+        'stopPx': exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_SL']['info']['stopPx']),  # if needed
         'text': filename,  # if needed
         'displayQty': 0,  # if needed
     }
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_SL']['info']['stopPx']),debugapp_Telegram=1)
 #    current_order_SL_EDIT= exchange.edit_order(dct_FILE['order_SL']['id'], dct_FILE.get("symbol"), type, dct_FILE['order_SL']['side'], order_quantity,  None,  params)
     current_order_SL_EDIT= exchange.edit_order(dct_FILE['order_SL']['id'], dct_FILE.get("symbol"), type, dct_FILE['order_SL']['side'], order_quantity,  None,  params)
     if current_order_SL_EDIT.get("id") is not None:
@@ -576,22 +576,23 @@ def t1_filled():
 def t2_filled():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 #            def edit_order(self, id, symbol, type, side, amount=None, price=None, params={}):
-    b_order_price=float(exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['T1']))
+#    b_order_price=float(exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['T1']))
     if dct_FILE['order_SL']['side']=="buy":
         type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit'
-        b_order_price_plus_sl_percen=percentage_calc(b_order_price, -dct_FILE['float_percentage_sl_upside'])
+#        b_order_price_plus_sl_percen=percentage_calc(b_order_price, -dct_FILE['float_percentage_sl_upside'])
     else:
         type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit'
-        b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['float_percentage_sl_upside'])
+#        b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['float_percentage_sl_upside'])
     b_order_Qty=float(dct_FILE['executedQty_creation'])-float(dct_FILE['executedQty_vendu'])
     order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
-    b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),debugapp_Telegram=1)
+#    b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
     params = {
-        'stopPx': dct_FILE['order_BUY']['price'],  # if needed
+        'stopPx': exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_BUY']['price']),  # if needed
         'text': filename,  # if needed
         'displayQty': 0,  # if needed
     }
+#    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),debugapp_Telegram=1)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_BUY']['price']),debugapp_Telegram=1)
     current_order_SL_EDIT= exchange.edit_order(dct_FILE['order_SL']['id'], dct_FILE.get("symbol"), type, dct_FILE['order_SL']['side'], order_quantity,  None,  params)
     if current_order_SL_EDIT.get("id") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Edit SL order"+str(current_order_SL_EDIT.get("id")),debugapp_DebugLevel="DEBUG")
