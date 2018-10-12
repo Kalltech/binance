@@ -54,10 +54,14 @@ def save_obj(obj, name ):
 dct_INI_JSON=load_obj(json_ini)
 
 def extract_numbers(extract_numbers_str, **kwargs):
+    if extract_numbers_str[:1]=="-":extract_numbers_str=extract_numbers_str[1:]
     if "-" in extract_numbers_str:
         extract_numbers_str_array=extract_numbers_str.split("-")
         if len(extract_numbers_str_array)==2:
-            extract_numbers_str_array_cell=extract_numbers_str_array[1]
+            if "%" in extract_numbers_str_array[1]:
+                extract_numbers_str_array_cell=extract_numbers_str_array[0]
+            else:
+                extract_numbers_str_array_cell=extract_numbers_str_array[1]
         if len(extract_numbers_str_array)==1:
             extract_numbers_str_array_cell=extract_numbers_str_array[0]
     else:
@@ -493,9 +497,12 @@ def echo(bot, update):
     elif "PeerChannel(channel_id=1229891129)".lower() in text_sent\
     or "PeerChannel(channel_id=1132337691)".lower() in text_sent\
     or "PeerChannel(channel_id=1114421815)".lower() in text_sent\
+    or "PeerChannel(channel_id=1398284234)".lower() in text_sent\
+    or "PeerChannel(channel_id=1322719136XX)".lower() in text_sent\
+    or "PeerChannel(channel_id=1133918305)".lower() in text_sent\
     or "Test_kall".lower() in text_sent\
     or "PeerUser(user_id=677414303)".lower() in text_sent:
-        print "GPS"
+        print "signal"
         symbol_dict_binance=load_obj("binance_prices.json")
         symbol_dict_bitmex=load_obj("bitmex_contracts.json")
         signal_dict = {}
@@ -515,9 +522,12 @@ def echo(bot, update):
             line=line.replace(" ", "")
             line=line.replace("/", "")
             line=line.replace("#", ":")
+            line=line.replace("*", "")
             line=line.replace("@", ":")
             line=line.replace("$", "")
             line=line.replace("~", ":")
+            line=line.replace("binance", "")
+            line=line.replace("bitmex", "")
             print line
 #            print line.upper()+"BTC"
             satoshi_signal=1
@@ -533,6 +543,8 @@ def echo(bot, update):
                     signal_dict['C'] = a_coin[1].upper()+"BTC"
             if line.replace(":", "").upper()+"BTC" in symbol_dict_binance  and signal_dict['C']=="init":
                 signal_dict['C'] = line.replace(":", "").upper()+"BTC"
+            if line.upper() in symbol_dict_binance  and signal_dict['C']=="init":
+                signal_dict['C'] = line.upper()
             if "USD" in signal_dict['C'] or signal_dict['C']=="XBTZ18":
                 satoshi_signal=0
             if "tcalongsignal" in line and signal_dict['POS']=="init":
@@ -542,6 +554,16 @@ def echo(bot, update):
             a={"buy", "buyunder", "buy:", "openat"}
             if any(x in line for x in a) and signal_dict['AC']=="init":
                 signal_dict['AC'] = get_price_type(line, a, satoshi=satoshi_signal)
+                
+            if "t1:" in line and "t2:" in line and "t3:" in line :
+                a_t1t2t3=line.replace("t1","")
+                a_t1t2t3=a_t1t2t3.replace("t2","")
+                a_t1t2t3=a_t1t2t3.replace("t3","")
+                a_t1t2t3=a_t1t2t3.split(":")
+                signal_dict['T1'] = float8f(float(a_t1t2t3[1]))
+                signal_dict['T2'] = float8f(float(a_t1t2t3[2]))
+                signal_dict['T3'] = float8f(float(a_t1t2t3[3]))
+                
             if "sell:" in line:
                 a_sell=line.split("sell:")
                 a_sell=a_sell[1].split("-")
