@@ -318,7 +318,7 @@ def b_trade_to_order(b_trade_to_order_file):
     for chat in dct_INI_JSON:
         if "array_telegram_chat_list" in chat:
             channel=dct_FILE['CHNL'].split(":")
-            if channel[0].lower() in dct_INI_JSON[chat]['str_channel'].lower():
+            if channel[0].lower() in dct_INI_JSON[chat]['str_channel'].lower() and channel[0]<>"":
                 if not dct_INI_JSON[chat]['bool_auto_trade_binance']:
                     try:
                         shutil.move(dir_SIGNALS+filename, dir_OLD+filename)
