@@ -48,28 +48,20 @@ def save_obj(obj, name ):
     json.dump(obj,save_obj_out_file, indent=4, sort_keys=True)                                    
     save_obj_out_file.close()
 
-def to_db(COIN="XXX",  TX="TX", TX_nb="0"):
-    """Instantiate a connection to the InfluxDB."""
+def to_db_balances():
     user = dct_INI_JSON['str_influxdb_user']
     password = dct_INI_JSON['str_influxdb_password']
-    dbname = dct_INI_JSON['str_influxdb_dbname']
+    dbname = "binance_balance"
     dbuser = dct_INI_JSON['str_influxdb_dbuser']
     dbuser_password = dct_INI_JSON['str_influxdb_password']
     host=dct_INI_JSON['str_influxdb_host']
     port=dct_INI_JSON['str_influxdb_port']
     current_time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-    json_body = [
-        {
-            "measurement": "SP_Stats",
-            "tags": {
-                "COIN": COIN,
-            },
-            "time": current_time,
-            "fields": {
-                TX: TX_nb,
-            }
-        }
-    ]
+
+    client2 = InfluxDBClient(host, port, user, password, dbname)
+    client2.create_database(dbname)
+    client2.switch_user(dbuser, dbuser_password)
+
     binance_usd=load_obj("./temp/binance_usd")
     bitmex_usd=load_obj("./temp/bitmex_usd")
     json_body2 = [
@@ -98,18 +90,38 @@ def to_db(COIN="XXX",  TX="TX", TX_nb="0"):
             }
         }
     ]
-
-    client = InfluxDBClient(host, port, user, password, dbname)
-    client2 = InfluxDBClient(host, port, user, password, "binance_balance")
-    client.create_database(dbname)
-    client2.create_database("binance_balance")
-    client.switch_user(dbuser, dbuser_password)
-    client2.switch_user(dbuser, dbuser_password)
-    print("Write points: {0}".format(json_body))
-    client.write_points(json_body)
+    print("Write points: {0}".format(json_body2))
+    print("Write points: {0}".format(json_body3))
     client2.write_points(json_body2)
     client2.write_points(json_body3)
-
+    
+def to_db(COIN="XXX",  TX="TX", TX_nb="0"):
+    """Instantiate a connection to the InfluxDB."""
+    user = dct_INI_JSON['str_influxdb_user']
+    password = dct_INI_JSON['str_influxdb_password']
+    dbname = dct_INI_JSON['str_influxdb_dbname']
+    dbuser = dct_INI_JSON['str_influxdb_dbuser']
+    dbuser_password = dct_INI_JSON['str_influxdb_password']
+    host=dct_INI_JSON['str_influxdb_host']
+    port=dct_INI_JSON['str_influxdb_port']
+    current_time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+    json_body = [
+        {
+            "measurement": "SP_Stats",
+            "tags": {
+                "COIN": COIN,
+            },
+            "time": current_time,
+            "fields": {
+                TX: TX_nb,
+            }
+        }
+    ]
+    client = InfluxDBClient(host, port, user, password, dbname)
+    client.create_database(dbname)
+    client.switch_user(dbuser, dbuser_password)
+    print("Write points: {0}".format(json_body))
+    client.write_points(json_body)
 
 def count_T(count_T_TX, count_T_COIN,  count_T_Name):
     x_count = 0
@@ -173,42 +185,50 @@ def main():
                 if ("entry zone:" in text_sent or "buy under " in text_sent or "buy zone " in text_sent\
                 or "tca " in text_sent or "open at" in text_sent or "accumulate between" in text_sent\
                 or "buy:" in text_sent or "buy :" in text_sent or "buy below:" in text_sent\
-                or "buy above or in:" in text_sent or "buy below or in:" in text_sent or ("target 1 " in text_sent and not "touched" in text_sent)\
+                or "buy above or in:" in text_sent or "buy below or in:" in text_sent\
+                or ("target 1 " in text_sent and not "touched" in text_sent)\
+                or ("target 1 " in text_sent and not "reached" in text_sent)\
                 or "buy below or close to:" in text_sent):
-                    print("Envoi")
-                    print("CHNL:"+str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
-                    if not str(event.message.to_id).lower()==str("PeerChannel(channel_id=1322719136)").lower():
-                        client.send_message(dct_INI_JSON['str_my_telegram_bot_name'], str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
+                    if str(event.message.to_id).lower()==str("PeerChannel(channel_id=1322719136)").lower():
+                        
+                        print("Envoi Bot")
+                        client.send_message(dct_INI_JSON['str_my_telegram_bot_name'],text_sent)
                         time.sleep(1)  # pause for 1 second to rate-limit automatic replies
-                        client.send_message("Signals_All", "CHNL:"+str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
                     else:
-                        client.send_message(text_sent)
+                        print("Envoi Bot & Signals_All")
+                        print("CHNL:"+str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
+                        client.send_message(dct_INI_JSON['str_my_telegram_bot_name'],\
+                        "CHNL:"+str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
                         time.sleep(1)  # pause for 1 second to rate-limit automatic replies
+                        client.send_message("Signals_All",\
+                        "CHNL:"+str(event.message.to_id)+":"+to_id+"\nBot:"+dct_INI_JSON['str_my_telegram_bot_name']+"\n"+text_sent)
             else:
                 print("Not on whitelist")
-            for collectors in dct_INI_JSON['list_influxdb_collectors'].split(","):
-                if dct_INI_JSON['bool_influxdb_enabled'] == "1" and"target" in text_sent and collectors in str(event.message.to_id):
-                    print("dct_INI_JSON['bool_influxdb_enabled']")
-                    current_time = datetime.datetime.now()
-                    COIN=text_sent.split(" touched")[0]
-                    if "target 1" in text_sent:
-                        TX="T1"
-                        T1.append(current_time)
-                        T1 = count_T(T1, COIN, TX)
-                        T1_global.append(current_time)
-                        T1_global = count_T(T1_global, "T1_global", "T1_global")
-                    if "target 2" in text_sent:
-                        TX="T2"
-                        T2.append(current_time)
-                        T2 = count_T(T2, COIN, TX)
-                        T2_global.append(current_time)
-                        T2_global = count_T(T2_global, "T2_global", "T2_global")
-                    if "target 3" in text_sent:
-                        TX="T3"
-                        T3.append(current_time)
-                        T3 = count_T(T3, COIN, TX)
-                        T3_global.append(current_time)
-                        T3_global = count_T(T3_global, "T3_global", "T3_global")
+            if dct_INI_JSON['bool_influxdb_enabled']:
+                print("bool_influxdb_enabled")
+                to_db_balances()
+                for collectors in dct_INI_JSON['list_influxdb_collectors'].split(","):
+                        if "target" in text_sent and collectors in str(event.message.to_id):
+                            current_time = datetime.datetime.now()
+                            COIN=text_sent.split(" touched")[0]
+                            if "target 1" in text_sent:
+                                TX="T1"
+                                T1.append(current_time)
+                                T1 = count_T(T1, COIN, TX)
+                                T1_global.append(current_time)
+                                T1_global = count_T(T1_global, "T1_global", "T1_global")
+                            if "target 2" in text_sent:
+                                TX="T2"
+                                T2.append(current_time)
+                                T2 = count_T(T2, COIN, TX)
+                                T2_global.append(current_time)
+                                T2_global = count_T(T2_global, "T2_global", "T2_global")
+                            if "target 3" in text_sent:
+                                TX="T3"
+                                T3.append(current_time)
+                                T3 = count_T(T3, COIN, TX)
+                                T3_global.append(current_time)
+                                T3_global = count_T(T3_global, "T3_global", "T3_global")
         else:
             print("On blacklist")
             
