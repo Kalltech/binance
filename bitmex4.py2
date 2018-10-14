@@ -310,7 +310,7 @@ def b_trade_to_order(b_trade_to_order_file):
     for chat in dct_INI_JSON:
         if "array_telegram_chat_list" in chat:
             channel=dct_FILE['CHNL'].replace("chnl:", "").split(":")
-            if channel[0].lower() in dct_INI_JSON[chat]['str_channel'].lower():
+            if channel[0].lower() in dct_INI_JSON[chat]['str_channel'].lower() and channel[0]<>"":
                 if not dct_INI_JSON[chat]['bool_auto_trade_bitmex']:
                     try:
                         shutil.move(dir_BITMEX_SIGNALS+filename, dir_OLD+filename)
@@ -455,7 +455,7 @@ def ToBeFilled():
                         save_obj(dct_FILE, dct_FILE.get("filename"))
                     else:
                         if float(current_allOrders['filled'])==float(current_allOrders['amount']):
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade "+order_level_dictToBeFilled+" FILLED of order_"+str(current_allOrders.get("id")),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade "+order_level_dictToBeFilled+" FILLED @Price:"+str(current_allOrders.get("price")),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
                             dct_FILE[order_level_dictToBeFilled+"_FILLED"]=current_allOrders
                             dct_FILE['last_order_level']=order_level_dictToBeFilled+"_FILLED"
                             dct_FILE['last_executedQty']=float(current_allOrders['filled'])
@@ -566,7 +566,7 @@ def t1_filled():
     if current_order_SL_EDIT.get("id") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Edit SL order_ "+str(current_order_SL_EDIT.get("id")),debugapp_DebugLevel="DEBUG")
         dct_FILE['order_SL']=current_order_SL_EDIT
-        dct_FILE['last_order_level']='order_SL'
+        dct_FILE['last_order_level']='order_SL_T1'
         dct_FILE['current_SL']='order_SL'
         save_obj(dct_FILE, dct_FILE.get("filename"))
     else:
@@ -597,7 +597,7 @@ def t2_filled():
     if current_order_SL_EDIT.get("id") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Edit SL order"+str(current_order_SL_EDIT.get("id")),debugapp_DebugLevel="DEBUG")
         dct_FILE['order_SL']=current_order_SL_EDIT
-        dct_FILE['last_order_level']='order_SL'
+        dct_FILE['last_order_level']='order_SL_T2'
         dct_FILE['current_SL']='order_SL'
         save_obj(dct_FILE, dct_FILE.get("filename"))
     else:
