@@ -45,6 +45,37 @@ def load_obj(name ):
         dct_load_obj = json.load(json_data)
         json_data.close()
         return dct_load_obj
+        
+def init_dict():
+    dictA = {}
+    dictA['C'] = 'init'
+    dictA['AC'] = 'init'
+    dictA['T1'] = 'init'
+    dictA['T2'] = 'init'
+    dictA['T3'] = 'init'
+    dictA['SL'] = 'init'
+    dictA['USD'] = 'init'
+    dictA['CHNL'] = ""
+    dictA['POS'] = 'init'
+    return dictA
+    
+def percentage_calc(percentage_calc_number, percentage_calc_percent):
+    percentage_calc_result = float(percentage_calc_number)+float(percentage_calc_number)/100*float(percentage_calc_percent)
+    return percentage_calc_result
+
+def clean_text(text):
+    text=text.replace(" ", "")
+    text=text.replace("|", "-")
+    text=text.replace("/", "")
+    text=text.replace("#", ":")
+    text=text.replace("*", "")
+    text=text.replace("@", ":")
+    text=text.replace("--->", "")
+    text=text.replace("$", "")
+    text=text.replace("~", ":")
+    text=text.replace("binance", "")
+    text=text.replace("bitmex", "")
+    return text
 
 def save_obj(obj, name ):
     save_obj_out_file = open(name,"w")
@@ -69,6 +100,7 @@ def extract_numbers(extract_numbers_str, **kwargs):
     extract_numbers_array=re.findall(r'\d+',extract_numbers_str_array_cell)
     global signal_dict
     if extract_numbers_array:
+        print "extract_numbers"+str(extract_numbers_array)
         if extract_numbers_array[0]=="0":
             return float8f(str(extract_numbers_array[0]+"."+extract_numbers_array[1]))
         elif extract_numbers_array[0]=="0":
@@ -82,15 +114,16 @@ def extract_numbers(extract_numbers_str, **kwargs):
                 xbt_value=xbt_value+"0"
             return "0."+xbt_value+str(extract_numbers_array[0])
         else:
-            return "vide"
+            return "init"
     else:
-        return "vide"
+        return "init"
 
 def get_price_type(get_price_type_str, get_price_type_valeurs, **kwargs):
     for valeur in get_price_type_valeurs:
         if valeur in get_price_type_str:
+            print "get_price_type"+get_price_type_str
             return extract_numbers(get_price_type_str.replace(valeur, ""), satoshi_extract_numbers=kwargs.get("satoshi"))
-    return "vide"
+    return "init"
 
 def findkeys(d, findkeys_str):
     for key in d.keys():
@@ -289,13 +322,7 @@ def echo(bot, update):
     text_sent=update.message.text.lower()
     printable = set(string.printable)
     text_sent=filter(lambda x: x in printable, text_sent)
-    a_channel=text_sent.split("\n")
-#    print a_channel
     channel=""
-    if "PeerChannel(channel_id=".lower() in a_channel[0] or "PeerUser(user_id=".lower() in a_channel[0]:
-        channel=a_channel[0]
-#    print text_sent
-#    print text_sent[:5]
     if "pause:" in text_sent:
         print "Create pause.txt"
         a_pause=text_sent.split("pause:")
@@ -497,6 +524,7 @@ def echo(bot, update):
     elif "PeerChannel(channel_id=1229891129)".lower() in text_sent\
     or "PeerChannel(channel_id=1132337691)".lower() in text_sent\
     or "PeerChannel(channel_id=1114421815)".lower() in text_sent\
+    or "PeerChannel(channel_id=1317593000)".lower() in text_sent\
     or "PeerChannel(channel_id=1398284234)".lower() in text_sent\
     or "PeerChannel(channel_id=1322719136XX)".lower() in text_sent\
     or "PeerChannel(channel_id=1133918305)".lower() in text_sent\
@@ -505,31 +533,13 @@ def echo(bot, update):
         print "signal"
         symbol_dict_binance=load_obj("binance_prices.json")
         symbol_dict_bitmex=load_obj("bitmex_contracts.json")
-        signal_dict = {}
-        signal_dict['C'] = 'init'
-        signal_dict['AC'] = 'init'
-        signal_dict['T1'] = 'init'
-        signal_dict['T2'] = 'init'
-        signal_dict['T3'] = 'init'
-        signal_dict['SL'] = 'init'
-        signal_dict['USD'] = 'init'
-        signal_dict['CHNL'] = channel
-        signal_dict['POS'] = 'init'
-        
-        lines=text_sent
+        signal_dict = init_dict()
+        lines = clean_text(text_sent)
         lines=lines.splitlines()
         for line in lines:
-            line=line.replace(" ", "")
-            line=line.replace("/", "")
-            line=line.replace("#", ":")
-            line=line.replace("*", "")
-            line=line.replace("@", ":")
-            line=line.replace("$", "")
-            line=line.replace("~", ":")
-            line=line.replace("binance", "")
-            line=line.replace("bitmex", "")
             print line
-#            print line.upper()+"BTC"
+            if "PeerChannel(channel_id=".lower() in line or "PeerUser(user_id=".lower() in line:
+                signal_dict['CHNL'] = line.replace("chnl:", "")
             satoshi_signal=1
             if line.upper()+"BTC" in symbol_dict_binance and signal_dict['C']=="init":
                 signal_dict['C'] = line.upper()+"BTC"
@@ -551,7 +561,7 @@ def echo(bot, update):
                 signal_dict['POS'] = "long"
             if "tcashortsignal" in line and signal_dict['POS']=="init":
                 signal_dict['POS'] = "short"
-            a={"buy", "buyunder", "buy:", "openat"}
+            a={"buy", "buyunder", "buy:", "openat", "accumulatebetween"}
             if any(x in line for x in a) and signal_dict['AC']=="init":
                 signal_dict['AC'] = get_price_type(line, a, satoshi=satoshi_signal)
                 
@@ -564,7 +574,21 @@ def echo(bot, update):
                 signal_dict['T2'] = float8f(float(a_t1t2t3[2]))
                 signal_dict['T3'] = float8f(float(a_t1t2t3[3]))
                 
-            if "sell:" in line:
+            if "sellingtargets:" in line:
+                a_sell=line.split("sellingtargets:")
+                a_sell=a_sell[1].split("-")
+                signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=satoshi_signal)
+                signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=satoshi_signal)
+                signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=satoshi_signal)
+                signal_dict['SL'] = float8f(percentage_calc(signal_dict['T1'], dct_INI_JSON['float_percentage_max_sl']))
+                
+            if "shorttermtargets:" in line:
+                a_sell=line.split("shorttermtargets:")
+                a_sell=a_sell[1].split("-")
+                signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=satoshi_signal)
+                signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=satoshi_signal)
+                signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=satoshi_signal)
+            elif "sell:" in line:
                 a_sell=line.split("sell:")
                 a_sell=a_sell[1].split("-")
                 signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=satoshi_signal)
@@ -572,12 +596,6 @@ def echo(bot, update):
                 signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=satoshi_signal)
             elif "sell" in line:
                 a_sell=line.split("sell")
-                a_sell=a_sell[1].split("-")
-                signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=satoshi_signal)
-                signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=satoshi_signal)
-                signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=satoshi_signal)
-            if "shorttermtargets:" in line:
-                a_sell=line.split("shorttermtargets:")
                 a_sell=a_sell[1].split("-")
                 signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=satoshi_signal)
                 signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=satoshi_signal)
@@ -591,7 +609,7 @@ def echo(bot, update):
             a={"target3:", "t3:", "target3-"}
             if any(x in line for x in a) and signal_dict['T3']=="init":
                 signal_dict['T3'] = get_price_type(line, a, satoshi=satoshi_signal)
-            a={"stop:", "stoploss", "stoplimit:", "stop-loss:"}
+            a={"stop:", "stoploss", "stoplimit:", "stop-loss:", "stoploss:", "sl"}
             if any(x in line for x in a) and signal_dict['SL']=="init":
                 signal_dict['SL'] = get_price_type(line, a, satoshi=satoshi_signal)
 
@@ -624,31 +642,20 @@ def echo(bot, update):
                 text_file.close()
                 update.message.reply_text("Signal resolu:\n"+str_file)
         else:
-            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
+            update.message.reply_text("Signal non resolu!")
+#            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
     elif "PeerChannel(channel_id=1321818269)".lower() in text_sent:
         print "bitmex"
         dct_INI_JSON=load_obj(json_ini)
         symbol_dict=load_obj("bitmex_contracts.json")
-
 #        symbol_dict = ['XBTUSD','.XRPXBT','.XRPXBT30M','.EVOL7D','.EOSXBT','.EOSXBT30M','.JPYBON','.JPYBON2H','.JPYBON8H','.BCHXBT','.BCHXBT30M','.KRWBON','.KRWBON2H','.KRWBON8H','.XBTKRWPI','.XBTKRWPI2H','.XBTKRWPI8H','.XBTKRW','.XBTKRW30M','.ADAXBT','.ADAXBT30M','.TRXXBT','.TRXXBT30M','.BADAXBT','.BADAXBT30M','.BBCHXBT','.BBCHXBT30M','.BEOSXBT','.BEOSXBT30M','.BXRPXBT','.BXRPXBT30M','BCHU18','ADAU18','EOSU18','XRPU18','TRXU18','XRPZ18','BCHZ18','ADAZ18','EOSZ18','TRXZ18','BTC/KRW','.XBT','.XBT30M','.XBTBON','.XBTBON8H','.XBTUSDPI','.XBTUSDPI8H','.XBTBON2H','.XBTUSDPI2H','.BXBT','.BXBT30M','.XBTJPY','.XBTJPY30M','.BXBTJPY','.BXBTJPY30M','.XBTJPYPI','.XBTJPYPI2H','.XBTJPYPI8H','.BVOL','.BVOL24H','.BVOL7D','.ETHXBT','.ETHXBT30M','.ETHXBTPI','.ETHXBTPI8H','.ETHBON','.ETHBON2H','.ETHBON8H','.ETHXBTPI2H','.BETH','.BETH30M','.ETHUSDPI','.ETHUSDPI2H','.ETHUSDPI8H','.BETHXBT','.BETHXBT30M','.LTCXBT','.LTCXBT30M','.BLTCXBT','.BLTCXBT30M','.USDBON','.USDBON8H','.USDBON2H','BTC/USD','XBT7D_U105','XBT7D_D95','XBTU18','XBTZ18','XBTH19','BTC/JPY','ETH/BTC','ETH/USD','ETHU18','ETHZ18','LTCU18','LTCZ18']
-        signal_dict = {}
-        signal_dict['C'] = 'init'
-        signal_dict['POS'] = 'init'
-        signal_dict['AC'] = 'init'
-        signal_dict['T1'] = 'init'
-        signal_dict['T2'] = 'init'
-        signal_dict['T3'] = 'init'
-        signal_dict['SL'] = 'init'
-        signal_dict['USD'] = 'init'
+        signal_dict = init_dict()
         signal_dict['CHNL'] = channel
-        lines=text_sent
+        lines = clean_text(text_sent)
         lines=lines.splitlines()
         for line in lines:
-            line=line.replace(" ", "")
-            line=line.replace("/", "")
-            line=line.replace("#", ":")
-            line=line.replace("$", "")
-#            print line
+            if "PeerChannel(channel_id=".lower() in line or "PeerUser(user_id=".lower() in line:
+                signal_dict['CHNL'] = line.replace("chnl:", "")
             if (line.upper() in symbol_dict or 'XBTUSD' in line.upper() or 'ETHUSD' in line.upper()) and signal_dict['C']=="init":
                 signal_dict['C'] = line.upper()
             if "position:" in line and signal_dict['POS']=="init":
@@ -697,29 +704,18 @@ def echo(bot, update):
                 text_file.close()
                 update.message.reply_text("Signal resolu:\n"+str_file)
         else:
-            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
+            update.message.reply_text("Signal non resolu!")
+#            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
     elif "btc" in text_sent or "coin:" in text_sent:
         print "signal"
-        signal_dict = {}
-        signal_dict['C'] = 'init'
-        signal_dict['AC'] = 'init'
-        signal_dict['T1'] = 'init'
-        signal_dict['T2'] = 'init'
-        signal_dict['T3'] = 'init'
-        signal_dict['SL'] = 'init'
-        signal_dict['USD'] = 'init'
+        signal_dict = init_dict()
         signal_dict['CHNL'] = channel
-#        signal_dict['BAD'] = 'init'
-        lines=text_sent
+        lines = clean_text(text_sent)
         lines=lines.splitlines()
         for line in lines:
-            line=line.replace(" ", "")
-            line=line.replace("/", "")
-            line=line.replace("#", ":")
-            line=line.replace("$", "")
-#            line=line.replace("coin:", "")
-#            print(line)
 #Crypto Signalist Pro
+            if "PeerChannel(channel_id=".lower() in line or "PeerUser(user_id=".lower() in line:
+                signal_dict['CHNL'] = line.replace("chnl:", "")
             if "btc" in line and signal_dict['C']=="init":
                 signal_dict['C'] = line.upper()
                 if signal_dict['C'].find("("):
