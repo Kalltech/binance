@@ -792,8 +792,12 @@ for filename in os.listdir(dir_BITMEX_SIGNALS):
     text_file = open(dir_BITMEX_SIGNALS+filename, "r")
     f_signal=text_file.read()
     text_file.close()
+    load_trade(dir_BITMEX_SIGNALS+filename)
     bitmex_actual_market=None
-    if "[TRADE]" in f_signal and dct_INI_JSON['bool_auto_trade_bitmex']:
+    if dct_FILE['symbol'].replace("/", "") in str(os.listdir(dir_BITMEX_TRADES)):
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position already exist on same coin, move to old:"+dir_BITMEX_SIGNALS+filename,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+        shutil.move(dir_BITMEX_SIGNALS+filename, dir_OLD+filename)
+    elif "[TRADE]" in f_signal and dct_INI_JSON['bool_auto_trade_bitmex']:
         b_trade_to_order(dir_BITMEX_SIGNALS+filename)
     elif not dct_INI_JSON['bool_auto_trade_bitmex']:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Autotrade off, move to old:"+dir_BITMEX_SIGNALS+filename,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
