@@ -186,11 +186,9 @@ def main():
                 or "tca " in text_sent or "open at" in text_sent or "accumulate between" in text_sent\
                 or "buy:" in text_sent or "buy :" in text_sent or "buy below:" in text_sent\
                 or "buy above or in:" in text_sent or "buy below or in:" in text_sent\
-                or ("target 1 " in text_sent and not "touched" in text_sent)\
-                or ("target 1 " in text_sent and not "reached" in text_sent)\
+                or ("target 1" in text_sent and not "touched" in text_sent and not "reached" in text_sent)\
                 or "buy below or close to:" in text_sent):
                     if str(event.message.to_id).lower()==str("PeerChannel(channel_id=1322719136)").lower():
-                        
                         print("Envoi Bot")
                         client.send_message(dct_INI_JSON['str_my_telegram_bot_name'],text_sent)
                         time.sleep(1)  # pause for 1 second to rate-limit automatic replies
