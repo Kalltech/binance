@@ -86,21 +86,25 @@ dct_INI_JSON=load_obj(json_ini)
 
 def extract_numbers(extract_numbers_str, **kwargs):
     if extract_numbers_str[:1]=="-":extract_numbers_str=extract_numbers_str[1:]
+#    print extract_numbers_str
     if "-" in extract_numbers_str:
         extract_numbers_str_array=extract_numbers_str.split("-")
-        if len(extract_numbers_str_array)==2:
+#        print "extract_numbers_str_array:"+str(extract_numbers_str_array)
+        if len(extract_numbers_str_array)>=2:
             if "%" in extract_numbers_str_array[1]:
                 extract_numbers_str_array_cell=extract_numbers_str_array[0]
             else:
                 extract_numbers_str_array_cell=extract_numbers_str_array[1]
-        if len(extract_numbers_str_array)==1:
+        elif len(extract_numbers_str_array)==1:
             extract_numbers_str_array_cell=extract_numbers_str_array[0]
     else:
         extract_numbers_str_array_cell=extract_numbers_str
+#    print "extract_numbers_str_array_cell:"+str(extract_numbers_str_array_cell)
     extract_numbers_array=re.findall(r'\d+',extract_numbers_str_array_cell)
+#    print "extract_numbers_array:"+str(extract_numbers_array)
     global signal_dict
     if extract_numbers_array:
-        print "extract_numbers"+str(extract_numbers_array)
+#        print "extract_numbers"+str(extract_numbers_array)
         if extract_numbers_array[0]=="0":
             return float8f(str(extract_numbers_array[0]+"."+extract_numbers_array[1]))
         elif extract_numbers_array[0]=="0":
@@ -561,7 +565,7 @@ def echo(bot, update):
                 signal_dict['POS'] = "long"
             if "tcashortsignal" in line and signal_dict['POS']=="init":
                 signal_dict['POS'] = "short"
-            a={"buy", "buyunder", "buy:", "openat", "accumulatebetween"}
+            a={"buy", "buyunder", "buy:", "openat", "accumulatebetween", "buyzone"}
             if any(x in line for x in a) and signal_dict['AC']=="init":
                 signal_dict['AC'] = get_price_type(line, a, satoshi=satoshi_signal)
                 
@@ -580,7 +584,8 @@ def echo(bot, update):
                 signal_dict['T1'] = get_price_type("t1:"+a_sell[0], {"t1", "target1"}, satoshi=satoshi_signal)
                 signal_dict['T2'] = get_price_type("t2:"+a_sell[1], {"t2", "target2"}, satoshi=satoshi_signal)
                 signal_dict['T3'] = get_price_type("t3:"+a_sell[2], {"t3", "target3"}, satoshi=satoshi_signal)
-                signal_dict['SL'] = float8f(percentage_calc(signal_dict['T1'], dct_INI_JSON['float_percentage_max_sl']))
+                if signal_dict['SL']=="init" and signal_dict['AC']<>"init":
+                    signal_dict['SL'] = float8f(percentage_calc(signal_dict['AC'], dct_INI_JSON['float_percentage_max_sl']))
                 
             if "shorttermtargets:" in line:
                 a_sell=line.split("shorttermtargets:")
@@ -612,14 +617,16 @@ def echo(bot, update):
             a={"stop:", "stoploss", "stoplimit:", "stop-loss:", "stoploss:", "sl"}
             if any(x in line for x in a) and signal_dict['SL']=="init":
                 signal_dict['SL'] = get_price_type(line, a, satoshi=satoshi_signal)
+            if signal_dict['SL']=="init" and signal_dict['AC']<>"init":
+                signal_dict['SL'] = float8f(percentage_calc(signal_dict['AC'], dct_INI_JSON['float_percentage_max_sl']))
 
         print signal_dict
         key_not_find=0
         str_file="[TRADE]\n"
         if signal_dict['POS']<>"init":
-            if signal_dict['USD']=="init": signal_dict['USD'] = dct_INI_JSON['int_usd_to_bet_bitmex']
+            if signal_dict['USD']=="init": signal_dict['USD'] = ""
         else:
-            if signal_dict['USD']=="init": signal_dict['USD'] = dct_INI_JSON['int_usd_to_bet_binance']
+            if signal_dict['USD']=="init": signal_dict['USD'] = ""
         if signal_dict['POS']=="init": signal_dict['POS'] = "binance"
         for key, value in sorted(signal_dict.items()):
             if (value == 'init' or value == 'vide'):
@@ -685,7 +692,7 @@ def echo(bot, update):
         print signal_dict
         key_not_find=0
         str_file="[TRADE]\n"
-        if signal_dict['USD']=="init": signal_dict['USD'] = dct_INI_JSON['int_usd_to_bet_bitmex']
+        if signal_dict['USD']=="init": signal_dict['USD'] = ""
         for key, value in sorted(signal_dict.items()):
             if value == 'init' or value == 'vide':
                 update.message.reply_text("Valeur non trouvee:"+key)
@@ -776,7 +783,7 @@ def echo(bot, update):
         print signal_dict
         key_not_find=0
         str_file="[TRADE]\n"
-        if signal_dict['USD']=="init": signal_dict['USD'] = dct_INI_JSON['int_usd_to_bet_binance']
+        if signal_dict['USD']=="init": signal_dict['USD'] = ""
         for key, value in sorted(signal_dict.items()):
             if value == 'init' or value == 'vide':
                 update.message.reply_text("Valeur non trouvee:"+key)
