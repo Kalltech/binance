@@ -16,7 +16,7 @@ import time
 import string,  re
 import json
 import glob
-
+import ccxt  # noqa: E402
 json_stats="sell_stats.json"
 json_ini="api4.json"
 
@@ -46,6 +46,10 @@ def load_obj(name ):
         json_data.close()
         return dct_load_obj
         
+dct_INI_JSON=load_obj(json_ini)
+bitmex = ccxt.bitmex()
+binance = ccxt.binance()
+
 def init_dict():
     dictA = {}
     dictA['C'] = 'init'
@@ -82,8 +86,6 @@ def save_obj(obj, name ):
     json.dump(obj,save_obj_out_file, indent=4, sort_keys=True)                                    
     save_obj_out_file.close()
 
-dct_INI_JSON=load_obj(json_ini)
-
 def extract_numbers(extract_numbers_str, **kwargs):
     if extract_numbers_str[:1]=="-":extract_numbers_str=extract_numbers_str[1:]
 #    print extract_numbers_str
@@ -112,7 +114,8 @@ def extract_numbers(extract_numbers_str, **kwargs):
         elif "USD" in signal_dict['C']:
             return str(extract_numbers_array[0])
         elif kwargs.get("satoshi_extract_numbers")==1:
-            len_satoshi=9-len(str(extract_numbers_array[0]))
+            len_tickSize=get_tickSize(signal_dict['C'])
+            len_satoshi=len_tickSize-len(str(extract_numbers_array[0]))
             xbt_value=""
             for x in range(1, len_satoshi):
                 xbt_value=xbt_value+"0"
@@ -128,7 +131,32 @@ def get_price_type(get_price_type_str, get_price_type_valeurs, **kwargs):
             print "get_price_type"+get_price_type_str
             return extract_numbers(get_price_type_str.replace(valeur, ""), satoshi_extract_numbers=kwargs.get("satoshi"))
     return "init"
-
+    
+def get_tickSize(get_tickSize_symbol):
+    bitmex_markets=bitmex.fetch_markets()
+    actual_market=None
+    for market in bitmex_markets:
+        if market['id']==get_tickSize_symbol:
+            get_tickSize_symbol=market['symbol']
+            actual_market=market
+            break
+        elif market['symbol']==get_tickSize_symbol:
+            actual_market=market
+            break
+    if actual_market==None:
+        binance_markets=binance.fetch_markets()
+        actual_market=None
+        for market in binance_markets:
+            if market['id']==get_tickSize_symbol:
+                get_tickSize_symbol=market['symbol']
+                actual_market=market
+                break
+            elif market['symbol']==get_tickSize_symbol:
+                actual_market=market
+                break
+    pos=str(float8f(actual_market['info']['tickSize'])).find("1")
+    return pos
+    
 def findkeys(d, findkeys_str):
     for key in d.keys():
         if findkeys_str in key:
