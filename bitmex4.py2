@@ -140,7 +140,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         #    'stopPx': 6500.0,  # if needed
             'text': filename,  # if needed
         }
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande "+b_order_side+" de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Mise $:"+str(dct_FILE['USD'])+"\nDemande "+b_order_side+" de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
         order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
     elif b_order_level=="order_SL":
         if b_order_side=="sell":
@@ -218,7 +218,7 @@ def load_trade(load_trade_file):
             dct_FILE['SL'] = percentage_calc(dct_FILE['BUY'], dct_FILE['float_percentage_max_sl'])
     if dct_FILE['float_percentage_force_sl'] <> 0:
         dct_FILE['SL'] = percentage_calc(dct_FILE['BUY'], dct_FILE['float_percentage_force_sl'])
-    dct_FILE['USD'] = float(ConfigSectionMap("TRADE", parse_Trade)['usd'])
+    if ConfigSectionMap("TRADE", parse_Trade)['usd'] <> "": dct_FILE['USD'] = float(ConfigSectionMap("TRADE", parse_Trade)['usd'])
     dct_FILE['filename']=load_trade_file
     debugapp(str(sys._getframe().f_code.co_name)+"|"+float8f(dct_FILE['BUY'])+"/"+float8f(dct_FILE['T1'])+"/"+float8f(dct_FILE['T2'])+"/"+float8f(dct_FILE['T3'])+"/"+float8f(dct_FILE['SL']),debugapp_DebugLevel="DEBUG")
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
@@ -489,6 +489,8 @@ def setup_logger(logger_name, log_file):
 
 def all_sold():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    if dct_FILE['last_order_level']=="order_T3_FILLED": sell_stats("order_T3_FILLED")    
+    if dct_FILE['last_order_level']=="order_SL_FILLED": sell_stats("order_SL_FILLED")    
     for order_level_dictToBeFilled in dct_FILE['dictToBeFilled']:
         if dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]==1:
             current_order_SL_CANCEL= exchange.cancel_order(dct_FILE[order_level_dictToBeFilled]['id'])
@@ -541,6 +543,18 @@ def not_all_sold():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
 
+def sell_stats(sell_stats_level):
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    prix_de_vente=dct_FILE[sell_stats_level]['info']['avgPx']
+    prix_achat=dct_FILE['order_BUY_FILLED']['info']['avgPx']
+    vente_qty=dct_FILE[sell_stats_level]['info']['cumQty']
+    gain_BTC=(prix_de_vente-prix_achat)*float(vente_qty)
+    bitmex_market_xbt=list(filter(lambda d: d['id'] in ".XBT", bitmex_markets))
+    BTCUSDT=float(bitmex_market_xbt[0]['info']['lastPrice'])
+    gain_USD=gain_BTC*BTCUSDT
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain $: "+str(gain_USD),debugapp_Telegram=1)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    
 def t1_filled():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 #            def edit_order(self, id, symbol, type, side, amount=None, price=None, params={}):
@@ -553,6 +567,7 @@ def t1_filled():
 #        b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['float_percentage_sl_upside'])
     b_order_Qty=float(dct_FILE['executedQty_creation'])-float(dct_FILE['executedQty_vendu'])
     order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
+    sell_stats("order_T1_FILLED")    
 #    b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
 #    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),debugapp_Telegram=1)
     params = {
@@ -585,6 +600,7 @@ def t2_filled():
 #        b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['float_percentage_sl_upside'])
     b_order_Qty=float(dct_FILE['executedQty_creation'])-float(dct_FILE['executedQty_vendu'])
     order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
+    sell_stats("order_T1_FILLED")    
 #    b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
     params = {
         'stopPx': exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_BUY']['price']),  # if needed
