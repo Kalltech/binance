@@ -18,6 +18,27 @@ endTime = datetime.datetime.now() + datetime.timedelta(minutes=15)
 
 loop_time = datetime.datetime.now()
 
+dir_PROBLEMS=cwd+"problems/"
+dir_TEMP=cwd+"temp/"
+dir_MODELS=cwd+"models/"
+dir_SIGNALS=cwd+"signals/"
+dir_TRADES=cwd+"trades/"
+dir_OLD=cwd+"old/"
+dir_BITMEX_LOGS=cwd+"bitmex_logs/"
+dir_BINANCE_LOGS=cwd+"logs/"
+
+def clean_old_files(dir_to_search):
+    import os
+    import datetime
+
+    for dirpath, dirnames, filenames in os.walk(dir_to_search):
+       for file in filenames:
+          curpath = os.path.join(dirpath, file)
+          file_modified = datetime.datetime.fromtimestamp(os.path.getmtime(curpath))
+          if datetime.datetime.now() - file_modified > datetime.timedelta(hours=24*14):
+              os.remove(curpath)
+              print str(curpath)+" removed"
+
 def load_obj(name ):
     with open(name) as json_data:
         dct_load_obj = json.load(json_data)
@@ -90,6 +111,11 @@ for event in notifier.event_gen():
         if int(diff_time.total_seconds()) > int(dct_INI_JSON['int_loop_schedule'])-1:
             bar.finish()
             os.chdir(cwd)
+            clean_old_files(dir_TEMP)
+            clean_old_files(dir_OLD)
+            clean_old_files(dir_PROBLEMS)
+            clean_old_files(dir_BITMEX_LOGS)
+            clean_old_files(dir_BINANCE_LOGS)
             last_error=""
             py_file="binance5.py2"
             if find_procs_by_name("python2", py_file) <> "found:":
