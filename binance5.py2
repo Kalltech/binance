@@ -145,7 +145,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
     if b_order_side=="BUY":
         b_order_Qty=float(b_order_Qty)
 #        b_order_Qty=format_stepSize(b_order_Qty, dct_FILE['LOT_SIZE_stepSize'])
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande d achat de "+str(b_order_Qty)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Mise $:"+str(dct_FILE['USD'])+"\nDemande d achat de "+str(b_order_Qty)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
         order=binance.order(b_order_symbol, binance.BUY, b_order_Qty, b_order_price, test=False)
         
     elif b_order_side=="SELL":
@@ -256,7 +256,7 @@ def load_trade(load_trade_file):
             dct_FILE['SL'] = percentage_calc(dct_FILE['BUY'], dct_FILE['float_percentage_max_sl'])
     if dct_FILE['float_percentage_force_sl'] <> 0:
         dct_FILE['SL'] = percentage_calc(dct_FILE['BUY'], dct_FILE['float_percentage_force_sl'])
-    dct_FILE['USD'] = float(ConfigSectionMap("TRADE", parse_Trade)['usd'])
+    if ConfigSectionMap("TRADE", parse_Trade)['usd'] <> "": dct_FILE['USD'] = float(ConfigSectionMap("TRADE", parse_Trade)['usd'])
     dct_FILE['filename']=load_trade_file
     debugapp(str(sys._getframe().f_code.co_name)+"|"+float8f(dct_FILE['BUY'])+"/"+float8f(dct_FILE['T1'])+"/"+float8f(dct_FILE['T2'])+"/"+float8f(dct_FILE['T3'])+"/"+float8f(dct_FILE['SL']),debugapp_DebugLevel="DEBUG")
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
