@@ -342,8 +342,9 @@ def b_trade_to_order(b_trade_to_order_file):
                 Buy_price_signal_down= percentage_calc(dct_FILE['BUY'], -dct_FILE['float_percentage_delta_buy_bitmex'])
                 Buy_price_signal_up= percentage_calc(dct_FILE['BUY'], dct_FILE['float_percentage_delta_buy_bitmex'])
                 dct_FILE['float_bitmex_price'] = bitmex_actual_market['info']['askPrice']
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix actuel est "+float8f(dct_FILE['float_bitmex_price']), debugapp_logger=logger)
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix demande est "+float8f(dct_FILE['BUY']), debugapp_logger=logger)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Le prix actuel est "+float8f(dct_FILE['float_bitmex_price']), debugapp_logger=logger)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Seuils: "+float8f(Buy_price_signal_down)+"<XXX<"+float8f(Buy_price_signal_up), debugapp_logger=logger)
                 if Buy_price_signal_down <= dct_FILE['float_bitmex_price'] <= Buy_price_signal_up:
                     debugapp(str(sys._getframe().f_code.co_name)+"|"+":prix entre les seuils d achat:"+float8f(dct_FILE['float_bitmex_price']), debugapp_logger=logger)
                     if dct_FILE['POS']=="long":
@@ -770,6 +771,8 @@ for filename in os.listdir(dir_BITMEX_TRADES):
                 bitmex_actual_market=market
                 break
         dct_FILE['float_bitmex_price'] = bitmex_actual_market['info']['bidPrice']
+#        print bitmex_actual_market['symbol']
+#        print exchange.price_to_precision(bitmex_actual_market['symbol'],bitmex_actual_market['info']['tickSize'])
         setup_logger(dct_FILE['symbol'], dir_BITMEX_TRADES+filename+".log")
         logger_symbol= logging.getLogger(dct_FILE['symbol'])
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Cours actuel "+str(float8f(dct_FILE['float_bitmex_price']))+" "+dct_FILE['last_order_level'],debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
