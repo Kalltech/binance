@@ -49,7 +49,7 @@ def load_obj(name ):
 dct_INI_JSON=load_obj(json_ini)
 bitmex = ccxt.bitmex()
 binance = ccxt.binance()
-binance_markets=binance.fetch_markets()
+
 def init_dict():
     dictA = {}
     dictA['C'] = 'init'
