@@ -168,7 +168,7 @@ def float0f(float0f_value):
     return format(float(float0f_value), '.0f')
 
 def stats():
-    sell_stats_file=cwd+json_stats
+    sell_stats_file=api_path+json_stats
     stats_str=""
     with open(sell_stats_file) as json_data:
         dct_sell_stats = json.load(json_data)
@@ -369,7 +369,7 @@ def echo(bot, update):
         text_file.close()
         update.message.reply_text("Pause until: "+str(f_time))
     elif text_sent=="stats":
-        sell_stats_file=cwd+json_stats
+        sell_stats_file=api_path+json_stats
         if not os.path.isfile(sell_stats_file):
             update.message.reply_text("Stats empty")
         else:
@@ -649,8 +649,8 @@ def echo(bot, update):
             a={"stop:", "stoploss", "stoplimit:", "stop-loss:", "stoploss:", "sl"}
             if any(x in line for x in a) and signal_dict['SL']=="init":
                 signal_dict['SL'] = get_price_type(line, a, satoshi=satoshi_signal)
-            if signal_dict['SL']=="init" and signal_dict['AC']<>"init":
-                signal_dict['SL'] = float8f(percentage_calc(signal_dict['AC'], dct_INI_JSON['float_percentage_max_sl']))
+        if signal_dict['SL']=="init" and signal_dict['AC']<>"init":
+            signal_dict['SL'] = float8f(percentage_calc(signal_dict['AC'], dct_INI_JSON['float_percentage_max_sl']))
 
         print signal_dict
         key_not_find=0
