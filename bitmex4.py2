@@ -120,10 +120,13 @@ def save_json(save_json_path, save_json_data):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     global processed_order
     order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
     b_order_price=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price))
+    b_order_price=floatXf_tickSize(b_order_price)
+    b_order_price= ('{:.' + str(bitmex_actual_market['precision']['price']) + 'f}').format(float(b_order_price))
+    
     if "order_T" in b_order_level:
         b_order_Qty=float(b_order_Qty)
         type = 'limit'  # or 'LimitIfTouched'  # or 'market', or 'Stop' or 'StopLimit'
@@ -172,7 +175,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+":id empty_"+str(order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
         if "trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
         if "signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/signals","/problems")+".laststate")
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     return order
 
 def check_pause():
@@ -228,10 +231,10 @@ def float8f(float8f_value):
     return format(float(float8f_value), '.8f')
 
 def floatXf_tickSize(float8f_value):
-    if "0.5" in str(dct_FILE['PRICE_FILTER_tickSize']):
+    if "0.5" in str(bitmex_actual_market['info']['tickSize']):
         return format(float(round(float8f_value * 2) / 2), "."+"1f")
     else:
-        pos=str(float8f(dct_FILE['PRICE_FILTER_tickSize'])).find("1")-1
+        pos=str(float8f(bitmex_actual_market['info']['tickSize'])).find("1")-1
         if pos<0:pos=-pos
         return format(float(float8f_value), "."+str(pos)+"f")
 
@@ -456,7 +459,7 @@ def ToBeFilled():
                         save_obj(dct_FILE, dct_FILE.get("filename"))
                     else:
                         if float(current_allOrders['filled'])==float(current_allOrders['amount']):
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade "+order_level_dictToBeFilled+" FILLED @Price:"+str(current_allOrders.get("price")),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade of "+str(current_allOrders['amount'])+" @Level "+order_level_dictToBeFilled+" FILLED @Price:"+str(current_allOrders.get("price")),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
                             dct_FILE[order_level_dictToBeFilled+"_FILLED"]=current_allOrders
                             dct_FILE['last_order_level']=order_level_dictToBeFilled+"_FILLED"
                             dct_FILE['last_executedQty']=float(current_allOrders['filled'])
@@ -550,10 +553,15 @@ def sell_stats(sell_stats_level):
     prix_achat=dct_FILE['order_BUY_FILLED']['info']['avgPx']
     vente_qty=dct_FILE[sell_stats_level]['info']['cumQty']
     gain_BTC=(prix_de_vente-prix_achat)*float(vente_qty)
+    gain_BTC2=(1/prix_achat-1/prix_de_vente)*float(vente_qty)
     bitmex_market_xbt=list(filter(lambda d: d['id'] in ".XBT", bitmex_markets))
     BTCUSDT=float(bitmex_market_xbt[0]['info']['lastPrice'])
     gain_USD=gain_BTC*BTCUSDT
+    gain_USD2=gain_BTC2*BTCUSDT
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain BTC: "+str(gain_BTC),debugapp_Telegram=1)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain BTC2: "+str(gain_BTC2),debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain $: "+str(gain_USD),debugapp_Telegram=1)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain $2: "+str(gain_USD2),debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     
 def t1_filled():
@@ -813,6 +821,10 @@ for filename in os.listdir(dir_BITMEX_SIGNALS):
     text_file.close()
     load_trade(dir_BITMEX_SIGNALS+filename)
     bitmex_actual_market=None
+    for market in bitmex_markets:
+        if market['id']==dct_FILE['symbol']:
+            dct_FILE['symbol']=market['symbol']
+            break
     if dct_FILE['symbol'].replace("/", "") in str(os.listdir(dir_BITMEX_TRADES)):
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position already exist on same coin, move to old:"+dir_BITMEX_SIGNALS+filename,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
         shutil.move(dir_BITMEX_SIGNALS+filename, dir_OLD+filename)
