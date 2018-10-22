@@ -605,6 +605,13 @@ exchange = ccxt.binance({
 binance_balance=exchange.fetch_balance()
 binance_markets=exchange.fetch_markets()
 
+#bitfinex = ccxt.bitfinex({
+#    'apiKey': dct_INI_JSON['str_key_bitfinex'],
+#    'secret': dct_INI_JSON['str_secret_bitfinex'],
+#    'enableRateLimit': True,
+#})
+#bitfinex_balance=bitfinex.fetch_balance()
+
 #binance_balances=binance.balances()
 binance_prices=binance.prices()
 #y=""
