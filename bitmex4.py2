@@ -133,6 +133,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         params = {
 #            'stopPx': exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),  # if needed
             'text': filename,  # if needed
+            'execInst':'ReduceOnly', 
         }
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande "+b_order_side+" de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
         order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
@@ -156,7 +157,9 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
         params = {
             'stopPx': b_order_price,  # if needed
+            'execInst':'ReduceOnly', 
             'text': filename,  # if needed
+            'displayQty': 0,  # if needed
         }
         debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+" of "+str(order_quantity)+" "+" @Price "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price),debugapp_Telegram=1)
         order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, None, params)
@@ -581,7 +584,7 @@ def t1_filled():
 #    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),debugapp_Telegram=1)
     params = {
         'stopPx': exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_SL']['info']['stopPx']),  # if needed
-        'text': filename,  # if needed
+#        'text': filename,  # if needed
         'displayQty': 0,  # if needed
     }
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_SL']['info']['stopPx']),debugapp_Telegram=1)
@@ -613,7 +616,7 @@ def t2_filled():
 #    b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
     params = {
         'stopPx': exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_BUY']['price']),  # if needed
-        'text': filename,  # if needed
+#        'text': filename,  # if needed
         'displayQty': 0,  # if needed
     }
 #    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),debugapp_Telegram=1)
