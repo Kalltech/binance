@@ -77,7 +77,8 @@ def debugapp(debugapp_str, **kwargs):
         if not debugapp_NoPrintConsole: print str(debugapp_str)
     if debugapp_Telegram: 
         try:
-            if 'dct_FILE' in globals(): debugapp_str=dct_FILE['symbol']+":"+debugapp_str
+            if 'dct_FILE' in globals():
+                if "symbol" in dct_FILE: debugapp_str=dct_FILE['symbol']+":"+debugapp_str
             if annonce_scriptname==False:
                 annonce_scriptname=True
                 bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(str(os.path.basename(__file__)).upper()+"\n"+debugapp_str))
