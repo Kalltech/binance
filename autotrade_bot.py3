@@ -91,7 +91,7 @@ def to_db_balances():
             }
         }
     ]
-    json_body3 = [
+    json_body4 = [
         {
             "measurement": "Binance_Stats",
             "tags": {
@@ -106,8 +106,10 @@ def to_db_balances():
     ]
     print("Write points: {0}".format(json_body2))
     print("Write points: {0}".format(json_body3))
+    print("Write points: {0}".format(json_body4))
     client2.write_points(json_body2)
     client2.write_points(json_body3)
+    client2.write_points(json_body4)
     
 def to_db(COIN="XXX",  TX="TX", TX_nb="0"):
     """Instantiate a connection to the InfluxDB."""
