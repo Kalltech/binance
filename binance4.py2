@@ -604,20 +604,32 @@ exchange = ccxt.binance({
 })
 binance_balance=exchange.fetch_balance()
 binance_markets=exchange.fetch_markets()
-
-#bitfinex = ccxt.bitfinex({
-#    'apiKey': dct_INI_JSON['str_key_bitfinex'],
-#    'secret': dct_INI_JSON['str_secret_bitfinex'],
-#    'enableRateLimit': True,
-#})
-#bitfinex_balance=bitfinex.fetch_balance()
-
-#binance_balances=binance.balances()
 binance_prices=binance.prices()
-#y=""
-#for x in binance_prices:
-#    y=y+"'"+x+"',"
-#print y
+
+if "str_key_bitfinex" in dct_INI_JSON:
+    if dct_INI_JSON['str_key_bitfinex'] <> "":
+        bitfinex = ccxt.bitfinex({
+            'apiKey': dct_INI_JSON['str_key_bitfinex'],
+            'secret': dct_INI_JSON['str_secret_bitfinex'],
+            'enableRateLimit': True,
+        })
+        bitfinex_balance=bitfinex.fetch_balance()
+        bitfinex_prices=bitfinex.fetchTickers()
+        all_amount=0
+        for x in bitfinex_balance['info']:
+            if float(x['amount']) > 0:
+                if x['currency'] <> "btc" and x['currency'] <> "usd":
+                    all_amount=all_amount+float(x['amount'])*bitfinex_prices[x['currency'].upper()+'/BTC']['close']
+                elif x['currency'] == "btc":
+                    all_amount=all_amount+float(x['amount'])
+                elif x['currency'] == "usd":
+                    all_amount=all_amount+float(x['amount'])/bitfinex_prices['BTC/USDT']['close']
+        all_amount_usd=all_amount*bitfinex_prices['BTC/USDT']['close']
+        bitfinex_usd={}
+        bitfinex_usd["total_usd"]=all_amount_usd
+        bitfinex_usd["total_btc"]=all_amount
+        save_json(dir_TEMP+"bitfinex_usd", bitfinex_usd)
+
 r_exchangeInfo=requests.get("https://www.binance.com/api/v1/exchangeInfo")
 get_stepSize_request=r_exchangeInfo.json()
 test_binance_prices=None
