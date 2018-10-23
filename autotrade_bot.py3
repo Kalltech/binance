@@ -62,6 +62,7 @@ def to_db_balances():
     client2.create_database(dbname)
     client2.switch_user(dbuser, dbuser_password)
 
+    bitfinex_usd=load_obj("./temp/bitfinex_usd")
     binance_usd=load_obj("./temp/binance_usd")
     bitmex_usd=load_obj("./temp/bitmex_usd")
     json_body2 = [
@@ -87,6 +88,19 @@ def to_db_balances():
             "fields": {
                 "total_usd_bitmex": bitmex_usd['total_usd'],
                 "total_btc_bitmex": bitmex_usd['total_btc'],
+            }
+        }
+    ]
+    json_body3 = [
+        {
+            "measurement": "Binance_Stats",
+            "tags": {
+                "BINANCE": "BINANCE",
+            },
+            "time": current_time,
+            "fields": {
+                "total_usd_bitfinex": bitfinex_usd['total_usd'],
+                "total_btc_bitfinex": bitfinex_usd['total_btc'],
             }
         }
     ]
