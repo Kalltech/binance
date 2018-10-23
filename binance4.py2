@@ -605,6 +605,21 @@ exchange = ccxt.binance({
 binance_balance=exchange.fetch_balance()
 binance_markets=exchange.fetch_markets()
 binance_prices=binance.prices()
+binance_balances=binance.balances()
+binance_usd={}
+all_usd=float(binance_balances['USDT']['free'])+float(binance_balances['USDT']['locked'])+float(binance_balances['TUSD']['free'])+float(binance_balances['TUSD']['locked'])
+binance_balances_total=binance.balances_total()
+binance_balances_temp={}
+for bals in binance_balances_total:
+    binance_balances_temp[bals]=binance_balances_total[bals]["total"]
+btc_value=binance_balances_total['BTC']['total']
+for k, v in binance_prices.iteritems():
+    if k[-3:]=="BTC":
+        coin=k.replace("BTC", "")
+        btc_value=btc_value+float(binance_balances_total[coin]['total']*v)
+binance_usd["total_usd"]=float(binance_prices.get("BTCUSDT"))*btc_value+all_usd
+binance_usd["total_btc"]=btc_value+(all_usd/float(binance_prices.get("BTCUSDT")))
+save_json(dir_TEMP+"binance_usd", binance_usd)
 
 if "str_key_bitfinex" in dct_INI_JSON:
     if dct_INI_JSON['str_key_bitfinex'] <> "":
@@ -674,25 +689,11 @@ for filename in os.listdir(dir_HODL):
         if (float(dct_FILE['executedQty_creation'])<=percentage_calc(dct_FILE['executedQty_vendu'], dct_INI_JSON['float_percentage_delta_buyed_sold']) and float(dct_FILE['executedQty_creation'])<>0):
             all_sold()
         binance_balances=binance.balances()
-        binance_balances_total=binance.balances_total()
-        binance_balances_temp={}
-        for bals in binance_balances_total:
-            binance_balances_temp[bals]=binance_balances_total[bals]["total"]
         binance_balances_total=binance_balances_temp
 #        binance_prices=binance.prices()
         binance_prices_temp={}
-        btc_value=binance_balances_total['BTC']
-        for k, v in binance_prices.iteritems():
-            if k[-3:]=="BTC":
-                coin=k.replace("BTC", "")
-                btc_value=btc_value+float(binance_balances_total[coin]*v)
 #        print "Total estimated USD:" + str(float(binance_prices.get("BTCUSDT"))*btc_value)
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Total estimated USD:"+ str(float(binance_prices.get("BTCUSDT"))*btc_value),debugapp_DebugLevel="INFO")
-        binance_usd={}
-        all_usd=float(binance_balances['USDT']['free'])+float(binance_balances['USDT']['locked'])+float(binance_balances['TUSD']['free'])+float(binance_balances['TUSD']['locked'])
-        binance_usd["total_usd"]=float(binance_prices.get("BTCUSDT"))*btc_value+all_usd
-        binance_usd["total_btc"]=btc_value+(all_usd/float(binance_prices.get("BTCUSDT")))
-        save_json(dir_TEMP+"binance_usd", binance_usd)
         save_json(dir_TEMP+"binance_balances", binance_balances)
         save_json(dir_TEMP+"binance_balances_total", binance_balances_total)
         save_json(dir_TEMP+"binance_prices", binance_prices)
