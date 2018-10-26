@@ -88,12 +88,12 @@ def debugapp(debugapp_str, **kwargs):
             print str("Impossible d envoyer vers Telegram"+str(debugapp_str))
     if debugapp_SaveObj:
         #Sauve le fichier au dernier etat
-        if "trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
-        if "signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/signals","/problems")+".laststate")
+        if "bitmex_trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/bitmex_trades","/problems")+".laststate")
+        if "bitmex_signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/bitmex_signals","/problems")+".laststate")
         #deplace le fichier de trade dans problems
         try:
             shutil.move(dct_FILE.get("filename"), dir_PROBLEMS+ntpath.basename(dct_FILE.get("filename")))
-            if "trades" in  dct_FILE['filename']: shutil.move(dct_FILE.get("filename")+".log", dir_PROBLEMS+ntpath.basename(dct_FILE.get("filename")+".log"))
+            if "bitmex_trades" in  dct_FILE['filename']: shutil.move(dct_FILE.get("filename")+".log", dir_PROBLEMS+ntpath.basename(dct_FILE.get("filename")+".log"))
             dct_FILE.clear
         except: 
             pass
@@ -176,8 +176,8 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
             dct_FILE['last_id']=order.get("id")
     else:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+":id empty_"+str(order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
-        if "trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
-        if "signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/signals","/problems")+".laststate")
+        if "bitmex_trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/bitmex_trades","/problems")+".laststate")
+        if "bitmex_signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/bitmex_signals","/problems")+".laststate")
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     return order
 
@@ -387,7 +387,7 @@ def b_trade_to_order(b_trade_to_order_file):
                                 dct_FILE['float_sl_replace_tx_percentage_downside']=-dct_INI_JSON['float_percentage_sl_upside']
                             else:
                                 dct_FILE['float_sl_replace_tx_percentage_downside']=dct_INI_JSON['float_sl_replace_tx_percentage_downside']
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK: deplace le fichier signal vers: "+b_trade_to_order_file.replace("/trades","/old"),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK: deplace le fichier signal vers: "+b_trade_to_order_file.replace("/bitmex_trades","/old"),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
                             save_obj(dct_FILE, dct_FILE['filename'])
                             try:
                                 shutil.move(b_trade_to_order_file, dir_OLD+ntpath.basename(b_trade_to_order_file))
@@ -454,26 +454,29 @@ def ToBeFilled():
             for order_level_dictToBeFilled in dct_FILE['dictToBeFilled']:
                 if dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]==1:
                     order_filtred=filter(lambda allOrders: allOrders['id'] == dct_FILE[order_level_dictToBeFilled]['id'], allOrders)
-                    current_allOrders=order_filtred[0]
-                    if current_allOrders['status']=="rejected":
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+order_level_dictToBeFilled+":"+current_allOrders['status']+"!",debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-                    elif current_allOrders['status']=="canceled":
-                        dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
-                        save_obj(dct_FILE, dct_FILE.get("filename"))
-                    else:
-                        if float(current_allOrders['filled'])==float(current_allOrders['amount']):
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade of "+str(current_allOrders['amount'])+" @Level "+order_level_dictToBeFilled+" FILLED @Price:"+str(current_allOrders.get("price")),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
-                            dct_FILE[order_level_dictToBeFilled+"_FILLED"]=current_allOrders
-                            dct_FILE['last_order_level']=order_level_dictToBeFilled+"_FILLED"
-                            dct_FILE['last_executedQty']=float(current_allOrders['filled'])
-                            if dct_FILE['executedQty_creation']==0:
-                                dct_FILE['executedQty_creation']=float(current_allOrders['filled'])
+                    if len(order_filtred)>0:
+                        current_allOrders=order_filtred[0]
+                        if current_allOrders['status']=="rejected":
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+order_level_dictToBeFilled+":"+current_allOrders['status']+"!",debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+                        elif current_allOrders['status']=="canceled":
                             dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
-                            if dct_FILE['last_order_level']<>"order_BUY_FILLED":
-                                dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+float(current_allOrders['filled'])
                             save_obj(dct_FILE, dct_FILE.get("filename"))
                         else:
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['id']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+                            if float(current_allOrders['filled'])==float(current_allOrders['amount']):
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade of "+str(current_allOrders['amount'])+" @Level "+order_level_dictToBeFilled+" FILLED @Price:"+str(current_allOrders.get("price")),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
+                                dct_FILE[order_level_dictToBeFilled+"_FILLED"]=current_allOrders
+                                dct_FILE['last_order_level']=order_level_dictToBeFilled+"_FILLED"
+                                dct_FILE['last_executedQty']=float(current_allOrders['filled'])
+                                if dct_FILE['executedQty_creation']==0:
+                                    dct_FILE['executedQty_creation']=float(current_allOrders['filled'])
+                                dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
+                                if dct_FILE['last_order_level']<>"order_BUY_FILLED":
+                                    dct_FILE['executedQty_vendu']=dct_FILE['executedQty_vendu']+float(current_allOrders['filled'])
+                                save_obj(dct_FILE, dct_FILE.get("filename"))
+                            else:
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['id']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+                    else:
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+order_level_dictToBeFilled+" n existe plus!",debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def findkeys(d, findkeys_str):
@@ -500,12 +503,24 @@ def all_sold():
     if dct_FILE['last_order_level']=="order_SL_FILLED": sell_stats("order_SL_FILLED")    
     for order_level_dictToBeFilled in dct_FILE['dictToBeFilled']:
         if dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]==1:
-            current_order_SL_CANCEL= exchange.cancel_order(dct_FILE[order_level_dictToBeFilled]['id'])
-            if current_order_SL_CANCEL.get("id") is not None:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule "+order_level_dictToBeFilled+" order_ "+str(current_order_SL_CANCEL.get("id")),debugapp_DebugLevel="DEBUG")
-                dct_FILE[order_level_dictToBeFilled+'_CANCELED']=current_order_SL_CANCEL
-                dct_FILE['last_order_level']=order_level_dictToBeFilled+'_CANCELED'
-                save_obj(dct_FILE, dct_FILE.get("filename"))
+            current_order=exchange.fetch_order(dct_FILE[order_level_dictToBeFilled]['id'])
+            if current_order.get("id") is not None:
+                if current_order.get("status")=="Canceled":
+                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Deja annule! "+order_level_dictToBeFilled+" order_ "+str(current_order.get("id")),debugapp_DebugLevel="DEBUG")
+                    dct_FILE[order_level_dictToBeFilled+'_CANCELED']=current_order
+                    dct_FILE['last_order_level']=order_level_dictToBeFilled+'_CANCELED'
+                    dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
+                    save_obj(dct_FILE, dct_FILE.get("filename"))
+                else:
+                    current_order_SL_CANCEL= exchange.cancel_order(dct_FILE[order_level_dictToBeFilled]['id'])
+                    if current_order_SL_CANCEL.get("id") is not None:
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Annule "+order_level_dictToBeFilled+" order_ "+str(current_order_SL_CANCEL.get("id")),debugapp_DebugLevel="DEBUG")
+                        dct_FILE[order_level_dictToBeFilled+'_CANCELED']=current_order_SL_CANCEL
+                        dct_FILE['last_order_level']=order_level_dictToBeFilled+'_CANCELED'
+                        dct_FILE['dictToBeFilled'][order_level_dictToBeFilled]=0
+                        save_obj(dct_FILE, dct_FILE.get("filename"))
+                    else:
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order empty:"+str(current_order_SL_CANCEL),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
             else:
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order empty:"+str(current_order_SL_CANCEL),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE.get("last_order_level")+" Fin du trade: deplace le fichier dans old",debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
@@ -552,19 +567,18 @@ def not_all_sold():
 
 def sell_stats(sell_stats_level):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    prix_de_vente=dct_FILE[sell_stats_level]['info']['avgPx']
-    prix_achat=dct_FILE['order_BUY_FILLED']['info']['avgPx']
-    vente_qty=dct_FILE[sell_stats_level]['info']['cumQty']
-    gain_BTC=(prix_de_vente-prix_achat)*float(vente_qty)
-    gain_BTC2=(1/prix_achat-1/prix_de_vente)*float(vente_qty)
+    prix_de_vente=float(dct_FILE[sell_stats_level]['info']['avgPx'])
+    prix_achat=float(dct_FILE['order_BUY_FILLED']['info']['avgPx'])
+    vente_qty=float(dct_FILE[sell_stats_level]['info']['cumQty'])
+    if bitmex_actual_market['base']=="BTC":
+        gain_BTC=(1/prix_achat-1/prix_de_vente)*float(vente_qty)
+    else:
+        gain_BTC=(1/prix_achat-1/prix_de_vente)*float(vente_qty)*prix_achat**2
     bitmex_market_xbt=list(filter(lambda d: d['id'] in ".XBT", bitmex_markets))
     BTCUSDT=float(bitmex_market_xbt[0]['info']['lastPrice'])
     gain_USD=gain_BTC*BTCUSDT
-    gain_USD2=gain_BTC2*BTCUSDT
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain BTC: "+str(gain_BTC),debugapp_Telegram=1)
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain BTC2: "+str(gain_BTC2),debugapp_Telegram=1)
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain $: "+str(gain_USD),debugapp_Telegram=1)
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain $2: "+str(gain_USD2),debugapp_Telegram=1)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain BTC: "+format(gain_BTC, '.5f'),debugapp_Telegram=1)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain $: "+format(gain_USD, '.1f'),debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     
 def t1_filled():
