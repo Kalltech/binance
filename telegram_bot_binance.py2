@@ -485,7 +485,7 @@ def echo(bot, update):
             bot.send_message(dct_INI_JSON['int_my_telegram_id'], text='All bitmex trades:', reply_markup=reply_markup)
         update.message.reply_text("Last log binance:"+time.strftime('%y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file)))\
         +"\n"+"Last log bitmex:"+time.strftime('%y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(latest_file_bitmex)))\
-        +"\n"+"Last error:"+time.strftime('%y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime("whatchdog_error.log")))\
+        +"\n"+"Last error:"+time.strftime('%y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime("watchdog_error.log")))\
         +"\nAutotrade binance:"+str(dct_INI_JSON['bool_auto_trade_binance'])\
         +"\nAutotrade bitmex:"+str(dct_INI_JSON['bool_auto_trade_bitmex']))
     elif text_sent=="panicsell":
