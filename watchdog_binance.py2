@@ -138,8 +138,12 @@ for event in notifier.event_gen():
                 p = subprocess.Popen([cwd+py_file, ""], stderr=subprocess.PIPE)
                 p_com=p.communicate()
                 if p_com[1]<>"": last_error=last_error+str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))+"\n"+str(p_com[1])
-            if last_error<>"":
-                text_file = open(cwd+"whatchdog_error.log", "a")
+            if last_error<>"" and not "overloaded" in last_error \
+            and not "Bad Gateway" in last_error \
+            and not "Bad Gateway" in last_error \
+            and not "request is outside" in last_error \
+            and not "Read timed out" in last_error:
+                text_file = open(cwd+"watchdog_error.log", "a")
                 text_file.write(last_error)
                 text_file.close()
             loop_time = datetime.datetime.now()
