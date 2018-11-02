@@ -136,7 +136,10 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
             'execInst':'ReduceOnly', 
         }
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande "+b_order_side+" de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
-        order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
+        try:
+            order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
+        except Exception as e:
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
     elif (b_order_side=="buy" or b_order_side=="sell") and b_order_level<>"order_SL":
         b_order_Qty=float(b_order_Qty)
         type = 'limit'
@@ -145,7 +148,10 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
             'text': filename,  # if needed
         }
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Mise $:"+str(dct_FILE['USD'])+"\nDemande "+b_order_side+" de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
-        order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
+        try:
+            order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
+        except Exception as e:
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
     elif b_order_level=="order_SL":
         if b_order_side=="sell":
             type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit' or LimitIfTouched or MarketIfTouched
@@ -162,7 +168,10 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
             'displayQty': 0,  # if needed
         }
         debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+" of "+str(order_quantity)+" "+" @Price "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price),debugapp_Telegram=1)
-        order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, None, params)
+        try:
+            order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, None, params)
+        except Exception as e:
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
 
     if order.get("id") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK:"+str(order.get("id")),debugapp_DebugLevel="DEBUG")
@@ -370,7 +379,16 @@ def b_trade_to_order(b_trade_to_order_file):
                     if Qty_signal_min<>0:
                         b_TRADE=b_order(dct_FILE['symbol'], Qty_signal, dct_FILE['BUY'],side.lower(), "order_BUY")
                         if b_TRADE.get("id") is not None:
-                            exchange.private_post_position_leverage({"symbol": bitmex_actual_market['id'], "leverage": str(dct_FILE['int_leverage_bitmex'])})
+                            try:
+                                exchange.private_post_position_leverage({"symbol": bitmex_actual_market['id'], "leverage": "10"})
+                            except Exception as e:
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Unable to set leverage to:"+"10",debugapp_Telegram=1,debugapp_DebugLevel="WARNING")
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"private_post_position_leverage problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="WARNING")
+                            try:
+                                exchange.private_post_position_leverage({"symbol": bitmex_actual_market['id'], "leverage": str(dct_FILE['int_leverage_bitmex'])})
+                            except Exception as e:
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Unable to set leverage to:"+str(dct_FILE['int_leverage_bitmex']),debugapp_Telegram=1,debugapp_DebugLevel="WARNING")
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"private_post_position_leverage problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="WARNING")
                             dct_FILE['last_id']=b_TRADE.get("id")
                             dct_FILE['order_BUY']=b_TRADE
                             dct_FILE['executedDate_creation']=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
@@ -597,7 +615,8 @@ def t1_filled():
 #    b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
 #    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),debugapp_Telegram=1)
     params = {
-        'stopPx': exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_SL']['info']['stopPx']),  # if needed
+        'stopPx': exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_BUY_FILLED']['info']['avgPx']),  # if needed
+#        'stopPx': exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_SL']['info']['stopPx']),  # if needed
 #        'text': filename,  # if needed
         'displayQty': 0,  # if needed
     }
