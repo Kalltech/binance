@@ -142,6 +142,7 @@ for event in notifier.event_gen():
             and not "Bad Gateway" in last_error \
             and not "Bad Gateway" in last_error \
             and not "request is outside" in last_error \
+            and not "HTTPSConnectionPool" in last_error \
             and not "Read timed out" in last_error:
                 text_file = open(cwd+"watchdog_error.log", "a")
                 text_file.write(last_error)
