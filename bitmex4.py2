@@ -715,26 +715,28 @@ def buy_filled():
 
 def check_sl_pos():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    allPositions=exchange.private_get_position()
-    if allPositions :
-        if isinstance(allPositions, list):
-            allPositions_pos = []
-            for o in allPositions:
-                if o['isOpen']:
-                    allPositions_pos.append(o['symbol'])
-    allOrders=exchange.fetch_orders()
-    if allOrders :
-        if isinstance(allOrders, list):
-            allOrders_opened = []
-            for o in allOrders:
-                if o['status']=="open" and o['info']['ordType']=="Stop":
-                    allOrders_opened.append(o['info']['symbol'])
-    allOrders_opened.sort()
-    allPositions_pos.sort()
-    diff_list_pos=list(set(allPositions_pos) - set(allOrders_opened))
+    check_sl_pos_allPositions=None
+    check_sl_pos_allPositions=exchange.private_get_position()
+    if check_sl_pos_allPositions :
+        if isinstance(check_sl_pos_allPositions, list):
+            check_sl_pos_allPositions_pos = []
+            for p in check_sl_pos_allPositions:
+                if p['isOpen']:
+                    check_sl_pos_allPositions_pos.append(p['symbol'])
+    check_sl_pos_allOrders=None
+    check_sl_pos_allOrders=exchange.fetch_orders()
+    if check_sl_pos_allOrders:
+        if isinstance(check_sl_pos_allOrders, list):
+            check_sl_pos_allOrders_opened = []
+            for q in check_sl_pos_allOrders:
+                if q['status']=="New" and q['info']['ordType']=="Stop":
+                    check_sl_pos_allOrders_opened.append(q['info']['symbol'])
+    check_sl_pos_allPositions_pos.sort()
+    check_sl_pos_allOrders_opened.sort()
+    diff_list_pos=list(set(check_sl_pos_allPositions_pos) - set(check_sl_pos_allOrders_opened))
+    diff_list_sl=list(set(check_sl_pos_allOrders_opened) - set(check_sl_pos_allPositions_pos))
     if diff_list_pos:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position without SL!! "+str(diff_list_pos),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
-    diff_list_sl=list(set(allOrders_opened) - set(allPositions_pos))
     if diff_list_sl:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL without position!! "+str(diff_list_sl),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
@@ -827,6 +829,7 @@ bitmex_usd={}
 bitmex_usd["total_usd"]=exchange.markets_by_id['XBTUSD']['info']['bidPrice']*bitmex_balance['BTC']['total']
 bitmex_usd["total_btc"]=bitmex_balance['BTC']['total']
 save_json(dir_TEMP+"bitmex_usd", bitmex_usd)
+#check_sl_pos()
 
 #parse le dossier pour les fichiers
 for filename in os.listdir(dir_BITMEX_TRADES):
