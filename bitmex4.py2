@@ -77,7 +77,8 @@ def debugapp(debugapp_str, **kwargs):
         if not debugapp_NoPrintConsole: print str(debugapp_str)
     if debugapp_Telegram: 
         try:
-            if 'dct_FILE' in globals(): debugapp_str=dct_FILE['symbol']+":"+debugapp_str
+            if 'dct_FILE' in globals():
+                if "symbol" in dct_FILE: debugapp_str=dct_FILE['symbol']+":"+debugapp_str
             if annonce_scriptname==False:
                 annonce_scriptname=True
                 bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(str(os.path.basename(__file__)).upper()+"\n"+debugapp_str))
@@ -458,7 +459,11 @@ def save_obj(obj, name ):
 def load_obj(name ):
     if logger: debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin"+"|"+"Ouvre l objet depuis: "+name,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     with open(name) as json_data:
-        dct_load_obj = json.load(json_data)
+        try:
+            dct_load_obj = json.load(json_data)
+        except:
+            dct_FILE['filename']=name
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Problem with file: "+name,debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
         json_data.close()
         if logger: debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         return dct_load_obj
@@ -708,6 +713,31 @@ def buy_filled():
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order empty:"+str(current_order_BUY_FILLED),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
+def check_sl_pos():
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    allPositions=exchange.private_get_position()
+    if allPositions :
+        if isinstance(allPositions, list):
+            allPositions_pos = []
+            for o in allPositions:
+                if o['isOpen']:
+                    allPositions_pos.append(o['symbol'])
+    allOrders=exchange.fetch_orders()
+    if allOrders :
+        if isinstance(allOrders, list):
+            allOrders_opened = []
+            for o in allOrders:
+                if o['status']=="open" and o['info']['ordType']=="Stop":
+                    allOrders_opened.append(o['info']['symbol'])
+    allOrders_opened.sort()
+    allPositions_pos.sort()
+    diff_list_pos=list(set(allPositions_pos) - set(allOrders_opened))
+    if diff_list_pos:
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position without SL!! "+str(diff_list_pos),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+    diff_list_sl=list(set(allOrders_opened) - set(allPositions_pos))
+    if diff_list_sl:
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL without position!! "+str(diff_list_sl),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 #############################################################################################################
 #END FUNCTIONS###############################################################################################
 #############################################################################################################
@@ -847,6 +877,7 @@ for filename in os.listdir(dir_BITMEX_TRADES):
         save_obj(dct_FILE, dct_FILE.get("filename"))
 
 if 'dct_FILE' in globals(): dct_FILE.clear()
+check_sl_pos()
 
 logger_symbol = logging.getLogger("bitmex")
 for filename in os.listdir(dir_BITMEX_SIGNALS):
