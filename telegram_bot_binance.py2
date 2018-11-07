@@ -597,7 +597,7 @@ def echo(bot, update):
                 signal_dict['POS'] = "long"
             if "tcashortsignal" in line and signal_dict['POS']=="init":
                 signal_dict['POS'] = "short"
-            a={"buy", "buyunder", "buy:", "openat", "accumulatebetween", "buyzone"}
+            a={"buy", "buyunder", "buy:", "openat", "accumulatebetween", "buyzone", "open", "openaround"}
             if any(x in line for x in a) and signal_dict['AC']=="init":
                 signal_dict['AC'] = get_price_type(line, a, satoshi=satoshi_signal)
                 
