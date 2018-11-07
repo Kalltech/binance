@@ -62,6 +62,7 @@ def to_db_balances():
     client2.create_database(dbname)
     client2.switch_user(dbuser, dbuser_password)
 
+    kraken_usd=load_obj("./temp/kraken_usd")
     bitfinex_usd=load_obj("./temp/bitfinex_usd")
     binance_usd=load_obj("./temp/binance_usd")
     bitmex_usd=load_obj("./temp/bitmex_usd")
@@ -104,12 +105,27 @@ def to_db_balances():
             }
         }
     ]
+    json_body5 = [
+        {
+            "measurement": "Binance_Stats",
+            "tags": {
+                "BINANCE": "BINANCE",
+            },
+            "time": current_time,
+            "fields": {
+                "total_usd_kraken": kraken_usd['total_usd'],
+                "total_btc_kraken": kraken_usd['total_btc'],
+            }
+        }
+    ]
     print("Write points: {0}".format(json_body2))
     print("Write points: {0}".format(json_body3))
     print("Write points: {0}".format(json_body4))
+    print("Write points: {0}".format(json_body5))
     client2.write_points(json_body2)
     client2.write_points(json_body3)
     client2.write_points(json_body4)
+    client2.write_points(json_body5)
     
 def to_db(COIN="XXX",  TX="TX", TX_nb="0"):
     """Instantiate a connection to the InfluxDB."""
