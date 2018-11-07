@@ -543,6 +543,78 @@ def all_sold():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
 
+def all_balances():
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    binance_balances_total=binance.balances_total()
+    binance_balances_temp={}
+    binance_usd={}
+#    all_usd=float(binance_balances['USDT']['free'])+float(binance_balances['USDT']['locked'])+float(binance_balances['TUSD']['free'])+float(binance_balances['TUSD']['locked'])
+    for bals in binance_balances_total:
+        binance_balances_temp[bals]=binance_balances_total[bals]["total"]
+    btc_value=binance_balances_total['BTC']['total']
+    for k, v in binance_prices.iteritems():
+        if k[-3:]=="BTC":
+            coin=k.replace("BTC", "")
+            btc_value=btc_value+float(binance_balances_total[coin]['total']*v)
+    binance_usd["total_usd"]=float(binance_prices.get("BTCUSDT"))*btc_value
+    binance_usd["total_btc"]=btc_value
+    save_json(dir_TEMP+"binance_usd", binance_usd)
+    save_json(dir_TEMP+"binance_balances", binance_balances)
+    save_json(dir_TEMP+"binance_balances_total", binance_balances_total)
+    save_json(dir_TEMP+"binance_prices", binance_prices)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Total estimated USD:"+ str(float(binance_prices.get("BTCUSDT"))*btc_value),debugapp_DebugLevel="INFO", debugapp_logger=logger)
+
+    if "str_key_bitfinex" in dct_INI_JSON:
+        if dct_INI_JSON['str_key_bitfinex'] <> "":
+            bitfinex = ccxt.bitfinex({
+                'apiKey': dct_INI_JSON['str_key_bitfinex'],
+                'secret': dct_INI_JSON['str_secret_bitfinex'],
+                'enableRateLimit': True,
+            })
+            bitfinex_balance=bitfinex.fetch_balance()
+            bitfinex_prices=bitfinex.fetchTickers()
+            all_amount=0
+            if 'BTC/USDT'in bitfinex_prices:
+                for x in bitfinex_balance['info']:
+                    if float(x['amount']) > 0:
+                        if x['currency'] <> "btc" and x['currency'] <> "usd":
+                            all_amount=all_amount+float(x['amount'])*bitfinex_prices[x['currency'].upper()+'/BTC']['close']
+                        elif x['currency'] == "btc":
+                            all_amount=all_amount+float(x['amount'])
+                        elif x['currency'] == "usd":
+                            all_amount=all_amount+float(x['amount'])/bitfinex_prices['BTC/USDT']['close']
+                all_amount_usd=all_amount*bitfinex_prices['BTC/USDT']['close']
+                bitfinex_usd={}
+                bitfinex_usd["total_usd"]=all_amount_usd
+                bitfinex_usd["total_btc"]=all_amount
+                save_json(dir_TEMP+"bitfinex_usd", bitfinex_usd)
+
+    if "str_key_kraken" in dct_INI_JSON:
+        if dct_INI_JSON['str_key_kraken'] <> "":
+            kraken = ccxt.kraken({
+                'apiKey': dct_INI_JSON['str_key_kraken'],
+                'secret': dct_INI_JSON['str_secret_kraken'],
+                'enableRateLimit': True,
+            })
+            kraken_balance=kraken.fetch_balance()
+            kraken_prices=kraken.fetchTickers()
+            all_amount=0
+            if 'BTC/USD'in kraken_prices:
+                for x, y in kraken_balance['total'].iteritems():
+                    if float(y) > 0:
+                        if x <> "BTC" and x <> "USD":
+                            all_amount=all_amount+float(y)*kraken_prices[x.upper()+'/BTC']['close']
+                        elif x == "BTC":
+                            all_amount=all_amount+float(y)
+                        elif x == "USD":
+                            all_amount=all_amount+float(y)/kraken_prices['BTC/USD']['close']
+                all_amount_usd=all_amount*kraken_prices['BTC/USD']['close']
+                kraken_usd={}
+                kraken_usd["total_usd"]=all_amount_usd
+                kraken_usd["total_btc"]=all_amount
+                save_json(dir_TEMP+"kraken_usd", kraken_usd)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+
 #############################################################################################################
 #END FUNCTIONS###############################################################################################
 #############################################################################################################
@@ -606,44 +678,7 @@ binance_balance=exchange.fetch_balance()
 binance_markets=exchange.fetch_markets()
 binance_prices=binance.prices()
 binance_balances=binance.balances()
-binance_usd={}
-all_usd=float(binance_balances['USDT']['free'])+float(binance_balances['USDT']['locked'])+float(binance_balances['TUSD']['free'])+float(binance_balances['TUSD']['locked'])
-binance_balances_total=binance.balances_total()
-binance_balances_temp={}
-for bals in binance_balances_total:
-    binance_balances_temp[bals]=binance_balances_total[bals]["total"]
-btc_value=binance_balances_total['BTC']['total']
-for k, v in binance_prices.iteritems():
-    if k[-3:]=="BTC":
-        coin=k.replace("BTC", "")
-        btc_value=btc_value+float(binance_balances_total[coin]['total']*v)
-binance_usd["total_usd"]=float(binance_prices.get("BTCUSDT"))*btc_value+all_usd
-binance_usd["total_btc"]=btc_value+(all_usd/float(binance_prices.get("BTCUSDT")))
-save_json(dir_TEMP+"binance_usd", binance_usd)
-
-if "str_key_bitfinex" in dct_INI_JSON:
-    if dct_INI_JSON['str_key_bitfinex'] <> "":
-        bitfinex = ccxt.bitfinex({
-            'apiKey': dct_INI_JSON['str_key_bitfinex'],
-            'secret': dct_INI_JSON['str_secret_bitfinex'],
-            'enableRateLimit': True,
-        })
-        bitfinex_balance=bitfinex.fetch_balance()
-        bitfinex_prices=bitfinex.fetchTickers()
-        all_amount=0
-        for x in bitfinex_balance['info']:
-            if float(x['amount']) > 0:
-                if x['currency'] <> "btc" and x['currency'] <> "usd":
-                    all_amount=all_amount+float(x['amount'])*bitfinex_prices[x['currency'].upper()+'/BTC']['close']
-                elif x['currency'] == "btc":
-                    all_amount=all_amount+float(x['amount'])
-                elif x['currency'] == "usd":
-                    all_amount=all_amount+float(x['amount'])/bitfinex_prices['BTC/USDT']['close']
-        all_amount_usd=all_amount*bitfinex_prices['BTC/USDT']['close']
-        bitfinex_usd={}
-        bitfinex_usd["total_usd"]=all_amount_usd
-        bitfinex_usd["total_btc"]=all_amount
-        save_json(dir_TEMP+"bitfinex_usd", bitfinex_usd)
+all_balances()
 
 r_exchangeInfo=requests.get("https://www.binance.com/api/v1/exchangeInfo")
 get_stepSize_request=r_exchangeInfo.json()
@@ -689,14 +724,8 @@ for filename in os.listdir(dir_HODL):
         if (float(dct_FILE['executedQty_creation'])<=percentage_calc(dct_FILE['executedQty_vendu'], dct_INI_JSON['float_percentage_delta_buyed_sold']) and float(dct_FILE['executedQty_creation'])<>0):
             all_sold()
         binance_balances=binance.balances()
-        binance_balances_total=binance_balances_temp
-#        binance_prices=binance.prices()
         binance_prices_temp={}
 #        print "Total estimated USD:" + str(float(binance_prices.get("BTCUSDT"))*btc_value)
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Total estimated USD:"+ str(float(binance_prices.get("BTCUSDT"))*btc_value),debugapp_DebugLevel="INFO")
-        save_json(dir_TEMP+"binance_balances", binance_balances)
-        save_json(dir_TEMP+"binance_balances_total", binance_balances_total)
-        save_json(dir_TEMP+"binance_prices", binance_prices)
         dct_FILE["current_balance"] = binance_balances.get(extract_symbol(dct_FILE["symbol"]))
         debugapp(str(sys._getframe().f_code.co_name)+"|"+":Price:"+ str(dct_FILE['binance_price']),debugapp_DebugLevel="INFO", debugapp_logger=logger)
 #        if dct_FILE['max_price'] =="init": dct_FILE['max_price'] = dct_FILE['binance_price']
