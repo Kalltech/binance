@@ -860,6 +860,7 @@ for filename in os.listdir(dir_BITMEX_TRADES):
     if ".json" in filename and not ".log" in filename:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_BITMEX_TRADES+filename,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         dct_FILE=load_obj(dir_BITMEX_TRADES+filename)
+    small_id_chat=""
     if "CHNL" in dct_FILE:
         if dct_FILE['CHNL']<>"":
             a_CHNL=dct_FILE['CHNL'].split("):")
