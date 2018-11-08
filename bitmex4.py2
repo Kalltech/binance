@@ -127,7 +127,7 @@ def save_json(save_json_path, save_json_data):
 
 def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_level):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    global processed_order
+    global processed_order, small_id_chat
     order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
     b_order_price=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price))
     b_order_price=floatXf_tickSize(b_order_price)
@@ -807,6 +807,7 @@ logger.addHandler(hdlr)
 logger.setLevel(level)
 logger_symbol=None
 tab=""
+small_id_chat=""
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"*************************************************", debugapp_logger=logger)
 debugapp(str(sys._getframe().f_code.co_name)+"|"+"/////////begin script:"+begin_time, debugapp_logger=logger)
 ###Telegram
@@ -860,7 +861,6 @@ for filename in os.listdir(dir_BITMEX_TRADES):
     if ".json" in filename and not ".log" in filename:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_BITMEX_TRADES+filename,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         dct_FILE=load_obj(dir_BITMEX_TRADES+filename)
-    small_id_chat=""
     if "CHNL" in dct_FILE:
         if dct_FILE['CHNL']<>"":
             a_CHNL=dct_FILE['CHNL'].split("):")
