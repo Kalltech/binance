@@ -728,22 +728,36 @@ def check_sl_pos():
     check_sl_pos_allPositions=exchange.private_get_position()
     if check_sl_pos_allPositions :
         if isinstance(check_sl_pos_allPositions, list):
-            check_sl_pos_allPositions_pos = []
+            check_sl_pos_allPositions_pos = {}
+            check_sl_pos_allPositions_pos_list=[]
             for p in check_sl_pos_allPositions:
                 if p['isOpen']:
-                    check_sl_pos_allPositions_pos.append(p['symbol'])
+                    check_sl_pos_allPositions_pos_list.append(p['symbol'])
+                    if p['symbol'] in check_sl_pos_allPositions_pos:
+                        check_sl_pos_allPositions_pos[p['symbol']]=p['currentQty']+check_sl_pos_allPositions_pos[p['symbol']]
+                    else:
+                        check_sl_pos_allPositions_pos[p['symbol']]=p['currentQty']
     check_sl_pos_allOrders=None
     check_sl_pos_allOrders=exchange.fetch_orders()
     if check_sl_pos_allOrders:
         if isinstance(check_sl_pos_allOrders, list):
-            check_sl_pos_allOrders_opened = []
+            check_sl_pos_allOrders_opened = {}
+            check_sl_pos_allOrders_opened_list=[]
             for q in check_sl_pos_allOrders:
-                if q['status']=="New" and q['info']['ordType']=="Stop":
-                    check_sl_pos_allOrders_opened.append(q['info']['symbol'])
-    check_sl_pos_allPositions_pos.sort()
-    check_sl_pos_allOrders_opened.sort()
-    diff_list_pos=list(set(check_sl_pos_allPositions_pos) - set(check_sl_pos_allOrders_opened))
-    diff_list_sl=list(set(check_sl_pos_allOrders_opened) - set(check_sl_pos_allPositions_pos))
+                if (q['status']=="New" or q['status']=="open") and q['info']['ordType']=="Stop":
+                    check_sl_pos_allOrders_opened_list.append(q['info']['symbol'])
+                    if q['info']['symbol'] in check_sl_pos_allOrders_opened:
+                        check_sl_pos_allOrders_opened[q['info']['symbol']]=q['remaining']+check_sl_pos_allOrders_opened[q['info']['symbol']]
+                    else:
+                        check_sl_pos_allOrders_opened[q['info']['symbol']]=q['remaining']
+    for r,  s in check_sl_pos_allOrders_opened.items():
+        if r in check_sl_pos_allPositions_pos:
+            if (check_sl_pos_allPositions_pos[r]+s)<>0:
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position <> SL Qty!! "+r,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+    check_sl_pos_allPositions_pos_list.sort()
+    check_sl_pos_allOrders_opened_list.sort()
+    diff_list_pos=list(set(check_sl_pos_allPositions_pos_list) - set(check_sl_pos_allOrders_opened_list))
+    diff_list_sl=list(set(check_sl_pos_allOrders_opened_list) - set(check_sl_pos_allPositions_pos_list))
     if diff_list_pos:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position without SL!! "+str(diff_list_pos),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
     if diff_list_sl:
