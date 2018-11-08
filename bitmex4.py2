@@ -745,11 +745,13 @@ def check_sl_pos():
             check_sl_pos_allOrders_opened_list=[]
             for q in check_sl_pos_allOrders:
                 if (q['status']=="New" or q['status']=="open") and q['info']['ordType']=="Stop":
+                    remaining=q['remaining']
+                    if q['side']=="sell": remaining=-q['remaining']
                     check_sl_pos_allOrders_opened_list.append(q['info']['symbol'])
                     if q['info']['symbol'] in check_sl_pos_allOrders_opened:
-                        check_sl_pos_allOrders_opened[q['info']['symbol']]=q['remaining']+check_sl_pos_allOrders_opened[q['info']['symbol']]
+                        check_sl_pos_allOrders_opened[q['info']['symbol']]=remaining+check_sl_pos_allOrders_opened[q['info']['symbol']]
                     else:
-                        check_sl_pos_allOrders_opened[q['info']['symbol']]=q['remaining']
+                        check_sl_pos_allOrders_opened[q['info']['symbol']]=remaining
     for r,  s in check_sl_pos_allOrders_opened.items():
         if r in check_sl_pos_allPositions_pos:
             if (check_sl_pos_allPositions_pos[r]+s)<>0:
