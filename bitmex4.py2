@@ -65,15 +65,20 @@ def debugapp(debugapp_str, **kwargs):
     if debugapp_DebugLevel:
         if debugapp_DebugLevel=="ERROR":
             debugapp_logger.error(str(debugapp_str))
+            if debugapp_logger<>logger: logger.error(str(debugapp_str))
         elif debugapp_DebugLevel=="DEBUG":
             debugapp_logger.debug(str(debugapp_str))
+            if debugapp_logger<>logger: logger.debug(str(debugapp_str))
         elif debugapp_DebugLevel=="WARNING":
             debugapp_logger.warning(str(debugapp_str))
+            if debugapp_logger<>logger: logger.warning(str(debugapp_str))
         elif debugapp_DebugLevel=="CRITICAL":
             debugapp_logger.critical(str(debugapp_str))
+            if debugapp_logger<>logger: logger.critical(str(debugapp_str))
         if not debugapp_NoPrintConsole: print str(debugapp_str)
     else:
         debugapp_logger.info(str(debugapp_str))
+        if debugapp_logger<>logger: logger.info(str(debugapp_str))
         if not debugapp_NoPrintConsole: print str(debugapp_str)
     if debugapp_Telegram: 
         try:
@@ -133,7 +138,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         type = 'limit'  # or 'LimitIfTouched'  # or 'market', or 'Stop' or 'StopLimit'
         params = {
 #            'stopPx': exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),  # if needed
-            'text': filename,  # if needed
+            'text': small_id_chat+filename,  # if needed
             'execInst':'ReduceOnly', 
         }
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Demande "+b_order_side+" de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
@@ -146,7 +151,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         type = 'limit'
         params = {
         #    'stopPx': 6500.0,  # if needed
-            'text': filename,  # if needed
+            'text': small_id_chat+filename,  # if needed
         }
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Mise $:"+str(dct_FILE['USD'])+"\nDemande "+b_order_side+" de "+str(order_quantity)+" "+" @Price "+float8f(b_order_price),debugapp_Telegram=1)
         try:
@@ -165,7 +170,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         params = {
             'stopPx': b_order_price,  # if needed
             'execInst':'ReduceOnly', 
-            'text': filename,  # if needed
+            'text': small_id_chat+filename,  # if needed
             'displayQty': 0,  # if needed
         }
         debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+" of "+str(order_quantity)+" "+" @Price "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price),debugapp_Telegram=1)
@@ -394,7 +399,7 @@ def b_trade_to_order(b_trade_to_order_file):
                             dct_FILE['order_BUY']=b_TRADE
                             dct_FILE['executedDate_creation']=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
                             dct_FILE['last_order_level']='order_BUY'
-                            dct_FILE['filename']=dir_BITMEX_TRADES+dct_FILE['symbol'].replace("/", "")+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json"
+                            dct_FILE['filename']=dir_BITMEX_TRADES+filename+".json"
                             dct_FILE['float_sell_part_t1_bitmex']=dct_INI_JSON['float_sell_part_t1_bitmex']
                             dct_FILE['float_sell_part_t2_bitmex']=dct_INI_JSON['float_sell_part_t2_bitmex']
                             dct_FILE['float_sell_part_t3_bitmex']=dct_INI_JSON['float_sell_part_t3_bitmex']
@@ -593,12 +598,16 @@ def sell_stats(sell_stats_level):
     prix_de_vente=float(dct_FILE[sell_stats_level]['info']['avgPx'])
     prix_achat=float(dct_FILE['order_BUY_FILLED']['info']['avgPx'])
     vente_qty=float(dct_FILE[sell_stats_level]['info']['cumQty'])
-    if bitmex_actual_market['base']=="BTC":
+    bitmex_market_xbt=list(filter(lambda d: d['id'] in ".XBT", bitmex_markets))
+    BTCUSDT=float(bitmex_market_xbt[0]['info']['lastPrice'])
+    bitmex_market_eth=list(filter(lambda d: d['id'] in "ETHUSD", bitmex_markets))
+    ETHUSDT=float(bitmex_market_eth[0]['info']['lastPrice'])
+    if bitmex_actual_market['quote']=="USD" and bitmex_actual_market['base']=="ETH":
+        gain_BTC=-(1/prix_achat-1/prix_de_vente)*float(vente_qty)/BTCUSDT*ETHUSDT
+    elif bitmex_actual_market['quote']=="USD":
         gain_BTC=(1/prix_achat-1/prix_de_vente)*float(vente_qty)
     else:
         gain_BTC=(1/prix_achat-1/prix_de_vente)*float(vente_qty)*prix_achat**2
-    bitmex_market_xbt=list(filter(lambda d: d['id'] in ".XBT", bitmex_markets))
-    BTCUSDT=float(bitmex_market_xbt[0]['info']['lastPrice'])
     gain_USD=gain_BTC*BTCUSDT
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain BTC: "+format(gain_BTC, '.5f'),debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain $: "+format(gain_USD, '.1f'),debugapp_Telegram=1)
@@ -622,7 +631,7 @@ def t1_filled():
     params = {
         'stopPx': exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_BUY_FILLED']['info']['avgPx']),  # if needed
 #        'stopPx': exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_SL']['info']['stopPx']),  # if needed
-#        'text': filename,  # if needed
+#        'text': small_id_chat+filename,  # if needed
         'displayQty': 0,  # if needed
     }
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_SL']['info']['stopPx']),debugapp_Telegram=1)
@@ -650,11 +659,11 @@ def t2_filled():
 #        b_order_price_plus_sl_percen=percentage_calc(b_order_price, dct_FILE['float_percentage_sl_upside'])
     b_order_Qty=float(dct_FILE['executedQty_creation'])-float(dct_FILE['executedQty_vendu'])
     order_quantity=exchange.amount_to_precision(dct_FILE['symbol'],b_order_Qty)
-    sell_stats("order_T1_FILLED")    
+    sell_stats("order_T2_FILLED")    
 #    b_order_price_plus_sl_percen=float(exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen))
     params = {
         'stopPx': exchange.price_to_precision(dct_FILE['symbol'],dct_FILE['order_BUY']['price']),  # if needed
-#        'text': filename,  # if needed
+#        'text': small_id_chat+filename,  # if needed
         'displayQty': 0,  # if needed
     }
 #    debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL of "+str(order_quantity)+" "+" @stopPrice "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price_plus_sl_percen),debugapp_Telegram=1)
@@ -837,6 +846,10 @@ for filename in os.listdir(dir_BITMEX_TRADES):
     if ".json" in filename and not ".log" in filename:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+dir_BITMEX_TRADES+filename,debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         dct_FILE=load_obj(dir_BITMEX_TRADES+filename)
+    if "CHNL" in dct_FILE:
+        if dct_FILE['CHNL']<>"":
+            a_CHNL=dct_FILE['CHNL'].split("):")
+            small_id_chat=a_CHNL[0][-4:]+"_"
 #        bitmex_actual_market=list(filter(lambda d: d['id'] in dct_FILE['symbol'], bitmex_markets))
         bitmex_actual_market=None
         for market in bitmex_markets:
