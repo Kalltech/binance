@@ -145,7 +145,10 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         try:
             order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
         except Exception as e:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
+            if "overloaded" in str(e):
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_exit=1)
+            else:
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
     elif (b_order_side=="buy" or b_order_side=="sell") and b_order_level<>"order_SL":
         b_order_Qty=float(b_order_Qty)
         type = 'limit'
@@ -157,7 +160,10 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         try:
             order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, b_order_price, params)
         except Exception as e:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
+            if "overloaded" in str(e):
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_exit=1)
+            else:
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
     elif b_order_level=="order_SL":
         if b_order_side=="sell":
             type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit' or LimitIfTouched or MarketIfTouched
@@ -177,7 +183,10 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         try:
             order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, None, params)
         except Exception as e:
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
+            if "overloaded" in str(e):
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_exit=1)
+            else:
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
 
     if order.get("id") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK:"+str(order.get("id")),debugapp_DebugLevel="DEBUG")
@@ -491,7 +500,7 @@ def ToBeFilled():
                             save_obj(dct_FILE, dct_FILE.get("filename"))
                         else:
                             if float(current_allOrders['filled'])==float(current_allOrders['amount']):
-                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Trade of "+str(current_allOrders['amount'])+" @Level "+order_level_dictToBeFilled+" FILLED @Price:"+str(current_allOrders.get("price")),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"FILLED trade of "+str(current_allOrders['amount'])+" @Level "+order_level_dictToBeFilled+" @Price:"+str(current_allOrders.get("price")),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
                                 dct_FILE[order_level_dictToBeFilled+"_FILLED"]=current_allOrders
                                 dct_FILE['last_order_level']=order_level_dictToBeFilled+"_FILLED"
                                 dct_FILE['last_executedQty']=float(current_allOrders['filled'])
@@ -755,15 +764,15 @@ def check_sl_pos():
     for r,  s in check_sl_pos_allOrders_opened.items():
         if r in check_sl_pos_allPositions_pos:
             if (check_sl_pos_allPositions_pos[r]+s)<>0:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position <> SL Qty!! "+r,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position <> SL Qty!! "+r,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1, debugapp_logger=logger)
     check_sl_pos_allPositions_pos_list.sort()
     check_sl_pos_allOrders_opened_list.sort()
     diff_list_pos=list(set(check_sl_pos_allPositions_pos_list) - set(check_sl_pos_allOrders_opened_list))
     diff_list_sl=list(set(check_sl_pos_allOrders_opened_list) - set(check_sl_pos_allPositions_pos_list))
     if diff_list_pos:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position without SL!! "+str(diff_list_pos),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position without SL!! "+str(diff_list_pos),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1, debugapp_logger=logger)
     if diff_list_sl:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL without position!! "+str(diff_list_sl),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL without position!! "+str(diff_list_sl),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1, debugapp_logger=logger)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 #############################################################################################################
 #END FUNCTIONS###############################################################################################
