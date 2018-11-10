@@ -17,7 +17,9 @@ import string,  re
 import json
 import glob
 import ccxt  # noqa: E402
-json_stats="sell_stats.json"
+binance_json_stats="binance_stats.json"
+bitmex_json_stats="bitmex_stats.json"
+
 json_ini="api4.json"
 
 binance_trades_path="trades/"
@@ -168,7 +170,7 @@ def float0f(float0f_value):
     return format(float(float0f_value), '.0f')
 
 def stats():
-    sell_stats_file=api_path+json_stats
+    sell_stats_file=api_path+binance_json_stats
     stats_str=""
     with open(sell_stats_file) as json_data:
         dct_sell_stats = json.load(json_data)
@@ -179,7 +181,7 @@ def stats():
             dct_today=dct_sell_stats.get(today)
             for key in dct_today.keys():
                 sum_GainUSD_today=sum_GainUSD_today+float(dct_today[key]["gain_USD"])
-        stats_str= "Gain today $:"+float0f(sum_GainUSD_today)
+        stats_str= "Binance Gain today $:"+float0f(sum_GainUSD_today)
         sum_GainUSD_week=0
         for x in range(0, 8):
             day=datetime.datetime.now()-datetime.timedelta(days=int(x))
@@ -188,7 +190,7 @@ def stats():
                 dct_day=dct_sell_stats.get(day)
                 for key in dct_day.keys():
                     sum_GainUSD_week=sum_GainUSD_week+float(dct_day[key]["gain_USD"])
-        stats_str= stats_str+"\nGain last 7 days $:"+float0f(sum_GainUSD_week)
+        stats_str= stats_str+"\nBinance Gain last 7 days $:"+float0f(sum_GainUSD_week)
         sum_GainUSD_month=0
         for x in range(0, 32):
             day=datetime.datetime.now()-datetime.timedelta(days=int(x))
@@ -197,7 +199,36 @@ def stats():
                 dct_day=dct_sell_stats.get(day)
                 for key in dct_day.keys():
                     sum_GainUSD_month=sum_GainUSD_month+float(dct_day[key]["gain_USD"])
-        stats_str= stats_str+"\nGain last 31 days $:"+float0f(sum_GainUSD_month)
+        stats_str= stats_str+"\nBinance Gain last 31 days $:"+float0f(sum_GainUSD_month)
+    sell_stats_file=api_path+bitmex_json_stats
+    with open(sell_stats_file) as json_data:
+        dct_sell_stats = json.load(json_data)
+        json_data.close()
+        sum_GainUSD_today=0
+        today=datetime.datetime.now().strftime("%Y-%m-%d")
+        if findkeys(dct_sell_stats, today):
+            dct_today=dct_sell_stats.get(today)
+            for key in dct_today.keys():
+                sum_GainUSD_today=sum_GainUSD_today+float(dct_today[key]["gain_USD"])
+        stats_str= stats_str+ "\nBitmex Gain today $:"+float0f(sum_GainUSD_today)
+        sum_GainUSD_week=0
+        for x in range(0, 8):
+            day=datetime.datetime.now()-datetime.timedelta(days=int(x))
+            day=str(day.strftime("%Y-%m-%d"))
+            if findkeys(dct_sell_stats, day):
+                dct_day=dct_sell_stats.get(day)
+                for key in dct_day.keys():
+                    sum_GainUSD_week=sum_GainUSD_week+float(dct_day[key]["gain_USD"])
+        stats_str= stats_str+"\nBitmex Gain last 7 days $:"+float0f(sum_GainUSD_week)
+        sum_GainUSD_month=0
+        for x in range(0, 32):
+            day=datetime.datetime.now()-datetime.timedelta(days=int(x))
+            day=str(day.strftime("%Y-%m-%d"))
+            if findkeys(dct_sell_stats, day):
+                dct_day=dct_sell_stats.get(day)
+                for key in dct_day.keys():
+                    sum_GainUSD_month=sum_GainUSD_month+float(dct_day[key]["gain_USD"])
+        stats_str= stats_str+"\nBitmex Gain last 31 days $:"+float0f(sum_GainUSD_month)
     return stats_str
 logger = logging.getLogger(__name__)
 
@@ -369,7 +400,7 @@ def echo(bot, update):
         text_file.close()
         update.message.reply_text("Pause until: "+str(f_time))
     elif text_sent=="stats":
-        sell_stats_file=api_path+json_stats
+        sell_stats_file=api_path+binance_json_stats
         if not os.path.isfile(sell_stats_file):
             update.message.reply_text("Stats empty")
         else:
