@@ -360,7 +360,7 @@ def b_trade_to_order(b_trade_to_order_file):
                         dct_FILE['order_BUY']=b_TRADE
                         dct_FILE['executedDate_creation']=datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
                         dct_FILE['last_order_level']='order_BUY'
-                        dct_FILE['filename']=dir_TRADES+dct_FILE['symbol']+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S")+".json"
+                        dct_FILE['filename']=dir_TRADES+filename+".json"
 
                         dct_FILE['float_sell_part_t1_binance']=dct_INI_JSON['float_sell_part_t1_binance']
                         dct_FILE['float_sell_part_t2_binance']=dct_INI_JSON['float_sell_part_t2_binance']
@@ -434,7 +434,7 @@ def sell_stats(sell_stats_current_order, sell_stats_current_level, gain_BTC, gai
     if dct_FILE.has_key("CHNL"): sell_stats_current_order["CHNL"]=dct_FILE['CHNL']
     sell_stats_current_order["origPrice"]=dct_FILE['order_BUY']['price']
     sell_stats_current_order["origTransactTime"]=dct_FILE['order_BUY']['transactTime']
-    sell_stats_file=cwd+"/"+"sell_stats.json"
+    sell_stats_file=cwd+"/"+"binance_stats.json"
     sell_stats_date=datetime.datetime.now().strftime("%Y-%m-%d")
     if not os.path.isfile(sell_stats_file):
         dct_sell_stats = {}
