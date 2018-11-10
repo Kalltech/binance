@@ -602,6 +602,7 @@ def not_all_sold():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
 
+#                            sell_stats(current_allOrders, order_level_dictToBeFilled, gain_BTC, gain_USD)
 def sell_stats(sell_stats_level):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     prix_de_vente=float(dct_FILE[sell_stats_level]['info']['avgPx'])
@@ -620,8 +621,35 @@ def sell_stats(sell_stats_level):
     gain_USD=gain_BTC*BTCUSDT
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain BTC: "+format(gain_BTC, '.5f'),debugapp_Telegram=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"Gain $: "+format(gain_USD, '.1f'),debugapp_Telegram=1)
+    stats_file(sell_stats_level, gain_BTC, gain_USD)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    
+
+def stats_file(stats_file_current_level, gain_BTC, gain_USD):
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+    stats_file_current_order = dct_FILE[stats_file_current_level]
+    stats_file_current_order["gain_USD"]=gain_USD
+    stats_file_current_order["gain_BTC"]=gain_BTC
+    stats_file_current_order["level"]=stats_file_current_level
+    if dct_FILE.has_key("CHNL"): stats_file_current_order["CHNL"]=dct_FILE['CHNL']
+    stats_file_current_order["origPrice"]=dct_FILE['order_BUY_FILLED']['info']['avgPx']
+    stats_file_current_order["origTransactTime"]=dct_FILE['order_BUY_FILLED']['datetime']
+    stats_file_file=cwd+"/"+"bitmex_stats.json"
+    stats_file_date=datetime.datetime.now().strftime("%Y-%m-%d")
+    if not os.path.isfile(stats_file_file):
+        dct_stats_file = {}
+        stats_file_file_obj = open(stats_file_file,"w")
+        json.dump(dct_stats_file,stats_file_file_obj, indent=4, sort_keys=True)                                    
+        stats_file_file_obj.close()
+    with open(stats_file_file) as json_data:
+        dct_stats_file = json.load(json_data)
+        if not findkeys(dct_stats_file, stats_file_date): dct_stats_file[stats_file_date] = {}
+        dct_stats_file[stats_file_date][stats_file_current_order.get("id")] = stats_file_current_order
+        json_data.close()
+        stats_file_file_obj = open(stats_file_file,"w")
+        json.dump(dct_stats_file,stats_file_file_obj, indent=4, sort_keys=True)                                    
+        stats_file_file_obj.close()
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
+
 def t1_filled():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 #            def edit_order(self, id, symbol, type, side, amount=None, price=None, params={}):
