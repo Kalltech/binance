@@ -28,9 +28,10 @@ json_ini="api4.json"
 
 def debugapp(debugapp_str, **kwargs):
     global tab,  annonce_scriptname
+    debugapp_str=str(debugapp_str)
     if "|begin" in debugapp_str:
-        tab=tab+"\t"
-    debugapp_str=tab+debugapp_str
+        tab=tab+"--"
+    debugapp_str=tab+debugapp_str.replace("  ", " ")
     debugapp_str=debugapp_str.replace("<module>", "")
     debugapp_exit=kwargs.get('debugapp_exit', None)
     debugapp_SaveObj2Problems=kwargs.get('debugapp_SaveObj2Problems', None)
@@ -43,30 +44,39 @@ def debugapp(debugapp_str, **kwargs):
             debugapp_logger=logger_symbol
         else:
             debugapp_logger=logger
-    if debugapp_DebugLevel:
-        if debugapp_DebugLevel=="ERROR":
-            debugapp_logger.error(str(debugapp_str))
-        elif debugapp_DebugLevel=="DEBUG":
-            debugapp_logger.debug(str(debugapp_str))
-        elif debugapp_DebugLevel=="WARNING":
-            debugapp_logger.warning(str(debugapp_str))
-        elif debugapp_DebugLevel=="CRITICAL":
-            debugapp_logger.critical(str(debugapp_str))
-        if not debugapp_NoPrintConsole: print str(debugapp_str)
-    else:
-        debugapp_logger.info(str(debugapp_str))
-        if not debugapp_NoPrintConsole: print str(debugapp_str)
+    str2add=""
+    if 'dct_FILE' in globals():
+        if "symbol" in dct_FILE: str2add=dct_FILE['symbol']
+        if "last_order_level" in dct_FILE: str2add=str2add+"["+dct_FILE['last_order_level']+"]"
+    debugapp_str=str2add+":"+debugapp_str
     if debugapp_Telegram: 
         try:
-            if 'dct_FILE' in globals(): debugapp_str=dct_FILE['symbol']+":"+debugapp_str
             if annonce_scriptname==False:
                 annonce_scriptname=True
-                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(str(os.path.basename(__file__)).upper()+"\n"+debugapp_str))
+                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(os.path.basename(__file__)).upper()+"\n"+debugapp_str)
             else:
-                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(debugapp_str))
+                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=debugapp_str)
         except:
-            debugapp_logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
-            print str("Impossible d envoyer vers Telegram"+str(debugapp_str))
+            debugapp_logger.warning("Impossible d envoyer vers Telegram:"+debugapp_str)
+            print("Impossible d envoyer vers Telegram:"+debugapp_str)
+    if debugapp_DebugLevel:
+        if debugapp_DebugLevel=="ERROR":
+            debugapp_logger.error(debugapp_str)
+            if debugapp_logger<>logger: logger.error(debugapp_str)
+        elif debugapp_DebugLevel=="DEBUG":
+            debugapp_logger.debug(debugapp_str)
+            if debugapp_logger<>logger: logger.debug(debugapp_str)
+        elif debugapp_DebugLevel=="WARNING":
+            debugapp_logger.warning(debugapp_str)
+            if debugapp_logger<>logger: logger.warning(debugapp_str)
+        elif debugapp_DebugLevel=="CRITICAL":
+            debugapp_logger.critical(debugapp_str)
+            if debugapp_logger<>logger: logger.critical(debugapp_str)
+        if not debugapp_NoPrintConsole: print debugapp_str
+    else:
+        debugapp_logger.info(debugapp_str)
+        if debugapp_logger<>logger: logger.info(debugapp_str)
+        if not debugapp_NoPrintConsole: print debugapp_str
     if debugapp_SaveObj2Problems:
         #Sauve le fichier au dernier etat
         if "trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
@@ -84,7 +94,7 @@ def debugapp(debugapp_str, **kwargs):
         except: 
             pass
     if "|end" in debugapp_str:
-        tab = tab[:-1]
+        tab = tab[:-2]
     if debugapp_exit:
         if 'dct_FILE' in globals(): dct_FILE.clear()
         sys.exit()
@@ -223,22 +233,6 @@ def format_stepSize(val, step_size_str):
         val=float(val)
     return val
 
-def ConfigSectionMap(section, Config):
-  dict1 = {}
-  options = Config.options(section)
-  for option in options:    
-    try:
-      dict1[option] = Config.get(section, option)
-      if dict1[option] == -1:
-         print("skip: %s" % option)
-    except:
-      print("exception on %s!" % option)
-      dict1[option] = None
-  if dict1 == {}:
-    print("unable to read file on ConfigSectionMap")
-    sys.exit()
-  return dict1
-
 def percentage_calc(percentage_calc_number, percentage_calc_percent):
     percentage_calc_result = float(percentage_calc_number)+float(percentage_calc_number)/100*float(percentage_calc_percent)
     return percentage_calc_result
@@ -285,46 +279,6 @@ def sell_stats(sell_stats_current_order, sell_stats_current_level, gain_BTC, gai
         sell_stats_file_obj.close()
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
-def which_level_what_do(which_level_what_do_price):
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    dct_which_level_what_do = {}
-    dct_which_level_what_do['vente_Qty'] = 'init'
-    dct_which_level_what_do['vente_Qty_SL'] = 'init'
-    dct_which_level_what_do['SL_Price'] = 'init'
-    print float8f(which_level_what_do_price)
-    which_level_what_do_price=percentage_calc(which_level_what_do_price, dct_FILE['percentage_limit_order_before_tx'])
-    print float8f(which_level_what_do_price)
-    
-    #si t3 vend la mise executedQty_creation-executedQty_vendu
-    if dct_FILE['T3'] < which_level_what_do_price:
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']-dct_FILE['executedQty_vendu']
-        dct_which_level_what_do['Current_TX']=dct_FILE['T3']
-    #si t2 mais pas t3 ni t1 vend 75% de la mise et met un SL de 25% de la mise a T1
-    if dct_FILE['T2'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and not findkeys(dct_FILE, "order_T1"):
-        sell_part_t=dct_FILE['sell_part_t1']+dct_FILE['sell_part_t2']
-        sell_part_sl=1-sell_part_t
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation'] * sell_part_t
-        dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation'] * sell_part_sl
-        dct_which_level_what_do['SL_Price']=dct_FILE['T1']
-        dct_which_level_what_do['Current_TX']=dct_FILE['T2']
-    #si t2 mais pas t3 mais t1 vend 25% de la mise et met un SL de 25% de la mise a T1
-    elif dct_FILE['T2'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and findkeys(dct_FILE, "order_T"):
-        sell_part_t=dct_FILE['sell_part_t1']+dct_FILE['sell_part_t2']
-        sell_part_sl=1-sell_part_t
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*dct_FILE['sell_part_t2']
-        dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
-        dct_which_level_what_do['SL_Price']=dct_FILE['T1']
-        dct_which_level_what_do['Current_TX']=dct_FILE['T2']
-    #si t1 mais pas t3 ni t2 vend 50% de la mise et met un SL de ce qu il reste a Achat
-    elif dct_FILE['T1'] < which_level_what_do_price and not findkeys(dct_FILE, "order_T3") and not findkeys(dct_FILE, "order_T2"):
-        sell_part_t=dct_FILE['sell_part_t1']
-        sell_part_sl=1-sell_part_t
-        dct_which_level_what_do['vente_Qty']=dct_FILE['executedQty_creation']*dct_FILE['sell_part_t1']
-        dct_which_level_what_do['vente_Qty_SL']=dct_FILE['executedQty_creation']*sell_part_sl
-        dct_which_level_what_do['SL_Price']=float(dct_FILE['order_BUY_FILLED']['price'])
-        dct_which_level_what_do['Current_TX']=dct_FILE['T1']
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    return dct_which_level_what_do
 
 def get_stepSize(get_stepSize_coin):
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
