@@ -47,12 +47,13 @@ def create_dict():
     
 def debugapp(debugapp_str, **kwargs):
     global tab,  annonce_scriptname
+    debugapp_str=str(debugapp_str)
     if "|begin" in debugapp_str:
-        tab=tab+"\t"
-    debugapp_str=tab+debugapp_str
+        tab=tab+"--"
+    debugapp_str=tab+debugapp_str.replace("  ", " ")
     debugapp_str=debugapp_str.replace("<module>", "")
     debugapp_exit=kwargs.get('debugapp_exit', None)
-    debugapp_SaveObj=kwargs.get('debugapp_SaveObj', None)
+    debugapp_SaveObj2Problems=kwargs.get('debugapp_SaveObj2Problems', None)
     debugapp_DebugLevel=kwargs.get('debugapp_DebugLevel', None)
     debugapp_Telegram=kwargs.get('debugapp_Telegram', None)
     debugapp_NoPrintConsole=kwargs.get('debugapp_NoPrintConsole', None)
@@ -62,32 +63,40 @@ def debugapp(debugapp_str, **kwargs):
             debugapp_logger=logger_symbol
         else:
             debugapp_logger=logger
-    if debugapp_DebugLevel:
-        if debugapp_DebugLevel=="ERROR":
-            debugapp_logger.error(str(debugapp_str))
-        elif debugapp_DebugLevel=="DEBUG":
-            debugapp_logger.debug(str(debugapp_str))
-        elif debugapp_DebugLevel=="WARNING":
-            debugapp_logger.warning(str(debugapp_str))
-        elif debugapp_DebugLevel=="CRITICAL":
-            debugapp_logger.critical(str(debugapp_str))
-        if not debugapp_NoPrintConsole: print str(debugapp_str)
-    else:
-        debugapp_logger.info(str(debugapp_str))
-        if not debugapp_NoPrintConsole: print str(debugapp_str)
+    str2add=""
+    if 'dct_FILE' in globals():
+        if "symbol" in dct_FILE: str2add=dct_FILE['symbol']
+        if "last_order_level" in dct_FILE: str2add=str2add+"["+dct_FILE['last_order_level']+"]"
+    debugapp_str=str2add+":"+debugapp_str
     if debugapp_Telegram: 
         try:
-            if 'dct_FILE' in globals():
-                if "symbol" in dct_FILE: debugapp_str=dct_FILE['symbol']+":"+debugapp_str
             if annonce_scriptname==False:
                 annonce_scriptname=True
-                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(str(os.path.basename(__file__)).upper()+"\n"+debugapp_str))
+                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(os.path.basename(__file__)).upper()+"\n"+debugapp_str)
             else:
-                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(debugapp_str))
+                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=debugapp_str)
         except:
-            debugapp_logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
-            print str("Impossible d envoyer vers Telegram"+str(debugapp_str))
-    if debugapp_SaveObj:
+            debugapp_logger.warning("Impossible d envoyer vers Telegram:"+debugapp_str)
+            print("Impossible d envoyer vers Telegram:"+debugapp_str)
+    if debugapp_DebugLevel:
+        if debugapp_DebugLevel=="ERROR":
+            debugapp_logger.error(debugapp_str)
+            if debugapp_logger<>logger: logger.error(debugapp_str)
+        elif debugapp_DebugLevel=="DEBUG":
+            debugapp_logger.debug(debugapp_str)
+            if debugapp_logger<>logger: logger.debug(debugapp_str)
+        elif debugapp_DebugLevel=="WARNING":
+            debugapp_logger.warning(debugapp_str)
+            if debugapp_logger<>logger: logger.warning(debugapp_str)
+        elif debugapp_DebugLevel=="CRITICAL":
+            debugapp_logger.critical(debugapp_str)
+            if debugapp_logger<>logger: logger.critical(debugapp_str)
+        if not debugapp_NoPrintConsole: print debugapp_str
+    else:
+        debugapp_logger.info(debugapp_str)
+        if debugapp_logger<>logger: logger.info(debugapp_str)
+        if not debugapp_NoPrintConsole: print debugapp_str
+    if debugapp_SaveObj2Problems:
         #Sauve le fichier au dernier etat
         if "trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
         if "signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/signals","/problems")+".laststate")
@@ -104,7 +113,7 @@ def debugapp(debugapp_str, **kwargs):
         except: 
             pass
     if "|end" in debugapp_str:
-        tab = tab[:-1]
+        tab = tab[:-2]
     if debugapp_exit:
         if 'dct_FILE' in globals(): dct_FILE.clear()
         sys.exit()
@@ -209,7 +218,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         if dct_FILE['last_orderId']=="init":
             dct_FILE['last_orderId']=order.get("orderId")
     else:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+":orderId empty_"+str(order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+":orderId empty_"+str(order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj2Problems=1,debugapp_exit=1)
         if "trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/trades","/problems")+".laststate")
         if "signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/signals","/problems")+".laststate")
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG")
