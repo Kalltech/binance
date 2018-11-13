@@ -47,12 +47,13 @@ def create_dict():
     
 def debugapp(debugapp_str, **kwargs):
     global tab,  annonce_scriptname
+    debugapp_str=str(debugapp_str)
     if "|begin" in debugapp_str:
-        tab=tab+"\t"
-    debugapp_str=tab+debugapp_str
+        tab=tab+"--"
+    debugapp_str=tab+debugapp_str.replace("  ", " ")
     debugapp_str=debugapp_str.replace("<module>", "")
     debugapp_exit=kwargs.get('debugapp_exit', None)
-    debugapp_SaveObj=kwargs.get('debugapp_SaveObj', None)
+    debugapp_SaveObj2Problems=kwargs.get('debugapp_SaveObj2Problems', None)
     debugapp_DebugLevel=kwargs.get('debugapp_DebugLevel', None)
     debugapp_Telegram=kwargs.get('debugapp_Telegram', None)
     debugapp_NoPrintConsole=kwargs.get('debugapp_NoPrintConsole', None)
@@ -62,37 +63,40 @@ def debugapp(debugapp_str, **kwargs):
             debugapp_logger=logger_symbol
         else:
             debugapp_logger=logger
-    if debugapp_DebugLevel:
-        if debugapp_DebugLevel=="ERROR":
-            debugapp_logger.error(str(debugapp_str))
-            if debugapp_logger<>logger: logger.error(str(debugapp_str))
-        elif debugapp_DebugLevel=="DEBUG":
-            debugapp_logger.debug(str(debugapp_str))
-            if debugapp_logger<>logger: logger.debug(str(debugapp_str))
-        elif debugapp_DebugLevel=="WARNING":
-            debugapp_logger.warning(str(debugapp_str))
-            if debugapp_logger<>logger: logger.warning(str(debugapp_str))
-        elif debugapp_DebugLevel=="CRITICAL":
-            debugapp_logger.critical(str(debugapp_str))
-            if debugapp_logger<>logger: logger.critical(str(debugapp_str))
-        if not debugapp_NoPrintConsole: print str(debugapp_str)
-    else:
-        debugapp_logger.info(str(debugapp_str))
-        if debugapp_logger<>logger: logger.info(str(debugapp_str))
-        if not debugapp_NoPrintConsole: print str(debugapp_str)
+    str2add=""
+    if 'dct_FILE' in globals():
+        if "symbol" in dct_FILE: str2add=dct_FILE['symbol']
+        if "last_order_level" in dct_FILE: str2add=str2add+"["+dct_FILE['last_order_level']+"]"
+    debugapp_str=str2add+":"+debugapp_str
     if debugapp_Telegram: 
         try:
-            if 'dct_FILE' in globals():
-                if "symbol" in dct_FILE: debugapp_str=dct_FILE['symbol']+":"+debugapp_str
             if annonce_scriptname==False:
                 annonce_scriptname=True
-                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(str(os.path.basename(__file__)).upper()+"\n"+debugapp_str))
+                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(os.path.basename(__file__)).upper()+"\n"+debugapp_str)
             else:
-                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=str(debugapp_str))
+                bot.sendMessage(chat_id=dct_INI_JSON['int_my_telegram_id'], text=debugapp_str)
         except:
-            debugapp_logger.warning("Impossible d envoyer vers Telegram"+str(debugapp_str))
-            print str("Impossible d envoyer vers Telegram"+str(debugapp_str))
-    if debugapp_SaveObj:
+            debugapp_logger.warning("Impossible d envoyer vers Telegram:"+debugapp_str)
+            print("Impossible d envoyer vers Telegram:"+debugapp_str)
+    if debugapp_DebugLevel:
+        if debugapp_DebugLevel=="ERROR":
+            debugapp_logger.error(debugapp_str)
+            if debugapp_logger<>logger: logger.error(debugapp_str)
+        elif debugapp_DebugLevel=="DEBUG":
+            debugapp_logger.debug(debugapp_str)
+            if debugapp_logger<>logger: logger.debug(debugapp_str)
+        elif debugapp_DebugLevel=="WARNING":
+            debugapp_logger.warning(debugapp_str)
+            if debugapp_logger<>logger: logger.warning(debugapp_str)
+        elif debugapp_DebugLevel=="CRITICAL":
+            debugapp_logger.critical(debugapp_str)
+            if debugapp_logger<>logger: logger.critical(debugapp_str)
+        if not debugapp_NoPrintConsole: print debugapp_str
+    else:
+        debugapp_logger.info(debugapp_str)
+        if debugapp_logger<>logger: logger.info(debugapp_str)
+        if not debugapp_NoPrintConsole: print debugapp_str
+    if debugapp_SaveObj2Problems:
         #Sauve le fichier au dernier etat
         if "bitmex_trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/bitmex_trades","/problems")+".laststate")
         if "bitmex_signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/bitmex_signals","/problems")+".laststate")
@@ -109,7 +113,7 @@ def debugapp(debugapp_str, **kwargs):
         except: 
             pass
     if "|end" in debugapp_str:
-        tab = tab[:-1]
+        tab = tab[:-2]
     if debugapp_exit:
         if 'dct_FILE' in globals(): dct_FILE.clear()
         sys.exit()
@@ -148,7 +152,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
             if "overloaded" in str(e):
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_exit=1)
             else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj2Problems=1,debugapp_exit=1)
     elif (b_order_side=="buy" or b_order_side=="sell") and b_order_level<>"order_SL":
         b_order_Qty=float(b_order_Qty)
         type = 'limit'
@@ -163,7 +167,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
             if "overloaded" in str(e):
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_exit=1)
             else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj2Problems=1,debugapp_exit=1)
     elif b_order_level=="order_SL":
         if b_order_side=="sell":
             type = 'Stop'  # or 'market', or 'Stop' or 'StopLimit' or LimitIfTouched or MarketIfTouched
@@ -179,14 +183,14 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
             'text': small_id_chat+filename,  # if needed
             'displayQty': 0,  # if needed
         }
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+" of "+str(order_quantity)+" "+" @Price "+exchange.price_to_precision(dct_FILE['symbol'],b_order_price),debugapp_Telegram=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+" of "+str(order_quantity)+" "+" @Price "+float8f(exchange.price_to_precision(dct_FILE['symbol'],b_order_price)),debugapp_Telegram=1)
         try:
             order= exchange.create_order(b_order_symbol, type, b_order_side, order_quantity, None, params)
         except Exception as e:
             if "overloaded" in str(e):
                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_exit=1)
             else:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"create_order problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj2Problems=1,debugapp_exit=1)
 
     if order.get("id") is not None:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order OK:"+str(order.get("id")),debugapp_DebugLevel="DEBUG")
@@ -199,7 +203,7 @@ def b_order(b_order_symbol, b_order_Qty, b_order_price,b_order_side, b_order_lev
         if dct_FILE['last_id']=="init":
             dct_FILE['last_id']=order.get("id")
     else:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+":id empty_"+str(order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+b_order_level+":id empty_"+str(order),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj2Problems=1,debugapp_exit=1)
         if "bitmex_trades" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/bitmex_trades","/problems")+".laststate")
         if "bitmex_signals" in  dct_FILE['filename']: save_obj(dct_FILE, dct_FILE['filename'].replace("/bitmex_signals","/problems")+".laststate")
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
@@ -426,7 +430,7 @@ def b_trade_to_order(b_trade_to_order_file):
                                 shutil.move(b_trade_to_order_file, dir_OLD+ntpath.basename(b_trade_to_order_file))
                             except:
                                 pass
-                            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
+                            debugapp(str(sys._getframe().f_code.co_name)+"|"+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
                         else:
                             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Order not OK:\n"+str(b_trade_to_order_file),debugapp_Telegram=1, debugapp_logger=logger)
                     else:
@@ -443,21 +447,21 @@ def b_trade_to_order(b_trade_to_order_file):
                     shutil.move(b_trade_to_order_file, dir_PROBLEMS+ntpath.basename(b_trade_to_order_file))
                 except: 
                     pass
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_Telegram=1,debugapp_DebugLevel="ERROR",debugapp_exit=1)
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+":EXIT",debugapp_Telegram=1,debugapp_DebugLevel="ERROR",debugapp_exit=1)
         else:
             debugapp(str(sys._getframe().f_code.co_name)+"|"+"Not in list_whitelist: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
             try:
                 shutil.move(b_trade_to_order_file, dir_PROBLEMS+ntpath.basename(b_trade_to_order_file))
             except: 
                 pass
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
     else:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"In dct_INI_JSON['list_blacklist']: "+str(b_trade_to_order_file),debugapp_Telegram=1,debugapp_DebugLevel="ERROR", debugapp_logger=logger)
         try:
             shutil.move(b_trade_to_order_file, dir_PROBLEMS+ntpath.basename(b_trade_to_order_file))
         except: 
             pass
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
+        debugapp(str(sys._getframe().f_code.co_name)+"|"+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def save_obj(obj, name ):
@@ -477,7 +481,7 @@ def load_obj(name ):
             dct_load_obj = json.load(json_data)
         except:
             dct_FILE['filename']=name
-            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Problem with file: "+name,debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Problem with file: "+name,debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj2Problems=1,debugapp_exit=1)
         json_data.close()
         if logger: debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
         return dct_load_obj
@@ -500,7 +504,7 @@ def ToBeFilled():
                             save_obj(dct_FILE, dct_FILE.get("filename"))
                         else:
                             if float(current_allOrders['filled'])==float(current_allOrders['amount']):
-                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"FILLED trade of "+str(current_allOrders['amount'])+" @Level "+order_level_dictToBeFilled+" @Price:"+str(current_allOrders.get("price")),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
+                                debugapp(str(sys._getframe().f_code.co_name)+"|"+"FILLED trade of "+str(current_allOrders['amount'])+" @Price:"+float8f(current_allOrders.get("price")),debugapp_DebugLevel="DEBUG",debugapp_Telegram=1)
                                 dct_FILE[order_level_dictToBeFilled+"_FILLED"]=current_allOrders
                                 dct_FILE['last_order_level']=order_level_dictToBeFilled+"_FILLED"
                                 dct_FILE['last_executedQty']=float(current_allOrders['filled'])
@@ -513,7 +517,7 @@ def ToBeFilled():
                             else:
                                 debugapp(str(sys._getframe().f_code.co_name)+"|"+"En attente FILLED_"+str(dct_FILE[order_level_dictToBeFilled]['id']),debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
                     else:
-                        debugapp(str(sys._getframe().f_code.co_name)+"|"+order_level_dictToBeFilled+" n existe plus!",debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj=1,debugapp_exit=1)
+                        debugapp(str(sys._getframe().f_code.co_name)+"|"+order_level_dictToBeFilled+" n existe plus!",debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_SaveObj2Problems=1,debugapp_exit=1)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 def findkeys(d, findkeys_str):
@@ -568,7 +572,7 @@ def all_sold():
     except: 
         pass
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
 
 def not_all_sold():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
@@ -600,7 +604,7 @@ def not_all_sold():
     except: 
         pass
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+dct_FILE['last_order_level']+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+":EXIT",debugapp_DebugLevel="INFO",debugapp_exit=1)
 
 #                            sell_stats(current_allOrders, order_level_dictToBeFilled, gain_BTC, gain_USD)
 def sell_stats(sell_stats_level):
@@ -775,7 +779,7 @@ def check_sl_pos():
                     else:
                         check_sl_pos_allPositions_pos[p['symbol']]=p['currentQty']
     check_sl_pos_allOrders=None
-    check_sl_pos_allOrders=exchange.fetch_orders()
+    check_sl_pos_allOrders=exchange.fetch_open_orders(limit=499)
     if check_sl_pos_allOrders:
         if isinstance(check_sl_pos_allOrders, list):
             check_sl_pos_allOrders_opened = {}
