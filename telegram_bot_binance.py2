@@ -190,7 +190,7 @@ def stats():
                 dct_day=dct_sell_stats.get(day)
                 for key in dct_day.keys():
                     sum_GainUSD_week=sum_GainUSD_week+float(dct_day[key]["gain_USD"])
-        stats_str= stats_str+"\nBinance Gain last 7 days $:"+float0f(sum_GainUSD_week)
+        stats_str= stats_str+"\nBinance Gain last 7 days $:"+float0f(sum_GainUSD_today+sum_GainUSD_week)
         sum_GainUSD_month=0
         for x in range(0, 32):
             day=datetime.datetime.now()-datetime.timedelta(days=int(x))
@@ -199,7 +199,7 @@ def stats():
                 dct_day=dct_sell_stats.get(day)
                 for key in dct_day.keys():
                     sum_GainUSD_month=sum_GainUSD_month+float(dct_day[key]["gain_USD"])
-        stats_str= stats_str+"\nBinance Gain last 31 days $:"+float0f(sum_GainUSD_month)
+        stats_str= stats_str+"\nBinance Gain last 31 days $:"+float0f(sum_GainUSD_today+sum_GainUSD_month)
     sell_stats_file=api_path+bitmex_json_stats
     with open(sell_stats_file) as json_data:
         dct_sell_stats = json.load(json_data)
@@ -218,8 +218,8 @@ def stats():
             if findkeys(dct_sell_stats, day):
                 dct_day=dct_sell_stats.get(day)
                 for key in dct_day.keys():
-                    sum_GainUSD_week=sum_GainUSD_week+float(dct_day[key]["gain_USD"])
-        stats_str= stats_str+"\nBitmex Gain last 7 days $:"+float0f(sum_GainUSD_week)
+                    sum_GainUSD_week=+sum_GainUSD_week+float(dct_day[key]["gain_USD"])
+        stats_str= stats_str+"\nBitmex Gain last 7 days $:"+float0f(sum_GainUSD_today+sum_GainUSD_week)
         sum_GainUSD_month=0
         for x in range(0, 32):
             day=datetime.datetime.now()-datetime.timedelta(days=int(x))
@@ -228,7 +228,7 @@ def stats():
                 dct_day=dct_sell_stats.get(day)
                 for key in dct_day.keys():
                     sum_GainUSD_month=sum_GainUSD_month+float(dct_day[key]["gain_USD"])
-        stats_str= stats_str+"\nBitmex Gain last 31 days $:"+float0f(sum_GainUSD_month)
+        stats_str= stats_str+"\nBitmex Gain last 31 days $:"+float0f(sum_GainUSD_today+sum_GainUSD_month)
     return stats_str
 logger = logging.getLogger(__name__)
 
@@ -691,9 +691,11 @@ def echo(bot, update):
         else:
             if signal_dict['USD']=="init": signal_dict['USD'] = ""
         if signal_dict['POS']=="init": signal_dict['POS'] = "binance"
+        msg2text="Valeur non trouvee:\n"
         for key, value in sorted(signal_dict.items()):
             if (value == 'init' or value == 'vide'):
-                update.message.reply_text("Valeur non trouvee:"+key)
+                msg2text=msg2text+key+","
+#                update.message.reply_text("Valeur non trouvee:"+key)
                 key_not_find=1
             else:
                 str_file=str_file+key.upper()+":"+str(value).strip()+"\n"
@@ -712,7 +714,7 @@ def echo(bot, update):
                 text_file.close()
                 update.message.reply_text("Signal resolu:\n"+str_file)
         else:
-            update.message.reply_text("Signal non resolu!")
+            update.message.reply_text(msg2text+"\n"+"Signal non resolu!")
 #            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
     elif "PeerChannel(channel_id=1321818269)".lower() in text_sent:
         print "bitmex"
@@ -756,9 +758,11 @@ def echo(bot, update):
         key_not_find=0
         str_file="[TRADE]\n"
         if signal_dict['USD']=="init": signal_dict['USD'] = ""
+        msg2text="Valeur non trouvee:\n"
         for key, value in sorted(signal_dict.items()):
             if value == 'init' or value == 'vide':
-                update.message.reply_text("Valeur non trouvee:"+key)
+                msg2text=msg2text+key+","
+#                update.message.reply_text("Valeur non trouvee:"+key)
                 key_not_find=1
             else:
                 str_file=str_file+key.upper()+":"+str(value).strip()+"\n"
@@ -774,7 +778,7 @@ def echo(bot, update):
                 text_file.close()
                 update.message.reply_text("Signal resolu:\n"+str_file)
         else:
-            update.message.reply_text("Signal non resolu!")
+            update.message.reply_text(msg2text+"\n"+"Signal non resolu!")
 #            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
     elif "btc" in text_sent or "coin:" in text_sent:
         print "signal"
@@ -848,9 +852,11 @@ def echo(bot, update):
         str_file="[TRADE]\n"
         if signal_dict['POS']=="init": signal_dict['POS'] = "binance"
         if signal_dict['USD']=="init": signal_dict['USD'] = ""
+        msg2text="Valeur non trouvee:\n"
         for key, value in sorted(signal_dict.items()):
             if value == 'init' or value == 'vide':
-                update.message.reply_text("Valeur non trouvee:"+key)
+                msg2text=msg2text+key+","
+#                update.message.reply_text("Valeur non trouvee:"+key)
                 key_not_find=1
             else:
                 str_file=str_file+key.upper()+":"+str(value).strip()+"\n"
@@ -864,7 +870,7 @@ def echo(bot, update):
                 text_file.close()
                 update.message.reply_text("Signal resolu:\n"+str_file)
         else:
-            update.message.reply_text("Signal non resolu, format:\nXLMBTC\nBuy:0.01\nSell: 0.02-0.03-0.04\nStop:0.005\nUSD:100\nOu format:\nXLMBTC\nBuy:0.01\nT1:0.02\nT2:0.03\nT3:0.04\nStop Loss:0.005\nUSD:100")
+            update.message.reply_text(msg2text+"\n"+"Signal non resolu!")
 #            print str_file
     else:
         update.message.reply_text("I dont understand")
