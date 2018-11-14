@@ -502,7 +502,7 @@ def all_balances():
     binance_balances_total=binance.balances_total()
     binance_balances_temp={}
     binance_usd={}
-#    all_usd=float(binance_balances['USDT']['free'])+float(binance_balances['USDT']['locked'])+float(binance_balances['TUSD']['free'])+float(binance_balances['TUSD']['locked'])
+    all_usd=binance_balances_total["USDT"]['total']+binance_balances_total["TUSD"]['total']
     for bals in binance_balances_total:
         binance_balances_temp[bals]=binance_balances_total[bals]["total"]
     btc_value=binance_balances_total['BTC']['total']
@@ -510,13 +510,13 @@ def all_balances():
         if k[-3:]=="BTC":
             coin=k.replace("BTC", "")
             btc_value=btc_value+float(binance_balances_total[coin]['total']*v)
-    binance_usd["total_usd"]=float(binance_prices.get("BTCUSDT"))*btc_value
-    binance_usd["total_btc"]=btc_value
+    binance_usd["total_usd"]=float(binance_prices.get("BTCUSDT"))*btc_value+all_usd
+    binance_usd["total_btc"]=btc_value+all_usd/float(binance_prices.get("BTCUSDT"))
     save_json(dir_TEMP+"binance_usd", binance_usd)
     save_json(dir_TEMP+"binance_balances", binance_balances)
     save_json(dir_TEMP+"binance_balances_total", binance_balances_total)
     save_json(dir_TEMP+"binance_prices", binance_prices)
-    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Total estimated USD:"+ str(float(binance_prices.get("BTCUSDT"))*btc_value),debugapp_DebugLevel="INFO", debugapp_logger=logger)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Total Binance estimated USD:"+ str(binance_usd["total_usd"]),debugapp_DebugLevel="INFO", debugapp_logger=logger)
 
     if "str_key_bitfinex" in dct_INI_JSON:
         if dct_INI_JSON['str_key_bitfinex'] <> "":
@@ -542,6 +542,7 @@ def all_balances():
                 bitfinex_usd["total_usd"]=all_amount_usd
                 bitfinex_usd["total_btc"]=all_amount
                 save_json(dir_TEMP+"bitfinex_usd", bitfinex_usd)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Total Bitfinex estimated USD:"+ str(all_amount_usd),debugapp_DebugLevel="INFO", debugapp_logger=logger)
 
     if "str_key_kraken" in dct_INI_JSON:
         if dct_INI_JSON['str_key_kraken'] <> "":
@@ -567,6 +568,7 @@ def all_balances():
                 kraken_usd["total_usd"]=all_amount_usd
                 kraken_usd["total_btc"]=all_amount
                 save_json(dir_TEMP+"kraken_usd", kraken_usd)
+    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Total Kraken estimated USD:"+ str(all_amount_usd),debugapp_DebugLevel="INFO", debugapp_logger=logger)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
 
 #############################################################################################################
