@@ -4,7 +4,7 @@ import datetime
 now = datetime.datetime.now()
 begin_now = now
 #print "Before import:%d" % now.second
-#import time
+import time
 import sys
 import ConfigParser
 #import bitmex
@@ -488,7 +488,22 @@ def load_obj(name ):
 
 def ToBeFilled():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
-    allOrders=exchange.fetch_orders(dct_FILE.get("symbol"))
+
+    e = "Timeout"
+    i=0
+    while "Timeout" in str(e):
+        try:
+            allOrders=exchange.fetch_orders(dct_FILE.get("symbol"))
+            if allOrders :
+                if isinstance(allOrders, list): e="OK"
+        except Exception as e:
+            time.sleep(1)
+            i=i+1
+            if "Timeout" in str(e) and i<=59:
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"fetch_orders problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="WARNING", debugapp_logger=logger)
+            elif i==60:
+                debugapp(str(sys._getframe().f_code.co_name)+"|"+"fetch_orders problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_exit=1, debugapp_logger=logger)
+
     if allOrders :
         if isinstance(allOrders, list):
             save_json(dir_TEMP+dct_FILE['symbol'].replace("/", "")+"_"+"allOrders", allOrders)
@@ -767,10 +782,10 @@ def check_sl_pos():
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"begin",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
     check_sl_pos_allPositions=None
     check_sl_pos_allPositions=exchange.private_get_position()
+    check_sl_pos_allPositions_pos_list=[]
     if check_sl_pos_allPositions :
         if isinstance(check_sl_pos_allPositions, list):
             check_sl_pos_allPositions_pos = {}
-            check_sl_pos_allPositions_pos_list=[]
             for p in check_sl_pos_allPositions:
                 if p['isOpen']:
                     check_sl_pos_allPositions_pos_list.append(p['symbol'])
@@ -780,10 +795,10 @@ def check_sl_pos():
                         check_sl_pos_allPositions_pos[p['symbol']]=p['currentQty']
     check_sl_pos_allOrders=None
     check_sl_pos_allOrders=exchange.fetch_open_orders(limit=499)
+    check_sl_pos_allOrders_opened_list=[]
     if check_sl_pos_allOrders:
         if isinstance(check_sl_pos_allOrders, list):
             check_sl_pos_allOrders_opened = {}
-            check_sl_pos_allOrders_opened_list=[]
             for q in check_sl_pos_allOrders:
                 if (q['status']=="New" or q['status']=="open") and q['info']['ordType']=="Stop":
                     remaining=q['remaining']
@@ -793,16 +808,17 @@ def check_sl_pos():
                         check_sl_pos_allOrders_opened[q['info']['symbol']]=remaining+check_sl_pos_allOrders_opened[q['info']['symbol']]
                     else:
                         check_sl_pos_allOrders_opened[q['info']['symbol']]=remaining
-    for r,  s in check_sl_pos_allOrders_opened.items():
-        if r in check_sl_pos_allPositions_pos:
-            if (check_sl_pos_allPositions_pos[r]+s)<>0:
-                debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position <> SL Qty!! "+r,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1, debugapp_logger=logger)
-    check_sl_pos_allPositions_pos_list.sort()
-    check_sl_pos_allOrders_opened_list.sort()
-    diff_list_pos=list(set(check_sl_pos_allPositions_pos_list) - set(check_sl_pos_allOrders_opened_list))
+    if 'check_sl_pos_allOrders_opened' in locals():
+        for r,  s in check_sl_pos_allOrders_opened.items():
+            if r in check_sl_pos_allPositions_pos:
+                if (check_sl_pos_allPositions_pos[r]+s)<>0:
+                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position <> SL Qty!! "+r,debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1, debugapp_logger=logger)
+        check_sl_pos_allPositions_pos_list.sort()
+        check_sl_pos_allOrders_opened_list.sort()
+        diff_list_pos=list(set(check_sl_pos_allPositions_pos_list) - set(check_sl_pos_allOrders_opened_list))
+        if diff_list_pos:
+            debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position without SL!! "+str(diff_list_pos),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1, debugapp_logger=logger)
     diff_list_sl=list(set(check_sl_pos_allOrders_opened_list) - set(check_sl_pos_allPositions_pos_list))
-    if diff_list_pos:
-        debugapp(str(sys._getframe().f_code.co_name)+"|"+"Position without SL!! "+str(diff_list_pos),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1, debugapp_logger=logger)
     if diff_list_sl:
         debugapp(str(sys._getframe().f_code.co_name)+"|"+"SL without position!! "+str(diff_list_sl),debugapp_DebugLevel="CRITICAL",debugapp_Telegram=1, debugapp_logger=logger)
     debugapp(str(sys._getframe().f_code.co_name)+"|"+"end",debugapp_DebugLevel="DEBUG", debugapp_logger=logger)
@@ -930,7 +946,21 @@ for filename in os.listdir(dir_BITMEX_TRADES):
     #############################################################################################################
     #TESTS###############################################################################################
     #############################################################################################################
-        open_orders=exchange.fetch_open_orders(dct_FILE.get("symbol"))
+        e = "Timeout"
+        i=0
+        while "Timeout" in str(e):
+            try:
+                open_orders=exchange.fetch_open_orders(dct_FILE.get("symbol"))
+                if open_orders :
+                    if isinstance(open_orders, list): e="OK"
+            except Exception as e:
+                time.sleep(1)
+                i=i+1
+                if "Timeout" in str(e) and i<=59:
+                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"fetch_open_orders problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="WARNING", debugapp_logger=logger)
+                elif i==60:
+                    debugapp(str(sys._getframe().f_code.co_name)+"|"+"fetch_open_orders problem:"+str(e),debugapp_Telegram=1,debugapp_DebugLevel="CRITICAL",debugapp_exit=1, debugapp_logger=logger)
+
         if dct_FILE['dictToBeFilled'].has_key("order_BUY"):
             ToBeFilled()
         if float(dct_FILE['executedQty_creation'])<float(dct_FILE['executedQty_vendu']):
