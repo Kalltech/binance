@@ -3,13 +3,14 @@ import hashlib
 import logging
 import requests
 import time
+
+requests.adapters.DEFAULT_RETRIES = 2
 try:
     from urllib import urlencode
 
 # for python3
 except ImportError:
     from urllib.parse import urlencode
-
 
 ENDPOINT = "https://www.binance.com"
 
@@ -18,9 +19,11 @@ SELL = "SELL"
 
 LIMIT = "LIMIT"
 MARKET = "MARKET"
+STOP_LOSS_LIMIT = "STOP_LOSS_LIMIT"
 
 GTC = "GTC"
 IOC = "IOC"
+log_error = False
 
 options = {}
 
@@ -34,10 +37,31 @@ def set(apiKey, secret):
     options["secret"] = secret
 
 
+def get_ping():
+    """Test request, returns []."""
+    print("Fetching ping: ")
+    r = request("GET", "/api/v1/ping", {})
+    return r
+
+
+def get_server_time():
+    """Fetches the binance server time, equivalent to the time.time() result, measured in milliseconds"""
+    print("Fetching binance server time: ")
+    r = request("GET", "/api/v1/time", {})
+    return r["serverTime"]
+
+
+def get_exchange_info():
+    """Get latest exchange information."""
+    print("Fetching exchange info: ")
+    r = request("GET", "/api/v1/exchangeInfo", {})
+    return r
+
+
 def prices():
     """Get latest prices for all symbols."""
-    data = request("GET", "/api/v1/ticker/allPrices")
-    return {d["symbol"]: d["price"] for d in data}
+    data = request("GET", "/api/v3/ticker/price", {})
+    return {d["symbol"]: float(d["price"]) for d in data}
 
 
 def tickers():
@@ -64,8 +88,8 @@ def depth(symbol, **kwargs):
     params.update(kwargs)
     data = request("GET", "/api/v1/depth", params)
     return {
-        "bids": {px: qty for px, qty in data["bids"]},
-        "asks": {px: qty for px, qty in data["asks"]},
+        "bids": {px: qty for px, qty, _ in data["bids"]},
+        "asks": {px: qty for px, qty, _ in data["asks"]},
     }
 
 
@@ -78,7 +102,7 @@ def klines(symbol, interval, **kwargs):
     Args:
         symbol (str)
         interval (str)
-        limit (int, optional): Default 500; max 500.
+        limit (int, optional): Default 500; max 1000.
         startTime (int, optional)
         endTime (int, optional)
 
@@ -111,6 +135,17 @@ def balances():
     } for d in data.get("balances", [])}
 
 
+def balances_total():
+    """Get current balances for all symbols."""
+    data = signedRequest("GET", "/api/v3/account", {})
+    if 'msg' in data:
+        raise ValueError("Error from exchange: {}".format(data['msg']))
+
+    return {d["asset"]: {
+        "total": float(d["locked"]) + float(d["free"]),
+    } for d in data.get("balances", [])}
+
+
 def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
           test=False, **kwargs):
     """Send in a new order.
@@ -120,7 +155,7 @@ def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
         side (str): BUY or SELL.
         quantity (float, str or decimal)
         price (float, str or decimal)
-        orderType (str, optional): LIMIT or MARKET.
+        orderType (str, optional): LIMIT or MARKET or STOP_LOSS_LIMIT
         timeInForce (str, optional): GTC or IOC.
         test (bool, optional): Creates and validates a new order but does not
             send it into the matching engine. Returns an empty dict if
@@ -131,14 +166,23 @@ def order(symbol, side, quantity, price, orderType=LIMIT, timeInForce=GTC,
         icebergQty (float, str or decimal, optional): Used with iceberg orders.
 
     """
-    params = {
-        "symbol": symbol,
-        "side": side,
-        "type": orderType,
-        "timeInForce": timeInForce,
-        "quantity": formatNumber(quantity),
-        "price": formatNumber(price),
-    }
+    if orderType == MARKET:
+        params = {
+            "symbol": symbol,
+            "side": side,
+            "type": orderType,
+            "quantity": formatNumber(quantity),
+        }
+    else:
+        params = {
+            "symbol": symbol,
+            "side": side,
+            "type": orderType,
+            "timeInForce": timeInForce,
+            "quantity": formatNumber(quantity),
+            "price": formatNumber(price),
+        }
+
     params.update(kwargs)
     path = "/api/v3/order/test" if test else "/api/v3/order"
     data = signedRequest("POST", path, params)
@@ -232,7 +276,7 @@ def myTrades(symbol, **kwargs):
 def request(method, path, params=None):
     resp = requests.request(method, ENDPOINT + path, params=params)
     data = resp.json()
-    if "msg" in data:
+    if "msg" in data and log_error:
         logging.error(data['msg'])
     return data
 
@@ -251,7 +295,7 @@ def signedRequest(method, path, params):
                             ENDPOINT + path + "?" + query,
                             headers={"X-MBX-APIKEY": options["apiKey"]})
     data = resp.json()
-    if "msg" in data:
+    if "msg" in data and log_error:
         logging.error(data['msg'])
     return data
 
